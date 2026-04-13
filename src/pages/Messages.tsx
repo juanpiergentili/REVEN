@@ -23,7 +23,7 @@ const MOCK_CONVERSATIONS = [
     vehicle: {
       name: 'Toyota Hilux 2023',
       price: 48500,
-      photo: 'https://images.unsplash.com/photo-1618341641711-203204969f52?auto=format&fit=crop&q=80&w=200'
+      photo: 'https://images.unsplash.com/photo-1559416523-140ddc3d238c?auto=format&fit=crop&q=80&w=200'
     }
   },
   {

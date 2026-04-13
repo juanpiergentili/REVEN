@@ -64,10 +64,10 @@ const REVIEWS_ROW_1 = REVIEWS.slice(0, 15);
 const REVIEWS_ROW_2 = REVIEWS.slice(15, 30);
 
 const LATEST_UNITS = [
-  { brand: "BAIC", model: "X55 II", version: "Luxury 1.5T", year: 2024, price: "32.500", oldPrice: "35.000", photo: "https://images.unsplash.com/photo-1606577924006-27d39b132ee6?auto=format&fit=crop&q=80&w=800", specs: { fuel: "Nafta", trans: "Automática", seats: 5 } },
-  { brand: "Toyota", model: "Hilux", version: "SRX 4x4 AT", year: 2023, price: "45.900", oldPrice: "48.500", photo: "https://images.unsplash.com/photo-1618341641711-203204969f52?auto=format&fit=crop&q=80&w=800", specs: { fuel: "Diesel", trans: "Automática", seats: 5 } },
+  { brand: "Toyota", model: "Hilux", version: "SRX 4x4 AT", year: 2023, price: "45.900", oldPrice: "48.500", photo: "https://images.unsplash.com/photo-1559416523-140ddc3d238c?auto=format&fit=crop&q=80&w=800", specs: { fuel: "Diesel", trans: "Automática", seats: 5 } },
   { brand: "Volkswagen", model: "Amarok", version: "V6 Extreme", year: 2024, price: "52.000", oldPrice: "55.000", photo: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=800", specs: { fuel: "Diesel", trans: "Automática", seats: 5 } },
-  { brand: "Ford", model: "Ranger", version: "Limited Plus", year: 2024, price: "49.500", oldPrice: "52.000", photo: "https://images.unsplash.com/photo-1590362891175-3794ec1693af?auto=format&fit=crop&q=80&w=800", specs: { fuel: "Diesel", trans: "Automática", seats: 5 } },
+  { brand: "Ford", model: "Ranger", version: "Limited Plus", year: 2024, price: "49.500", oldPrice: "52.000", photo: "https://images.unsplash.com/photo-1544636331-e26879cd4d9b?auto=format&fit=crop&q=80&w=800", specs: { fuel: "Diesel", trans: "Automática", seats: 5 } },
+  { brand: "Jeep", model: "Compass", version: "Limited 1.3T", year: 2023, price: "38.500", oldPrice: "41.000", photo: "https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&q=80&w=800", specs: { fuel: "Nafta", trans: "Automática", seats: 5 } },
 ];
 
 const STEPS = [
@@ -109,15 +109,15 @@ function ReviewCard({ review }: { review: typeof REVIEWS[0], key?: any }) {
 function InfiniteSlider({ reviews, direction = "left" }: { reviews: typeof REVIEWS, direction?: "left" | "right" }) {
   return (
     <div className="overflow-hidden py-4">
-        <motion.div 
+      <motion.div
         className="flex"
-        animate={{ 
-          x: direction === "left" ? ["0%", "-50%"] : ["-50%", "0%"] 
+        animate={{
+          x: direction === "left" ? ["0%", "-50%"] : ["-50%", "0%"]
         }}
-        transition={{ 
-          duration: 28, 
-          repeat: Infinity, 
-          ease: "linear" 
+        transition={{
+          duration: 28,
+          repeat: Infinity,
+          ease: "linear"
         }}
       >
         {[...reviews, ...reviews].map((review, i) => (
@@ -170,7 +170,7 @@ export function Home() {
   const handleAdmissionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!acceptedTerms) return;
-    
+
     setLoading(true);
     setError(null);
     try {
@@ -232,9 +232,9 @@ export function Home() {
       {/* Hero Section */}
       <section className="relative min-h-[90vh] flex items-center overflow-hidden py-20 lg:py-0">
         <div className="absolute inset-0 z-0">
-          <img 
-            src="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&q=80&w=1920" 
-            alt="Hero Background" 
+          <img
+            src="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&q=80&w=1920"
+            alt="Hero Background"
             className="w-full h-full object-cover opacity-40"
             referrerPolicy="no-referrer"
           />
@@ -243,7 +243,7 @@ export function Home() {
 
         <div className="container relative z-10 px-6 md:px-12 mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, x: -50 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8 }}
@@ -261,17 +261,17 @@ export function Home() {
                 La plataforma privada donde los profesionales de Argentina compran y venden stock verificado con máxima rentabilidad.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 pt-4 justify-center lg:justify-start">
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   className="h-14 md:h-16 px-8 md:px-10 rounded-2xl font-bold text-base md:text-lg shadow-xl shadow-primary/20 group uppercase tracking-tighter w-full sm:w-auto"
                   onClick={() => setIsAdmissionOpen(true)}
                 >
                   SOLICITAR ADMISIÓN
                   <ArrowRight className="ml-2 h-5 md:h-6 w-5 md:w-6 group-hover:translate-x-1 transition-transform" />
                 </Button>
-                <Button 
-                  size="lg" 
-                  variant="outline" 
+                <Button
+                  size="lg"
+                  variant="outline"
                   className="h-14 md:h-16 px-8 md:px-10 rounded-2xl font-bold text-base md:text-lg border-border hover:bg-primary/5 uppercase tracking-tighter w-full sm:w-auto"
                   onClick={() => {
                     const pricingSection = document.getElementById('pricing');
@@ -290,9 +290,9 @@ export function Home() {
               className="hidden lg:block relative"
             >
               <div className="absolute inset-0 bg-primary/20 blur-[120px] rounded-full" />
-              <img 
-                src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=1000" 
-                alt="Car" 
+              <img
+                src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=1000"
+                alt="Car"
                 className="relative z-10 w-full h-auto rounded-[3rem] shadow-2xl border border-white/20"
                 referrerPolicy="no-referrer"
               />
@@ -330,7 +330,7 @@ export function Home() {
 
               <div className="space-y-8">
                 {STEPS.map((step, i) => (
-                  <motion.div 
+                  <motion.div
                     key={i}
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
@@ -349,8 +349,8 @@ export function Home() {
                 ))}
               </div>
 
-              <Button 
-                size="lg" 
+              <Button
+                size="lg"
                 className="h-16 px-10 rounded-2xl font-bold text-lg shadow-xl shadow-primary/20 group uppercase tracking-tighter"
                 onClick={() => setIsAdmissionOpen(true)}
               >
@@ -359,23 +359,23 @@ export function Home() {
               </Button>
             </div>
 
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, x: 50 }}
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8 }}
               viewport={{ once: true }}
               className="relative aspect-video rounded-[3rem] overflow-hidden shadow-2xl border border-white/10"
             >
-              <video 
-                autoPlay 
-                loop 
-                muted 
-                playsInline 
-                className="w-full h-full object-cover"
-              >
-                <source src="/7154208-hd_1920_1080_25fps.mp4" type="video/mp4" />
-              </video>
-              <div className="absolute inset-0 bg-black/20" />
+              <div className="w-full h-full relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-secondary/20 to-primary/10 animate-pulse" />
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-white/90 space-y-4">
+                  <div className="h-20 w-20 rounded-full bg-white/10 backdrop-blur-xl flex items-center justify-center border border-white/20">
+                    <ShieldCheck className="h-10 w-10 text-primary" />
+                  </div>
+                  <p className="text-2xl font-bold tracking-tighter uppercase">Red Verificada</p>
+                  <p className="text-sm text-white/60 font-medium">+500 operaciones mensuales</p>
+                </div>
+              </div>
             </motion.div>
           </div>
         </div>
@@ -422,7 +422,7 @@ export function Home() {
                     <h4 className="font-bold text-xl uppercase tracking-tighter leading-none text-foreground dark:text-foreground">{car.brand} {car.model}</h4>
                     <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">{car.version}</p>
                   </div>
-                  
+
                   <div className="flex items-center justify-between py-4 border-y border-border/50">
                     <div className="flex flex-col items-center gap-1">
                       <Users className="h-4 w-4 text-muted-foreground" />
@@ -459,13 +459,13 @@ export function Home() {
 
       {/* Features / Why Reven */}
       <section ref={socioRef} className="relative py-24 md:py-32 overflow-hidden bg-background">
-        <motion.div 
+        <motion.div
           style={{ y: socioY }}
           className="absolute inset-0 z-0"
         >
-          <img 
-            src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=1920" 
-            alt="Business Background" 
+          <img
+            src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=1920"
+            alt="Business Background"
             className="w-full h-[120%] object-cover opacity-10 dark:opacity-20 grayscale"
             referrerPolicy="no-referrer"
           />
@@ -475,41 +475,41 @@ export function Home() {
             <h2 className="text-4xl md:text-6xl font-bold tracking-tighter mb-4 uppercase">Tu Socio Estratégico</h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto font-medium">Optimizamos la compra y venta de unidades para maximizar la rentabilidad de tu concesionaria.</p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
-              { 
-                icon: Shield, 
-                title: 'Peritaje Profesional', 
-                desc: 'Cada unidad en nuestro marketplace cuenta con un peritaje completo realizado por expertos. Sabés exactamente qué estás comprando, sin sorpresas.' 
+              {
+                icon: Shield,
+                title: 'Peritaje Profesional',
+                desc: 'Cada unidad en nuestro marketplace cuenta con un peritaje completo realizado por expertos. Sabés exactamente qué estás comprando, sin sorpresas.'
               },
-              { 
-                icon: Zap, 
-                title: 'Compra Mayorista', 
-                desc: 'Accedé a un stock exclusivo con precios mayoristas y condiciones preferenciales diseñadas únicamente para revendedores.' 
+              {
+                icon: Zap,
+                title: 'Compra Mayorista',
+                desc: 'Accedé a un stock exclusivo con precios mayoristas y condiciones preferenciales diseñadas únicamente para revendedores.'
               },
-              { 
-                icon: Star, 
-                title: 'Venta Diferencial', 
-                desc: 'No solo comprás; también podés liquidar tu stock excedente vendiendo a otros profesionales a precios diferenciales de mercado.' 
+              {
+                icon: Star,
+                title: 'Venta Diferencial',
+                desc: 'No solo comprás; también podés liquidar tu stock excedente vendiendo a otros profesionales a precios diferenciales de mercado.'
               },
-              { 
-                icon: Users, 
-                title: 'Gestoría Interna', 
-                desc: 'Nos encargamos de que toda la documentación esté lista para transferir. Retirá la unidad y vendela sin demoras administrativas.' 
+              {
+                icon: Users,
+                title: 'Gestoría Interna',
+                desc: 'Nos encargamos de que toda la documentación esté lista para transferir. Retirá la unidad y vendela sin demoras administrativas.'
               },
-              { 
-                icon: Check, 
-                title: 'Marketplace Cerrado', 
-                desc: 'Un entorno seguro y privado. Sin curiosos ni consumidores finales. Solo operaciones reales entre colegas del sector.' 
+              {
+                icon: Check,
+                title: 'Marketplace Cerrado',
+                desc: 'Un entorno seguro y privado. Sin curiosos ni consumidores finales. Solo operaciones reales entre colegas del sector.'
               },
-              { 
-                icon: Shield, 
-                title: 'Rentabilidad Máxima', 
-                desc: 'Nuestras herramientas están orientadas a mejorar tus márgenes operativos mediante rotación rápida de stock verificado.' 
+              {
+                icon: Shield,
+                title: 'Rentabilidad Máxima',
+                desc: 'Nuestras herramientas están orientadas a mejorar tus márgenes operativos mediante rotación rápida de stock verificado.'
               }
             ].map((feature, i) => (
-              <motion.div 
+              <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -530,13 +530,13 @@ export function Home() {
 
       {/* Parallax Reviews Section */}
       <section ref={parallaxRef} className="relative py-24 md:py-32 overflow-hidden bg-black">
-        <motion.div 
+        <motion.div
           style={{ y }}
           className="absolute inset-0 z-0"
         >
-          <img 
-            src="https://images.unsplash.com/photo-1521791136064-7986c2923216?auto=format&fit=crop&q=80&w=1920" 
-            alt="Handshake Background" 
+          <img
+            src="https://images.unsplash.com/photo-1521791136064-7986c2923216?auto=format&fit=crop&q=80&w=1920"
+            alt="Handshake Background"
             className="w-full h-[140%] object-cover opacity-40 blur-[2px]"
             referrerPolicy="no-referrer"
           />
@@ -565,7 +565,7 @@ export function Home() {
       <section id="pricing" className="py-24 md:py-32 bg-foreground text-background dark:bg-muted/20 dark:text-foreground relative overflow-hidden">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 blur-[120px] rounded-full -z-0" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-secondary/10 blur-[120px] rounded-full -z-0" />
-        
+
         <div className="container px-6 md:px-12 mx-auto relative z-10">
           <div className="text-center mb-20">
             <h2 className="text-5xl md:text-7xl font-bold tracking-tighter uppercase mb-6 text-background dark:text-foreground">Planes de Membresía</h2>
@@ -574,32 +574,32 @@ export function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 max-w-7xl mx-auto items-center">
             {[
-              { 
-                name: 'Plata', 
-                price: '120', 
+              {
+                name: 'Plata',
+                price: '120',
                 annual: '999',
                 features: ['Hasta 5 autos publicados', 'Acceso al Marketplace B2B', 'Mensajería directa', 'Soporte estándar'],
                 popular: false,
                 color: 'border-border'
               },
-              { 
-                name: 'Oro', 
-                price: '180', 
+              {
+                name: 'Oro',
+                price: '180',
                 annual: '1500',
                 features: ['Hasta 25 autos publicados', 'Acceso al Marketplace B2B', 'Mensajería prioritaria', 'Soporte 24/7', 'Badge de Verificado'],
                 popular: true,
                 color: 'border-primary shadow-primary/20'
               },
-              { 
-                name: 'Platinum', 
-                price: '300', 
+              {
+                name: 'Platinum',
+                price: '300',
                 annual: '2500',
                 features: ['Hasta 150 autos publicados', 'Acceso al Marketplace B2B', 'Gestoría preferencial', 'Destacados ilimitados', 'Account Manager dedicado'],
                 popular: false,
                 color: 'border-secondary shadow-secondary/20'
               }
             ].map((plan, i) => (
-              <motion.div 
+              <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -620,7 +620,7 @@ export function Home() {
                   </div>
                   <p className="text-primary font-black text-base mt-5 tracking-tighter uppercase bg-primary/10 inline-block px-4 py-1 rounded-full">U$D {plan.annual} ANUAL</p>
                 </div>
-                
+
                 <ul className="space-y-6 mb-14 flex-1">
                   {plan.features.map((feature, j) => (
                     <li key={j} className="flex items-center gap-5 text-base font-bold text-background/90 dark:text-foreground/90">
@@ -632,7 +632,7 @@ export function Home() {
                   ))}
                 </ul>
 
-                <Button 
+                <Button
                   className={`w-full h-16 rounded-2xl font-black text-xl uppercase tracking-tighter transition-all ${plan.popular ? 'bg-primary text-primary-foreground shadow-xl shadow-primary/30 hover:scale-105' : 'variant-outline border-border hover:bg-primary/10'}`}
                   onClick={() => setIsAdmissionOpen(true)}
                 >
@@ -645,7 +645,7 @@ export function Home() {
           <div className="mt-20 p-12 rounded-[3rem] bg-background/5 dark:bg-card/50 border border-border/20 text-center max-w-4xl mx-auto backdrop-blur-sm">
             <h3 className="text-3xl font-bold tracking-tighter uppercase mb-4 text-background dark:text-foreground">¿Necesitás más volumen?</h3>
             <p className="text-muted-foreground font-medium mb-8">Para redes de concesionarias o grandes flotas, tenemos soluciones Enterprise a medida.</p>
-            <Button 
+            <Button
               className="h-14 px-10 rounded-2xl font-bold text-lg bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-tighter shadow-xl shadow-primary/20"
               onClick={() => setIsAdmissionOpen(true)}
             >
@@ -662,9 +662,9 @@ export function Home() {
             UNITE A LA RED MÁS <br />
             GRANDE DE ARGENTINA
           </h2>
-          <Button 
-            size="lg" 
-            variant="secondary" 
+          <Button
+            size="lg"
+            variant="secondary"
             className="h-20 px-16 rounded-3xl font-bold text-2xl shadow-2xl group uppercase tracking-tighter"
             onClick={() => setIsAdmissionOpen(true)}
           >
@@ -715,88 +715,88 @@ export function Home() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="pop-name" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Nombre</Label>
-                    <Input 
-                      id="pop-name" 
+                    <Input
+                      id="pop-name"
                       required
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      placeholder="Juan" 
-                      className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4" 
+                      placeholder="Juan"
+                      className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="pop-lastname" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Apellido</Label>
-                    <Input 
-                      id="pop-lastname" 
+                    <Input
+                      id="pop-lastname"
                       required
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
-                      placeholder="Pérez" 
-                      className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4" 
+                      placeholder="Pérez"
+                      className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4"
                     />
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="pop-cuil" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">CUIL / CUIT</Label>
-                    <Input 
-                      id="pop-cuil" 
+                    <Input
+                      id="pop-cuil"
                       required
                       value={cuil}
                       onChange={(e) => setCuil(e.target.value)}
-                      placeholder="20-XXXXXXXX-X" 
-                      className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4" 
+                      placeholder="20-XXXXXXXX-X"
+                      className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="pop-phone" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Teléfono</Label>
-                    <Input 
-                      id="pop-phone" 
+                    <Input
+                      id="pop-phone"
                       required
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+54 9 11 ..." 
-                      className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4" 
+                      placeholder="+54 9 11 ..."
+                      className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="pop-company" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Concesionaria</Label>
-                  <Input 
-                    id="pop-company" 
+                  <Input
+                    id="pop-company"
                     required
                     value={company}
                     onChange={(e) => setCompany(e.target.value)}
-                    placeholder="Automotores Reven S.A." 
-                    className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4" 
+                    placeholder="Automotores Reven S.A."
+                    className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="pop-email" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Email Corporativo</Label>
-                    <Input 
-                      id="pop-email" 
-                      type="email" 
+                    <Input
+                      id="pop-email"
+                      type="email"
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="juan@concesionaria.com" 
-                      className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4" 
+                      placeholder="juan@concesionaria.com"
+                      className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="pop-pass" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Contraseña</Label>
-                    <Input 
-                      id="pop-pass" 
-                      type="password" 
+                    <Input
+                      id="pop-pass"
+                      type="password"
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••" 
-                      className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4" 
+                      placeholder="••••••••"
+                      className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4"
                     />
                   </div>
                 </div>
@@ -844,16 +844,16 @@ export function Home() {
                 <div className="space-y-2">
                   <Label htmlFor="pop-discount" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Código de Descuento</Label>
                   <div className="flex gap-2">
-                    <Input 
-                      id="pop-discount" 
+                    <Input
+                      id="pop-discount"
                       value={discountCode}
                       onChange={(e) => setDiscountCode(e.target.value)}
-                      placeholder="REVEN20" 
-                      className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4 flex-1" 
+                      placeholder="REVEN20"
+                      className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4 flex-1"
                     />
-                    <Button 
-                      type="button" 
-                      variant="secondary" 
+                    <Button
+                      type="button"
+                      variant="secondary"
                       onClick={handleApplyDiscount}
                       className="h-12 rounded-xl font-bold px-6"
                     >
@@ -866,9 +866,9 @@ export function Home() {
                 </div>
 
                 <div className="flex items-start space-x-4 pt-2">
-                  <Checkbox 
-                    id="terms" 
-                    checked={acceptedTerms} 
+                  <Checkbox
+                    id="terms"
+                    checked={acceptedTerms}
                     onCheckedChange={(checked) => setAcceptedTerms(checked as boolean)}
                     className="mt-1 border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground h-5 w-5 rounded-md"
                   />
@@ -885,7 +885,7 @@ export function Home() {
                   </div>
                 </div>
 
-                <Button 
+                <Button
                   type="submit"
                   disabled={!acceptedTerms || loading}
                   className="w-full h-14 rounded-xl font-bold text-lg shadow-xl shadow-primary/20 mt-4 uppercase tracking-tighter"
@@ -941,8 +941,8 @@ export function Home() {
         <div className="container px-6 md:px-12 mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16 text-center md:text-left">
             <div className="col-span-1 md:col-span-1 space-y-6 flex flex-col items-center md:items-start">
-              <img src="/logo-negro.png" alt="REVEN" className="h-[30px] w-auto hidden dark:block object-contain rounded-xl" />
-              <img src="/logo-blanco.png" alt="REVEN" className="h-[30px] w-auto block dark:hidden object-contain rounded-xl" />
+              <img src="/logo-blanco.svg" alt="REVEN" className="h-[30px] w-auto hidden dark:block object-contain rounded-xl" />
+              <img src="/logo-negro.svg" alt="REVEN" className="h-[30px] w-auto block dark:hidden object-contain rounded-xl" />
               <p className="text-white/70 text-sm font-medium leading-relaxed max-w-xs">
                 La red B2B más exclusiva de Argentina. Conectamos profesionales del sector automotor con tecnología y transparencia.
               </p>
@@ -983,9 +983,9 @@ export function Home() {
                   Córdoba, Argentina
                 </li>
                 <li className="flex items-center gap-3">
-                  <a 
-                    href="https://wa.me/543516161300?text=Hola,%20vi%20su%20servicio%20para%20concesionarias%20de%20REVEN%20y%20me%20gustaria%20sacarme%20algunas%20dudas.%20Mi%20nombre%20es..." 
-                    target="_blank" 
+                  <a
+                    href="https://wa.me/543516161300?text=Hola,%20vi%20su%20servicio%20para%20concesionarias%20de%20REVEN%20y%20me%20gustaria%20sacarme%20algunas%20dudas.%20Mi%20nombre%20es..."
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-3 hover:text-primary transition-colors"
                   >

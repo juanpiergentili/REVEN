@@ -39,10 +39,10 @@ const MOCK_VEHICLES = [
     price: 48500,
     currency: 'USD',
     photos: [
-      'https://images.unsplash.com/photo-1618341641711-203204969f52?auto=format&fit=crop&q=80&w=1200',
+      'https://images.unsplash.com/photo-1559416523-140ddc3d238c?auto=format&fit=crop&q=80&w=1200',
       'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=1200',
-      'https://images.unsplash.com/photo-1590362891175-3794ec1693af?auto=format&fit=crop&q=80&w=1200',
-      'https://images.unsplash.com/photo-1606577924006-27d39b132ee6?auto=format&fit=crop&q=80&w=1200',
+      'https://images.unsplash.com/photo-1544636331-e26879cd4d9b?auto=format&fit=crop&q=80&w=1200',
+      'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?auto=format&fit=crop&q=80&w=1200',
     ],
     description: 'Impecable estado, único dueño. Service oficiales al día. Cubiertas nuevas. Lista para transferir.',
     createdAt: '2024-03-10T10:00:00Z',
@@ -64,7 +64,7 @@ const MOCK_VEHICLES = [
     price: 58500,
     currency: 'USD',
     photos: [
-      'https://images.unsplash.com/photo-1606577924006-27d39b132ee6?auto=format&fit=crop&q=80&w=1200',
+      'https://images.unsplash.com/photo-1549317661-bd32c8ce0afe?auto=format&fit=crop&q=80&w=1200',
       'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=1200',
     ],
     description: 'Entrega inmediata. Varios colores disponibles. Garantía de fábrica.',

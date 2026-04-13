@@ -11,6 +11,7 @@ import { Messages } from '@/src/pages/Messages';
 function AppContent() {
   const location = useLocation();
   const isLoginPage = location.pathname === '/login';
+  const isHomePage = location.pathname === '/';
 
   return (
     <div className="min-h-screen flex flex-col font-sans antialiased">
@@ -28,7 +29,7 @@ function AppContent() {
         </Routes>
       </main>
       
-      {!isLoginPage && (
+      {!isLoginPage && !isHomePage && (
         <footer className="border-t py-6 md:py-0 bg-background">
           <div className="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row px-4 md:px-8">
             <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">

@@ -185,13 +185,13 @@ export function Login() {
             className="inline-block mb-6"
           >
             <img 
-              src="/logo-negro.png" 
+              src="/logo-negro.svg" 
               alt="REVEN" 
               className="h-[40px] w-auto block dark:hidden object-contain rounded-xl"
               referrerPolicy="no-referrer"
             />
             <img 
-              src="/logo-blanco.png" 
+              src="/logo-blanco.svg" 
               alt="REVEN" 
               className="h-[40px] w-auto hidden dark:block object-contain rounded-xl"
               referrerPolicy="no-referrer"
