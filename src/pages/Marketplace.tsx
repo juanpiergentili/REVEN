@@ -297,7 +297,7 @@ export function Marketplace() {
     <div className="flex flex-col min-h-screen bg-background">
       {/* Hero Section - Shrunk */}
       <div className="relative py-12 flex items-center overflow-hidden border-b border-white/5 bg-black/40">
-        <div className="container relative z-10 px-4 md:px-8 mx-auto">
+        <div className="container mx-auto relative z-10 px-4 md:px-8 mx-auto">
           <div className="mb-6">
             <Button 
               variant="ghost" 
@@ -354,7 +354,7 @@ export function Marketplace() {
         </div>
       </div>
 
-      <main className="container px-4 md:px-8 py-16 mx-auto">
+      <main className="container mx-auto px-4 md:px-8 py-16 mx-auto">
         <Tabs value={activeTab} className="w-full">
           <TabsContent value="stock" className="m-0">
             <div className="flex flex-col lg:flex-row gap-12">

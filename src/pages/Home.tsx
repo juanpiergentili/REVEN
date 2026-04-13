@@ -241,7 +241,7 @@ export function Home() {
           <div className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-transparent" />
         </div>
 
-        <div className="container relative z-10 px-6 md:px-12 mx-auto">
+        <div className="container mx-auto relative z-10 px-6 md:px-12 mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <motion.div
               initial={{ opacity: 0, x: -50 }}
@@ -303,7 +303,7 @@ export function Home() {
 
       {/* Trust Bar - Carent Style */}
       <section className="py-12 bg-background border-b border-border/50 overflow-hidden">
-        <div className="container px-6 md:px-12 mx-auto">
+        <div className="container mx-auto px-6 md:px-12 mx-auto">
           <p className="text-center text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground/50 mb-8">CONFIAN EN NOSOTROS LAS MEJORES CONCESIONARIAS</p>
           <div className="flex flex-wrap justify-center items-center gap-6 md:gap-16 opacity-30 grayscale hover:grayscale-0 transition-all duration-500">
             {['Toyota', 'Ford', 'Volkswagen', 'Chevrolet', 'BMW', 'Mercedes'].map((brand) => (
@@ -315,7 +315,7 @@ export function Home() {
 
       {/* Steps Section - Carent Style Redesign */}
       <section className="py-24 md:py-32 bg-foreground text-background dark:bg-muted/20 dark:text-foreground relative overflow-hidden">
-        <div className="container px-6 md:px-12 mx-auto relative z-10">
+        <div className="container mx-auto px-6 md:px-12 mx-auto relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             <div className="space-y-12">
               <div className="space-y-4">
@@ -383,7 +383,7 @@ export function Home() {
 
       {/* Latest Units Section */}
       <section className="py-24 bg-foreground text-background dark:bg-muted/20 dark:text-foreground">
-        <div className="container px-6 md:px-12 mx-auto">
+        <div className="container mx-auto px-6 md:px-12 mx-auto">
           <div className="flex flex-col sm:flex-row items-center sm:items-end justify-between gap-6 mb-12 text-center sm:text-left">
             <div className="space-y-2">
               <Badge className="bg-primary/20 text-primary border-none font-bold tracking-tighter px-4 py-1 rounded-full text-xs inline-flex">
@@ -470,7 +470,7 @@ export function Home() {
             referrerPolicy="no-referrer"
           />
         </motion.div>
-        <div className="container px-6 md:px-12 mx-auto relative z-10">
+        <div className="container mx-auto px-6 md:px-12 mx-auto relative z-10">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-6xl font-bold tracking-tighter mb-4 uppercase">Tu Socio Estratégico</h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto font-medium">Optimizamos la compra y venta de unidades para maximizar la rentabilidad de tu concesionaria.</p>
@@ -544,7 +544,7 @@ export function Home() {
         </motion.div>
 
         <div className="relative z-10">
-          <div className="container px-6 md:px-12 mx-auto text-center mb-16">
+          <div className="container mx-auto px-6 md:px-12 mx-auto text-center mb-16">
             <Badge className="bg-primary/20 text-primary border-none font-bold tracking-tighter px-6 py-2 rounded-full text-sm mb-6 inline-flex">
               TESTIMONIOS REALES
             </Badge>
@@ -566,7 +566,7 @@ export function Home() {
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 blur-[120px] rounded-full -z-0" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-secondary/10 blur-[120px] rounded-full -z-0" />
 
-        <div className="container px-6 md:px-12 mx-auto relative z-10">
+        <div className="container mx-auto px-6 md:px-12 mx-auto relative z-10">
           <div className="text-center mb-20">
             <h2 className="text-5xl md:text-7xl font-bold tracking-tighter uppercase mb-6 text-background dark:text-foreground">Planes de Membresía</h2>
             <p className="text-muted-foreground text-xl max-w-2xl mx-auto font-medium">Elegí el nivel de acceso que mejor se adapte al volumen de tu negocio.</p>
@@ -657,7 +657,7 @@ export function Home() {
 
       {/* Footer CTA */}
       <section className="py-24 bg-primary text-primary-foreground">
-        <div className="container px-4 md:px-8 text-center">
+        <div className="container mx-auto px-4 md:px-8 text-center">
           <h2 className="text-5xl md:text-7xl font-bold tracking-tighter uppercase mb-8 leading-none text-primary-foreground">
             UNITE A LA RED MÁS <br />
             GRANDE DE ARGENTINA
@@ -938,7 +938,7 @@ export function Home() {
       </Dialog>
       {/* Footer - Carent Style */}
       <footer className="bg-foreground text-white dark:bg-muted/20 dark:text-foreground py-24 border-t border-border/10">
-        <div className="container px-6 md:px-12 mx-auto">
+        <div className="container mx-auto px-6 md:px-12 mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16 text-center md:text-left">
             <div className="col-span-1 md:col-span-1 space-y-6 flex flex-col items-center md:items-start">
               <img src="/logo-blanco.svg" alt="REVEN" className="h-[30px] w-auto hidden dark:block object-contain rounded-xl" />

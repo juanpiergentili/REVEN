@@ -22,7 +22,7 @@ export function Publish() {
   const prevStep = () => setStep(step - 1);
 
   return (
-    <div className="container max-w-4xl py-20 px-4">
+    <div className="container mx-auto max-w-4xl py-20 px-4">
       <div className="mb-12 text-center space-y-4">
         <Badge className="bg-primary/20 text-primary border-primary/20 font-bold tracking-tighter px-4 py-1.5 rounded-full text-sm">
           NUEVA PUBLICACIÓN

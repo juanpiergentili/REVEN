@@ -98,3 +98,9 @@
     @apply font-heading font-medium text-primary tracking-tight;
   }
 }
+
+@layer utilities {
+  .container {
+    @apply mx-auto;
+  }
+}

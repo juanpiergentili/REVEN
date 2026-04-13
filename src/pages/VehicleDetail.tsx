@@ -115,7 +115,7 @@ export function VehicleDetail() {
     <div className="min-h-screen bg-background pb-20">
       {/* Top Bar */}
       <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50">
-        <div className="container px-4 md:px-8 h-16 flex items-center justify-between">
+        <div className="container mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
           <Button 
             variant="ghost" 
             size="sm" 
@@ -136,7 +136,7 @@ export function VehicleDetail() {
         </div>
       </div>
 
-      <main className="container px-4 md:px-8 py-8">
+      <main className="container mx-auto px-4 md:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
           
           {/* Left Column: Gallery & Description */}

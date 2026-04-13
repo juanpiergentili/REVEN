@@ -67,7 +67,7 @@ const MOCK_MESSAGES = [
 ];
 
 export function Messages() {
-  const [selectedId, setSelectedId] = useState('1');
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<{ [key: string]: typeof MOCK_MESSAGES }>({
     '1': MOCK_MESSAGES,
     '2': [
@@ -80,12 +80,12 @@ export function Messages() {
   const [newMessage, setNewMessage] = useState('');
   const navigate = useNavigate();
 
-  const currentChat = MOCK_CONVERSATIONS.find(c => c.id === selectedId);
-  const messages = chatMessages[selectedId] || [];
+  const currentChat = selectedId ? MOCK_CONVERSATIONS.find(c => c.id === selectedId) : null;
+  const messages = selectedId ? (chatMessages[selectedId] || []) : [];
 
   const handleSendMessage = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || !selectedId) return;
 
     const msg = {
       id: Date.now().toString(),
@@ -102,7 +102,7 @@ export function Messages() {
   };
 
   return (
-    <div className="container max-w-7xl h-[calc(100vh-8rem)] py-8 px-4 md:px-8">
+    <div className="container mx-auto max-w-7xl h-[calc(100vh-8rem)] py-8 px-4 md:px-8">
       <div className="mb-6">
         <Button 
           variant="ghost" 
@@ -116,7 +116,7 @@ export function Messages() {
       </div>
       <div className="flex h-full gap-8">
         {/* Sidebar */}
-        <div className="hidden lg:flex flex-col w-96 shrink-0 bg-white/5 backdrop-blur-xl border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl">
+        <div className={`${selectedId ? 'hidden lg:flex' : 'flex'} flex-col w-full lg:w-96 shrink-0 bg-white/5 backdrop-blur-xl border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl`}>
           <div className="p-8 border-b border-white/5 space-y-6">
             <h2 className="text-2xl font-bold tracking-tighter uppercase">Mensajes</h2>
             <div className="relative">
@@ -174,7 +174,7 @@ export function Messages() {
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1 flex flex-col bg-white/5 backdrop-blur-xl border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl relative">
+        <div className={`${!selectedId ? 'hidden lg:flex' : 'flex'} flex-1 flex-col bg-white/5 backdrop-blur-xl border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl relative`}>
           <AnimatePresence mode="wait">
             {currentChat ? (
               <motion.div 
@@ -187,7 +187,7 @@ export function Messages() {
                 {/* Chat Header */}
                 <div className="p-6 md:p-8 border-b border-white/5 flex items-center justify-between bg-white/5">
                   <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="icon" className="lg:hidden h-10 w-10 rounded-full">
+                    <Button variant="ghost" size="icon" className="lg:hidden h-10 w-10 rounded-full" onClick={() => setSelectedId(null)}>
                       <ChevronLeft className="h-6 w-6" />
                     </Button>
                     <Avatar className="h-12 w-12 border-2 border-white/10">

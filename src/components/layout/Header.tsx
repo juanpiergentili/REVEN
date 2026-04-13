@@ -200,7 +200,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-colors duration-300">
-      <div className="container flex h-20 items-center justify-between px-4 md:px-8">
+      <div className="container mx-auto flex h-20 items-center justify-between px-4 md:px-8">
         <div className="flex items-center gap-12">
           <Link to="/" className="flex items-center space-x-2 group">
             <img 
@@ -307,8 +307,8 @@ export function Header() {
                   className="rounded-full px-6 font-bold uppercase tracking-widest text-xs h-11 shadow-lg shadow-primary/20 group"
                   onClick={() => navigate('/publish')}
                 >
-                  <Plus className="mr-2 h-4 w-4 group-hover:rotate-90 transition-transform" />
-                  PUBLICAR +
+                  PUBLICAR
+                  <Plus className="ml-2 h-4 w-4 group-hover:rotate-90 transition-transform" />
                 </Button>
               </>
             ) : (
@@ -325,8 +325,8 @@ export function Header() {
                   className="rounded-full px-6 font-bold uppercase tracking-widest text-xs h-11 shadow-lg shadow-primary/20 group"
                   onClick={() => setIsLoginOpen(true)}
                 >
-                  <Plus className="mr-2 h-4 w-4 group-hover:rotate-90 transition-transform" />
-                  PUBLICAR +
+                  PUBLICAR
+                  <Plus className="ml-2 h-4 w-4 group-hover:rotate-90 transition-transform" />
                 </Button>
               </>
             )}
@@ -352,7 +352,7 @@ export function Header() {
             exit={{ opacity: 0, height: 0 }}
             className="md:hidden border-t border-border bg-background"
           >
-            <div className="container py-6 space-y-4 px-4">
+            <div className="container mx-auto py-6 space-y-4 px-4">
               {navItems.map((item) => (
                 <Link
                   key={item.name}
