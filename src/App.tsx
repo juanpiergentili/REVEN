@@ -7,6 +7,7 @@ import { VehicleDetail } from '@/src/pages/VehicleDetail';
 import { Publish } from '@/src/pages/Publish';
 import { Login } from '@/src/pages/Login';
 import { Messages } from '@/src/pages/Messages';
+import { Profile } from '@/src/pages/Profile';
 
 function AppContent() {
   const location = useLocation();
@@ -24,6 +25,8 @@ function AppContent() {
           <Route path="/publish" element={<Publish />} />
           <Route path="/login" element={<Login />} />
           <Route path="/messages" element={<Messages />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/profile/:uid" element={<Profile />} />
           {/* Fallback to home */}
           <Route path="*" element={<Home />} />
         </Routes>

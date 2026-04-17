@@ -262,7 +262,7 @@ export function VehicleDetail() {
                 <Button 
                   size="lg" 
                   className="w-full h-16 rounded-2xl font-bold text-lg shadow-xl shadow-primary/20 group uppercase tracking-tighter"
-                  onClick={() => navigate('/messages')}
+                  onClick={() => navigate(`/messages?userId=${vehicle.id}-seller&userName=${encodeURIComponent(vehicle.sellerName)}&company=${encodeURIComponent(vehicle.sellerDealer)}&vehicleId=${vehicle.id}`)}
                 >
                   <MessageSquare className="mr-2 h-6 w-6" />
                   CONTACTAR VENDEDOR

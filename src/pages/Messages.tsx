@@ -1,281 +1,288 @@
-
-import React, { useState } from 'react';
-import { Search, MessageSquare, Car as CarIcon, Send, Paperclip, ChevronLeft } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import React, { useState, useEffect, useRef } from 'react';
+import { Send, Search, ChevronLeft, Clock, Check, CheckCheck, ArrowLeft, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAuth } from '@/src/lib/firebase';
+import {
+  subscribeToConversations, subscribeToMessages,
+  sendMessage, findOrCreateConversation, markMessagesAsRead,
+  ConversationData, MessageData,
+} from '@/src/lib/chat';
+import { Timestamp } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'motion/react';
-import { useNavigate } from 'react-router-dom';
 
-const MOCK_CONVERSATIONS = [
-  {
-    id: '1',
-    user: {
-      name: 'Juan Pérez',
-      avatar: 'https://picsum.photos/seed/u1/100/100',
-      dealer: 'Concesionaria Norte'
-    },
-    lastMessage: '¿Sigue disponible la Hilux?',
-    time: '10:30',
-    unread: true,
-    vehicle: {
-      name: 'Toyota Hilux 2023',
-      price: 48500,
-      photo: 'https://images.unsplash.com/photo-1559416523-140ddc3d238c?auto=format&fit=crop&q=80&w=200'
-    }
-  },
-  {
-    id: '2',
-    user: {
-      name: 'Matias',
-      avatar: 'https://picsum.photos/seed/u2/100/100',
-      dealer: 'Sport Cars'
-    },
-    lastMessage: 'Te mando la documentación por mail.',
-    time: 'Ayer',
-    unread: false,
-    vehicle: {
-      name: 'VW Amarok 2024',
-      price: 58500,
-      photo: 'https://images.unsplash.com/photo-1606577924006-27d39b132ee6?auto=format&fit=crop&q=80&w=200'
-    }
-  },
-  {
-    id: '3',
-    user: {
-      name: 'Laura',
-      avatar: 'https://picsum.photos/seed/u3/100/100',
-      dealer: 'Auto Premium'
-    },
-    lastMessage: '¿Aceptás permuta por menor valor?',
-    time: 'Lunes',
-    unread: false,
-    vehicle: {
-      name: 'Ford Ranger 2023',
-      price: 52000,
-      photo: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=200'
-    }
-  }
-];
-
-const MOCK_MESSAGES = [
-  { id: '1', senderId: 'other', text: 'Hola! ¿Sigue disponible la Hilux? Me interesa para un cliente.', timestamp: '10:25' },
-  { id: '2', senderId: 'me', text: 'Hola Juan! Sí, todavía la tengo. Está impecable, si querés podés venir a verla mañana.', timestamp: '10:28' },
-  { id: '3', senderId: 'other', text: 'Dale, tipo 10hs te parece bien?', timestamp: '10:30' },
-];
+function formatTime(ts: Timestamp | undefined): string {
+  if (!ts) return '';
+  const date = ts.toDate();
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  if (diff < 60000) return 'Ahora';
+  if (diff < 3600000) return `hace ${Math.floor(diff / 60000)}m`;
+  if (diff < 86400000) return `hace ${Math.floor(diff / 3600000)}h`;
+  return date.toLocaleDateString('es-AR', { day: '2-digit', month: 'short' });
+}
 
 export function Messages() {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [chatMessages, setChatMessages] = useState<{ [key: string]: typeof MOCK_MESSAGES }>({
-    '1': MOCK_MESSAGES,
-    '2': [
-      { id: '2-1', senderId: 'other', text: 'Hola, me interesa la Amarok.', timestamp: '09:00' }
-    ],
-    '3': [
-      { id: '3-1', senderId: 'other', text: '¿Aceptás permuta?', timestamp: 'Lunes' }
-    ]
-  });
-  const [newMessage, setNewMessage] = useState('');
+  const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [conversations, setConversations] = useState<(ConversationData & { id: string })[]>([]);
+  const [selectedConvoId, setSelectedConvoId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<(MessageData & { id: string })[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const currentChat = selectedId ? MOCK_CONVERSATIONS.find(c => c.id === selectedId) : null;
-  const messages = selectedId ? (chatMessages[selectedId] || []) : [];
+  const currentUserId = user?.uid || 'demo-user';
+  const currentUserName = user?.displayName || 'Mi Concesionaria';
 
-  const handleSendMessage = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!newMessage.trim() || !selectedId) return;
+  // Handle deep link from vehicle detail or colleague contact
+  useEffect(() => {
+    const targetUserId = searchParams.get('userId');
+    const targetUserName = searchParams.get('userName');
+    const targetCompany = searchParams.get('company');
+    const vehicleId = searchParams.get('vehicleId');
+    const convoId = searchParams.get('conversation');
 
-    const msg = {
-      id: Date.now().toString(),
-      senderId: 'me',
-      text: newMessage,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
+    if (convoId) {
+      setSelectedConvoId(convoId);
+      return;
+    }
 
-    setChatMessages(prev => ({
-      ...prev,
-      [selectedId]: [...(prev[selectedId] || []), msg]
-    }));
+    if (targetUserId && targetUserName) {
+      const initConvo = async () => {
+        const id = await findOrCreateConversation({
+          buyerId: currentUserId,
+          sellerId: targetUserId,
+          buyerName: currentUserName,
+          sellerName: targetUserName,
+          buyerCompany: currentUserName,
+          sellerCompany: targetCompany || targetUserName,
+          vehicleId: vehicleId || undefined,
+        });
+        setSelectedConvoId(id);
+      };
+      initConvo();
+    }
+  }, [searchParams, currentUserId, currentUserName]);
+
+  // Subscribe to conversations
+  useEffect(() => {
+    const unsub = subscribeToConversations(currentUserId, (convos) => {
+      setConversations(convos);
+      setLoading(false);
+    });
+    return unsub;
+  }, [currentUserId]);
+
+  // Subscribe to messages when a conversation is selected
+  useEffect(() => {
+    if (!selectedConvoId) return;
+    const unsub = subscribeToMessages(selectedConvoId, (msgs) => {
+      setMessages(msgs);
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+    });
+    markMessagesAsRead(selectedConvoId, currentUserId);
+    return unsub;
+  }, [selectedConvoId, currentUserId]);
+
+  const handleSend = async () => {
+    if (!newMessage.trim() || !selectedConvoId) return;
+    const msg = newMessage.trim();
     setNewMessage('');
+    await sendMessage(selectedConvoId, currentUserId, msg);
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  const selectedConvo = conversations.find(c => c.id === selectedConvoId);
+
+  const getDisplayName = (convo: ConversationData) => {
+    return convo.buyerId === currentUserId ? convo.sellerName : convo.buyerName;
+  };
+
+  const getDisplayCompany = (convo: ConversationData) => {
+    return convo.buyerId === currentUserId ? convo.sellerCompany : convo.buyerCompany;
+  };
+
+  const filteredConversations = conversations.filter(c => {
+    if (!searchQuery) return true;
+    const name = getDisplayName(c).toLowerCase();
+    const company = getDisplayCompany(c).toLowerCase();
+    return name.includes(searchQuery.toLowerCase()) || company.includes(searchQuery.toLowerCase());
+  });
+
   return (
-    <div className="container mx-auto max-w-7xl h-[calc(100vh-8rem)] py-8 px-4 md:px-8">
-      <div className="mb-6">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={() => navigate('/marketplace')}
-          className="rounded-full font-bold uppercase tracking-widest text-[10px] gap-2 hover:bg-white/10"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Volver al Marketplace
+    <div className="h-screen flex flex-col bg-background">
+      {/* Header */}
+      <div className="border-b border-white/5 bg-background/80 backdrop-blur-xl px-6 py-4 flex items-center gap-4">
+        <Button variant="ghost" size="icon" className="rounded-full" onClick={() => navigate(-1)}>
+          <ArrowLeft className="h-5 w-5" />
         </Button>
+        <h1 className="text-2xl font-bold tracking-tighter uppercase">Mensajes</h1>
+        <Badge className="bg-primary/20 text-primary border-none font-bold text-[10px] rounded-full px-3">
+          {conversations.length}
+        </Badge>
       </div>
-      <div className="flex h-full gap-8">
-        {/* Sidebar */}
-        <div className={`${selectedId ? 'hidden lg:flex' : 'flex'} flex-col w-full lg:w-96 shrink-0 bg-white/5 backdrop-blur-xl border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl`}>
-          <div className="p-8 border-b border-white/5 space-y-6">
-            <h2 className="text-2xl font-bold tracking-tighter uppercase">Mensajes</h2>
+
+      <div className="flex flex-1 overflow-hidden">
+        {/* Conversation List */}
+        <aside className={`w-full md:w-96 border-r border-white/5 flex flex-col ${selectedConvoId ? 'hidden md:flex' : 'flex'}`}>
+          <div className="p-4">
             <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input 
-                placeholder="Buscar chats..." 
-                className="h-12 pl-12 rounded-2xl bg-white/5 border-white/10 focus:border-primary/50 transition-all font-bold" 
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar conversación..."
+                className="pl-10 h-11 rounded-2xl bg-white/5 border-white/10"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
               />
             </div>
           </div>
           <ScrollArea className="flex-1">
-            <div className="p-4 space-y-2">
-              {MOCK_CONVERSATIONS.map((chat) => (
+            {loading ? (
+              <div className="flex items-center justify-center py-20 text-muted-foreground">
+                <Clock className="h-5 w-5 animate-spin mr-2" /> Cargando...
+              </div>
+            ) : filteredConversations.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 px-6 text-center space-y-4">
+                <div className="bg-white/5 p-6 rounded-full">
+                  <MessageCircle className="h-10 w-10 text-muted-foreground opacity-30" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-bold tracking-tighter uppercase">Sin conversaciones</h3>
+                  <p className="text-xs text-muted-foreground">Contactá a un colega desde el marketplace para iniciar un chat.</p>
+                </div>
+                <Button variant="outline" className="rounded-2xl text-[10px] font-bold uppercase tracking-widest" onClick={() => navigate('/marketplace')}>
+                  Ir al Marketplace
+                </Button>
+              </div>
+            ) : (
+              filteredConversations.map(convo => (
                 <button
-                  key={chat.id}
-                  onClick={() => setSelectedId(chat.id)}
-                  className={`w-full flex items-center gap-4 p-4 rounded-[1.5rem] transition-all duration-300 group ${
-                    selectedId === chat.id 
-                      ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' 
-                      : 'hover:bg-white/5 text-muted-foreground hover:text-foreground'
-                  }`}
+                  key={convo.id}
+                  onClick={() => setSelectedConvoId(convo.id)}
+                  className={`w-full flex items-center gap-4 p-4 text-left border-b border-white/5 transition-all hover:bg-white/5 ${selectedConvoId === convo.id ? 'bg-primary/5 border-l-2 border-l-primary' : ''}`}
                 >
-                  <div className="relative">
-                    <Avatar className="h-14 w-14 border-2 border-white/10">
-                      <AvatarImage src={chat.user.avatar} />
-                      <AvatarFallback className="font-bold">{chat.user.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    {chat.unread && (
-                      <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-white text-primary text-[10px] font-bold shadow-lg">
-                        1
-                      </span>
+                  <Avatar className="h-12 w-12 shrink-0 border-2 border-primary/20">
+                    <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
+                      {getDisplayName(convo).split(' ').map(n => n[0]).join('').slice(0, 2)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <h4 className="text-sm font-bold tracking-tighter uppercase truncate">{getDisplayName(convo)}</h4>
+                      <span className="text-[10px] text-muted-foreground font-bold shrink-0 ml-2">{formatTime(convo.lastMessageAt)}</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-1">{getDisplayCompany(convo)}</p>
+                    <p className="text-xs text-muted-foreground truncate">{convo.lastMessage || 'Conversación nueva'}</p>
+                    {convo.vehicleInfo && (
+                      <Badge variant="outline" className="mt-1 text-[8px] font-bold tracking-wider border-white/10 rounded-full px-2 py-0">
+                        {convo.vehicleInfo.brand} {convo.vehicleInfo.model} {convo.vehicleInfo.year}
+                      </Badge>
                     )}
                   </div>
-                  <div className="flex-1 text-left overflow-hidden">
-                    <div className="flex justify-between items-baseline mb-1">
-                      <span className="font-bold tracking-tighter uppercase truncate">{chat.user.name}</span>
-                      <span className={`text-[10px] font-bold uppercase tracking-widest ${selectedId === chat.id ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                        {chat.time}
-                      </span>
-                    </div>
-                    <p className={`text-xs truncate font-medium ${selectedId === chat.id ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
-                      {chat.lastMessage}
-                    </p>
-                    <div className="flex items-center gap-1 mt-1">
-                      <CarIcon className={`h-3 w-3 ${selectedId === chat.id ? 'text-primary-foreground/60' : 'text-primary'}`} />
-                      <span className={`text-[10px] font-bold uppercase tracking-tighter truncate ${selectedId === chat.id ? 'text-primary-foreground/60' : 'text-muted-foreground'}`}>
-                        {chat.vehicle.name}
-                      </span>
-                    </div>
-                  </div>
                 </button>
-              ))}
-            </div>
+              ))
+            )}
           </ScrollArea>
-        </div>
+        </aside>
 
         {/* Chat Area */}
-        <div className={`${!selectedId ? 'hidden lg:flex' : 'flex'} flex-1 flex-col bg-white/5 backdrop-blur-xl border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl relative`}>
-          <AnimatePresence mode="wait">
-            {currentChat ? (
-              <motion.div 
-                key={currentChat.id}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="flex flex-col h-full"
-              >
-                {/* Chat Header */}
-                <div className="p-6 md:p-8 border-b border-white/5 flex items-center justify-between bg-white/5">
-                  <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="icon" className="lg:hidden h-10 w-10 rounded-full" onClick={() => setSelectedId(null)}>
-                      <ChevronLeft className="h-6 w-6" />
-                    </Button>
-                    <Avatar className="h-12 w-12 border-2 border-white/10">
-                      <AvatarImage src={currentChat.user.avatar} />
-                      <AvatarFallback className="font-bold">{currentChat.user.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h3 className="font-bold tracking-tighter uppercase text-lg leading-none">{currentChat.user.name}</h3>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-primary mt-1">{currentChat.user.dealer}</p>
-                    </div>
-                  </div>
-                  <div className="hidden sm:flex items-center gap-4 p-3 pr-6 rounded-2xl bg-white/5 border border-white/5">
-                    <img 
-                      src={currentChat.vehicle.photo} 
-                      alt="Vehicle" 
-                      className="h-10 w-14 object-cover rounded-lg border border-white/10"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-tighter leading-none">
-                        {currentChat.vehicle.name}
-                      </p>
-                      <p className="text-xs font-bold tracking-tighter text-primary mt-0.5">
-                        USD {currentChat.vehicle.price.toLocaleString('es-AR')}
-                      </p>
-                    </div>
-                  </div>
+        <div className={`flex-1 flex flex-col ${selectedConvoId ? 'flex' : 'hidden md:flex'}`}>
+          {selectedConvo ? (
+            <>
+              {/* Chat Header */}
+              <div className="p-4 border-b border-white/5 bg-background/50 backdrop-blur-xl flex items-center gap-4">
+                <Button variant="ghost" size="icon" className="rounded-full md:hidden" onClick={() => setSelectedConvoId(null)}>
+                  <ChevronLeft className="h-5 w-5" />
+                </Button>
+                <Avatar className="h-10 w-10 border-2 border-primary/20">
+                  <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
+                    {getDisplayName(selectedConvo).split(' ').map(n => n[0]).join('').slice(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold uppercase tracking-tighter text-sm truncate">{getDisplayName(selectedConvo)}</h3>
+                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{getDisplayCompany(selectedConvo)}</p>
                 </div>
-
-                {/* Messages */}
-                <ScrollArea className="flex-1 p-6 md:p-8">
-                  <div className="space-y-6">
-                    {messages.map((msg) => (
-                      <div
-                        key={msg.id}
-                        className={`flex ${msg.senderId === 'me' ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div
-                          className={`max-w-[80%] p-5 rounded-[1.5rem] shadow-lg ${
-                            msg.senderId === 'me'
-                              ? 'bg-primary text-primary-foreground rounded-tr-none shadow-primary/10'
-                              : 'bg-white/5 text-foreground rounded-tl-none border border-white/5'
-                          }`}
-                        >
-                          <p className="text-sm font-medium leading-relaxed">{msg.text}</p>
-                          <p className={`text-[10px] font-bold uppercase tracking-widest mt-2 text-right ${
-                            msg.senderId === 'me' ? 'text-primary-foreground/60' : 'text-muted-foreground'
-                          }`}>
-                            {msg.timestamp}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-
-                {/* Input Area */}
-                <form 
-                  className="p-6 md:p-8 bg-white/5 border-t border-white/5"
-                  onSubmit={handleSendMessage}
-                >
-                  <div className="flex gap-4 items-center">
-                    <Button type="button" variant="ghost" size="icon" className="h-12 w-12 rounded-full hover:bg-white/10 shrink-0">
-                      <Paperclip className="h-5 w-5 text-muted-foreground" />
-                    </Button>
-                    <div className="relative flex-1">
-                      <Input
-                        placeholder="Escribí tu mensaje..."
-                        className="h-14 rounded-full bg-white/5 border-white/10 focus:border-primary/50 transition-all px-6 font-medium"
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                      />
-                    </div>
-                    <Button type="submit" className="h-14 w-14 rounded-full shadow-lg shadow-primary/20 shrink-0">
-                      <Send className="h-5 w-5 stroke-[3]" />
-                    </Button>
-                  </div>
-                </form>
-              </motion.div>
-            ) : (
-              <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground space-y-4">
-                <div className="bg-white/5 p-8 rounded-full">
-                  <MessageSquare className="h-16 w-16 opacity-20" />
-                </div>
-                <p className="font-bold tracking-tighter uppercase text-xl">Seleccioná una conversación</p>
+                {selectedConvo.vehicleInfo && (
+                  <Badge className="bg-white/5 border-white/10 text-xs font-bold rounded-full px-3 py-1 hidden sm:flex">
+                    {selectedConvo.vehicleInfo.brand} {selectedConvo.vehicleInfo.model}
+                  </Badge>
+                )}
               </div>
-            )}
-          </AnimatePresence>
+
+              {/* Messages */}
+              <ScrollArea className="flex-1 p-6">
+                <div className="max-w-3xl mx-auto space-y-4">
+                  <AnimatePresence>
+                    {messages.map((msg) => {
+                      const isMine = msg.senderId === currentUserId;
+                      return (
+                        <motion.div
+                          key={msg.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}
+                        >
+                          <div className={`max-w-[75%] px-5 py-3 rounded-3xl ${isMine ? 'bg-primary text-primary-foreground rounded-br-lg' : 'bg-white/5 rounded-bl-lg'}`}>
+                            <p className="text-sm font-medium leading-relaxed break-words">{msg.text}</p>
+                            <div className={`flex items-center gap-1 mt-1 ${isMine ? 'justify-end' : ''}`}>
+                              <span className="text-[10px] opacity-60">{formatTime(msg.createdAt)}</span>
+                              {isMine && (msg.read ? <CheckCheck className="h-3 w-3 opacity-60 text-blue-400" /> : <Check className="h-3 w-3 opacity-60" />)}
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </AnimatePresence>
+                  <div ref={messagesEndRef} />
+                </div>
+              </ScrollArea>
+
+              {/* Input */}
+              <div className="p-4 border-t border-white/5 bg-background/50 backdrop-blur-xl">
+                <div className="max-w-3xl mx-auto flex items-center gap-3">
+                  <Input
+                    value={newMessage}
+                    onChange={e => setNewMessage(e.target.value)}
+                    onKeyDown={handleKeyPress}
+                    placeholder="Escribí tu mensaje..."
+                    className="flex-1 h-12 rounded-2xl bg-white/5 border-white/10 text-base"
+                  />
+                  <Button
+                    onClick={handleSend}
+                    disabled={!newMessage.trim()}
+                    size="lg"
+                    className="h-12 w-12 rounded-2xl shadow-lg shadow-primary/20"
+                  >
+                    <Send className="h-5 w-5" />
+                  </Button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center p-8">
+              <div className="text-center space-y-4">
+                <div className="bg-white/5 p-8 rounded-full inline-block">
+                  <MessageCircle className="h-12 w-12 text-muted-foreground opacity-20" />
+                </div>
+                <h3 className="text-lg font-bold tracking-tighter uppercase">Seleccioná una conversación</h3>
+                <p className="text-sm text-muted-foreground font-medium">Elegí un chat del panel izquierdo para comenzar.</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

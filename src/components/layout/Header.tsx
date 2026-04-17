@@ -280,7 +280,10 @@ export function Header() {
                       <DropdownMenuLabel className="font-bold uppercase tracking-widest text-[10px] px-3 py-2">Mi Cuenta</DropdownMenuLabel>
                     </DropdownMenuGroup>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem className="rounded-xl font-bold uppercase tracking-widest text-[10px] px-3 py-2 cursor-pointer">
+                    <DropdownMenuItem 
+                      className="rounded-xl font-bold uppercase tracking-widest text-[10px] px-3 py-2 cursor-pointer"
+                      onClick={() => navigate('/profile')}
+                    >
                       <User className="mr-2 h-4 w-4" />
                       Perfil
                     </DropdownMenuItem>

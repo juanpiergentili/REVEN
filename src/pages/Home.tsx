@@ -30,14 +30,14 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 const REVIEWS = [
   { name: "Carlos Benítez", role: "Dueño de Automotores del Sur", comment: "Excelente plataforma. He cerrado más negocios en un mes que en todo el semestre pasado. La atención es cálida y profesional.", photo: "https://picsum.photos/seed/user1/100/100" },
   { name: "Marina Soler", role: "Gerente de Ventas - LuxCars", comment: "La exclusividad B2B es lo que necesitábamos. Sin curiosos, solo gente del rubro. Muy contenta con los resultados.", photo: "https://picsum.photos/seed/user2/100/100" },
-  { name: "Juan Pablo Domínguez", role: "Representante de Agencias Unidas", comment: "REVEN cambió nuestra forma de rotar stock. El peritaje profesional nos da una tranquilidad que no existe en otros sitios.", photo: "https://picsum.photos/seed/user3/100/100" },
+  { name: "Juan Pablo Domínguez", role: "Representante de Agencias Unidas", comment: "REVEN cambió nuestra forma de rotar stock. El historial de inspecciones por concesionaria nos da una tranquilidad que no existe en otros sitios.", photo: "https://picsum.photos/seed/user3/100/100" },
   { name: "Ricardo Valenzuela", role: "Director de Plaza Motors", comment: "Atención rápida y eficiente. Los precios mayoristas son reales y competitivos. Recomiendo 100% la plataforma.", photo: "https://picsum.photos/seed/user4/100/100" },
   { name: "Sofía Navarro", role: "Ventas Premium - Elite Auto", comment: "Hacer negocios entre colegas nunca fue tan fácil. La interfaz es moderna y muy intuitiva. ¡Gracias REVEN!", photo: "https://picsum.photos/seed/user5/100/100" },
   { name: "Diego Herrera", role: "Concesionaria Herrera Hnos", comment: "La mejor inversión del año. La calidad de los leads es superior. Se nota que hay un filtro real de admisión.", photo: "https://picsum.photos/seed/user6/100/100" },
   { name: "Lucía Morales", role: "Broker Independiente", comment: "Me encanta la rapidez de la plataforma. Publico y en minutos ya tengo consultas de colegas interesados.", photo: "https://picsum.photos/seed/user7/100/100" },
   { name: "Gabriel Vaca", role: "Gerente General - Nordelta Cars", comment: "Un entorno seguro para operar. La gestoría interna nos ahorra muchísimo tiempo administrativo.", photo: "https://picsum.photos/seed/user8/100/100" },
   { name: "Valeria Ortiz", role: "Dueña de Ortiz Automotores", comment: "Estamos haciendo más y mejores negocios. La comunidad es muy activa y profesional. Excelente soporte.", photo: "https://picsum.photos/seed/user9/100/100" },
-  { name: "Marcos Galarza", role: "Ventas - Galarza Trucks", comment: "El sistema de peritaje es impecable. Compro con confianza sabiendo el estado real de cada unidad.", photo: "https://picsum.photos/seed/user10/100/100" },
+  { name: "Marcos Galarza", role: "Ventas - Galarza Trucks", comment: "El sistema de inspecciones verificadas es impecable. Compro con confianza sabiendo el historial de cada concesionaria.", photo: "https://picsum.photos/seed/user10/100/100" },
   { name: "Ana Belén Castro", role: "Directora - BA Motors", comment: "La plataforma es impecable. El diseño y las animaciones le dan un toque premium que el sector necesitaba.", photo: "https://picsum.photos/seed/user11/100/100" },
   { name: "Fernando Silveira", role: "Agencia Silveira", comment: "Muy satisfecho con la membresía Platinum. La rotación de stock es constante. Gran herramienta de trabajo.", photo: "https://picsum.photos/seed/user12/100/100" },
   { name: "Patricia Méndez", role: "Ventas Corporativas", comment: "La calidez en la atención marca la diferencia. Siempre dispuestos a ayudar a que el negocio crezca.", photo: "https://picsum.photos/seed/user13/100/100" },
@@ -480,8 +480,8 @@ export function Home() {
             {[
               {
                 icon: Shield,
-                title: 'Peritaje Profesional',
-                desc: 'Cada unidad en nuestro marketplace cuenta con un peritaje completo realizado por expertos. Sabés exactamente qué estás comprando, sin sorpresas.'
+                title: 'Historial de Inspecciones Verificadas',
+                desc: 'Consultá el registro de inspecciones realizadas por cada concesionaria. Transparencia total: conocé la trayectoria operativa y el nivel de rigurosidad de cada miembro de la red.'
               },
               {
                 icon: Zap,

@@ -1,44 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ===============================================================
-    // Assumed Data Model
-    // ===============================================================
-    //
-    // Collection: users
-    // Document ID: {userId} (matches auth.uid)
-    // Fields:
-    //   - uid: string (required)
-    //   - email: string (required, email format)
-    //   - name: string
-    //   - lastName: string
-    //   - cuil: string
-    //   - phone: string
-    //   - company: string
-    //   - plan: string (enum: plata, oro, platinum)
-    //   - role: string (enum: user, admin)
-    //   - status: string (enum: pending, approved, rejected)
-    //   - createdAt: timestamp
-    //
-    // Collection: vehicles
-    // Document ID: {vehicleId}
-    // Fields:
-    //   - brand: string
-    //   - model: string
-    //   - version: string
-    //   - year: number
-    //   - price: number
-    //   - photo: string (url)
-    //   - sellerUid: string
-    //   - isVerified: bool
-    //   - isWholesale: bool
-    //   - createdAt: timestamp
-    //
-    // ===============================================================
-
-    // ===============================================================
-    // Helper Functions
-    // ===============================================================
+    
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -53,54 +16,62 @@ service cloud.firestore {
          (request.auth.token.email == "juanpablo.piergentili@gmail.com" && request.auth.token.email_verified == true));
     }
 
-    function isValidEmail(email) {
-      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    function isApproved() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'approved';
     }
 
-    function isValidUser(data) {
-      return data.keys().hasAll(['uid', 'email', 'role', 'status']) &&
-             data.uid == request.auth.uid &&
-             isValidEmail(data.email) &&
-             data.role in ['user', 'admin'] &&
-             data.status in ['pending', 'approved', 'rejected'] &&
-             (!('plan' in data) || data.plan in ['plata', 'oro', 'platinum']);
-    }
-
-    // ===============================================================
-    // Rules
-    // ===============================================================
-
+    // USERS
     match /users/{userId} {
-      // Users can read their own profile. Admins can read all.
-      allow read: if isOwner(userId) || isAdmin();
-      
-      // Users can create their own profile as 'pending' and 'user' role.
-      allow create: if isOwner(userId) && 
-                      isValidUser(request.resource.data) && 
-                      request.resource.data.role == 'user' && 
-                      request.resource.data.status == 'pending';
-      
-      // Users can update their own non-sensitive fields. Admins can update anything.
-      allow update: if isAdmin() || 
-                      (isOwner(userId) && 
-                       isValidUser(request.resource.data) && 
-                       request.resource.data.role == resource.data.role && 
-                       request.resource.data.status == resource.data.status);
-    }
-
-    match /vehicles/{vehicleId} {
-      // All authenticated users can read vehicles.
+      // Any authenticated user can read public profile info
       allow read: if isAuthenticated();
       
-      // Only approved users or admins can create/update listings.
-      // (Assuming we check user status in the app, but rules should enforce it)
-      function isApproved() {
-        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'approved';
-      }
+      // Users can create their own profile
+      allow create: if isOwner(userId);
+      
+      // Allow updates to analytics counters from any authenticated user, OR owner/admin edits
+      allow update: if isAuthenticated() && 
+        (isOwner(userId) || isAdmin() || 
+         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['totalProfileViews', 'totalListingViews', 'totalContactClicks', 'lastOnline'])));
+    }
 
+    // VEHICLES
+    match /vehicles/{vehicleId} {
+      allow read: if isAuthenticated();
+      
       allow create: if (isAdmin() || isApproved()) && request.resource.data.sellerUid == request.auth.uid;
-      allow update: if isAdmin() || (isApproved() && resource.data.sellerUid == request.auth.uid);
+      
+      // Allow updates to metrics from any authenticated user, OR owner/admin edits
+      allow update: if isAuthenticated() && 
+        (isAdmin() || 
+         (isApproved() && resource.data.sellerUid == request.auth.uid) ||
+         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount', 'contactCount'])));
+         
       allow delete: if isAdmin() || (isApproved() && resource.data.sellerUid == request.auth.uid);
+    }
+
+    // CONVERSATIONS
+    match /conversations/{conversationId} {
+      // Only participants or admins can read
+      allow read: if isAuthenticated() && (isAdmin() || request.auth.uid in resource.data.participants);
+      
+      // Only participants can create
+      allow create: if isAuthenticated() && request.auth.uid in request.resource.data.participants;
+      
+      // Only participants can update (for lastMessage)
+      allow update: if isAuthenticated() && request.auth.uid in resource.data.participants;
+
+      // MESSAGES Subcollection
+      match /messages/{messageId} {
+        // Can only read/write messages if part of the parent conversation
+        function isParticipant() {
+          return request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+        }
+        
+        allow read: if isAuthenticated() && (isAdmin() || isParticipant());
+        allow create: if isAuthenticated() && isParticipant() && request.resource.data.senderId == request.auth.uid;
+        // Allow updating 'read' status
+        allow update: if isAuthenticated() && isParticipant() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      }
     }
   }
 }

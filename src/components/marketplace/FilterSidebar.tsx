@@ -1,0 +1,390 @@
+import React, { useState, useEffect } from 'react';
+import { ChevronDown, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { BODY_TYPES, FUEL_TYPES, TRANSMISSIONS, KM_RANGES, COLORS, getBrandNames, getModelsByBrand, getVersionsByBrandAndModel, getYearRange } from '@/src/data/vehicle-catalog';
+import { getProvinciasForSelect, getLocalidadesByProvinciaId } from '@/src/data/argentina-geo';
+
+export interface FilterState {
+  searchQuery: string;
+  condition: string | null;
+  bodyType: string;
+  brand: string;
+  model: string;
+  version: string;
+  yearFrom: string;
+  yearTo: string;
+  kmRange: string;
+  kmMin: string;
+  kmMax: string;
+  fuelType: string;
+  transmission: string;
+  minPrice: string;
+  maxPrice: string;
+  currency: string;
+  province: string;
+  city: string;
+  color: string;
+}
+
+export const INITIAL_FILTERS: FilterState = {
+  searchQuery: '',
+  condition: null,
+  bodyType: 'all',
+  brand: 'all',
+  model: 'all',
+  version: 'all',
+  yearFrom: '',
+  yearTo: '',
+  kmRange: 'all',
+  kmMin: '',
+  kmMax: '',
+  fuelType: 'all',
+  transmission: 'all',
+  minPrice: '',
+  maxPrice: '',
+  currency: 'USD',
+  province: 'all',
+  city: 'all',
+  color: 'all',
+};
+
+interface FilterSidebarProps {
+  filters: FilterState;
+  onFilterChange: (filters: FilterState) => void;
+  onClear: () => void;
+  resultCount: number;
+}
+
+function FilterSection({ title, children, defaultOpen = true }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="space-y-3">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center justify-between w-full text-left"
+      >
+        <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground cursor-pointer">{title}</label>
+        <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && <div className="space-y-2">{children}</div>}
+    </div>
+  );
+}
+
+export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }: FilterSidebarProps) {
+  const [models, setModels] = useState<{ nombre: string }[]>([]);
+  const [versions, setVersions] = useState<{ nombre: string }[]>([]);
+  const [localidades, setLocalidades] = useState<{ id: string; nombre: string }[]>([]);
+
+  const update = (key: keyof FilterState, value: string | null) => {
+    const next = { ...filters, [key]: value };
+    // Reset dependents
+    if (key === 'brand') { next.model = 'all'; next.version = 'all'; }
+    if (key === 'model') { next.version = 'all'; }
+    if (key === 'province') { next.city = 'all'; }
+    if (key === 'kmRange' && value !== 'all' && value !== 'custom') {
+      const range = KM_RANGES.find(r => r.value === value);
+      if (range) { next.kmMin = String(range.min); next.kmMax = String(range.max); }
+    }
+    if (key === 'kmRange' && value === 'all') { next.kmMin = ''; next.kmMax = ''; }
+    onFilterChange(next);
+  };
+
+  useEffect(() => {
+    if (filters.brand && filters.brand !== 'all') {
+      setModels(getModelsByBrand(filters.brand));
+    } else {
+      setModels([]);
+    }
+  }, [filters.brand]);
+
+  useEffect(() => {
+    if (filters.brand !== 'all' && filters.model !== 'all') {
+      setVersions(getVersionsByBrandAndModel(filters.brand, filters.model));
+    } else {
+      setVersions([]);
+    }
+  }, [filters.brand, filters.model]);
+
+  useEffect(() => {
+    if (filters.province && filters.province !== 'all') {
+      setLocalidades(getLocalidadesByProvinciaId(filters.province));
+    } else {
+      setLocalidades([]);
+    }
+  }, [filters.province]);
+
+  const brands = getBrandNames();
+  const provincias = getProvinciasForSelect();
+  const years = getYearRange();
+
+  const hasActiveFilters = Object.entries(filters).some(([key, val]) => {
+    if (key === 'searchQuery') return false;
+    if (key === 'currency') return false;
+    if (val === null || val === 'all' || val === '') return false;
+    return true;
+  });
+
+  return (
+    <div className="sticky top-32 space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold tracking-tighter uppercase">Filtros</h2>
+        {hasActiveFilters && (
+          <Button
+            variant="link"
+            size="sm"
+            className="h-auto p-0 text-xs font-bold uppercase tracking-widest text-primary"
+            onClick={onClear}
+          >
+            Limpiar
+          </Button>
+        )}
+      </div>
+
+      <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+        {resultCount} resultado{resultCount !== 1 ? 's' : ''}
+      </div>
+
+      <div className="space-y-6">
+        {/* Condición */}
+        <FilterSection title="Condición">
+          <div className="grid grid-cols-2 gap-2">
+            {['0KM', 'USADO'].map(c => (
+              <Button
+                key={c}
+                variant="outline"
+                className={`rounded-2xl border-white/5 font-bold text-xs transition-all ${filters.condition === c ? 'bg-primary text-primary-foreground border-primary' : 'bg-white/5 hover:border-primary/50'}`}
+                onClick={() => update('condition', filters.condition === c ? null : c)}
+              >
+                {c}
+              </Button>
+            ))}
+          </div>
+        </FilterSection>
+
+        {/* Tipo de vehículo */}
+        <FilterSection title="Tipo de Vehículo">
+          <Select value={filters.bodyType} onValueChange={v => update('bodyType', v)}>
+            <SelectTrigger className="rounded-2xl bg-white/5 border-white/10 h-11 font-bold text-sm">
+              <SelectValue placeholder="Todos los tipos" />
+            </SelectTrigger>
+            <SelectContent className="rounded-2xl">
+              <SelectItem value="all">Todos</SelectItem>
+              {BODY_TYPES.map(bt => (
+                <SelectItem key={bt.value} value={bt.value}>{bt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FilterSection>
+
+        {/* Marca */}
+        <FilterSection title="Marca">
+          <Select value={filters.brand} onValueChange={v => update('brand', v)}>
+            <SelectTrigger className="rounded-2xl bg-white/5 border-white/10 h-11 font-bold text-sm">
+              <SelectValue placeholder="Todas las marcas" />
+            </SelectTrigger>
+            <SelectContent className="rounded-2xl max-h-60">
+              <SelectItem value="all">Todas</SelectItem>
+              {brands.map(b => (
+                <SelectItem key={b} value={b}>{b}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FilterSection>
+
+        {/* Modelo */}
+        {filters.brand !== 'all' && models.length > 0 && (
+          <FilterSection title="Modelo">
+            <Select value={filters.model} onValueChange={v => update('model', v)}>
+              <SelectTrigger className="rounded-2xl bg-white/5 border-white/10 h-11 font-bold text-sm">
+                <SelectValue placeholder="Todos los modelos" />
+              </SelectTrigger>
+              <SelectContent className="rounded-2xl max-h-60">
+                <SelectItem value="all">Todos</SelectItem>
+                {models.map(m => (
+                  <SelectItem key={m.nombre} value={m.nombre}>{m.nombre}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FilterSection>
+        )}
+
+        {/* Versión */}
+        {filters.model !== 'all' && versions.length > 0 && (
+          <FilterSection title="Versión">
+            <Select value={filters.version} onValueChange={v => update('version', v)}>
+              <SelectTrigger className="rounded-2xl bg-white/5 border-white/10 h-11 font-bold text-sm">
+                <SelectValue placeholder="Todas las versiones" />
+              </SelectTrigger>
+              <SelectContent className="rounded-2xl max-h-60">
+                <SelectItem value="all">Todas</SelectItem>
+                {versions.map(vr => (
+                  <SelectItem key={vr.nombre} value={vr.nombre}>{vr.nombre}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FilterSection>
+        )}
+
+        {/* Año */}
+        <FilterSection title="Año" defaultOpen={false}>
+          <div className="flex gap-2">
+            <Select value={filters.yearFrom} onValueChange={v => update('yearFrom', v)}>
+              <SelectTrigger className="rounded-2xl bg-white/5 border-white/10 h-11 font-bold text-sm">
+                <SelectValue placeholder="Desde" />
+              </SelectTrigger>
+              <SelectContent className="rounded-2xl max-h-52">
+                <SelectItem value="">Desde</SelectItem>
+                {years.map(y => (
+                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={filters.yearTo} onValueChange={v => update('yearTo', v)}>
+              <SelectTrigger className="rounded-2xl bg-white/5 border-white/10 h-11 font-bold text-sm">
+                <SelectValue placeholder="Hasta" />
+              </SelectTrigger>
+              <SelectContent className="rounded-2xl max-h-52">
+                <SelectItem value="">Hasta</SelectItem>
+                {years.map(y => (
+                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </FilterSection>
+
+        {/* Kilometraje */}
+        <FilterSection title="Kilometraje" defaultOpen={false}>
+          <Select value={filters.kmRange} onValueChange={v => update('kmRange', v)}>
+            <SelectTrigger className="rounded-2xl bg-white/5 border-white/10 h-11 font-bold text-sm">
+              <SelectValue placeholder="Todos" />
+            </SelectTrigger>
+            <SelectContent className="rounded-2xl">
+              <SelectItem value="all">Todos</SelectItem>
+              {KM_RANGES.map(r => (
+                <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+              ))}
+              <SelectItem value="custom">Personalizado</SelectItem>
+            </SelectContent>
+          </Select>
+          {filters.kmRange === 'custom' && (
+            <div className="flex gap-2 mt-2">
+              <Input placeholder="Min" className="h-11 rounded-2xl bg-white/5 border-white/10 font-bold text-sm" value={filters.kmMin} onChange={e => update('kmMin', e.target.value)} type="number" />
+              <Input placeholder="Max" className="h-11 rounded-2xl bg-white/5 border-white/10 font-bold text-sm" value={filters.kmMax} onChange={e => update('kmMax', e.target.value)} type="number" />
+            </div>
+          )}
+        </FilterSection>
+
+        {/* Combustible */}
+        <FilterSection title="Combustible" defaultOpen={false}>
+          <Select value={filters.fuelType} onValueChange={v => update('fuelType', v)}>
+            <SelectTrigger className="rounded-2xl bg-white/5 border-white/10 h-11 font-bold text-sm">
+              <SelectValue placeholder="Todos" />
+            </SelectTrigger>
+            <SelectContent className="rounded-2xl">
+              <SelectItem value="all">Todos</SelectItem>
+              {FUEL_TYPES.map(f => (
+                <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FilterSection>
+
+        {/* Transmisión */}
+        <FilterSection title="Transmisión" defaultOpen={false}>
+          <div className="grid grid-cols-2 gap-2">
+            {TRANSMISSIONS.map(t => (
+              <Button
+                key={t.value}
+                variant="outline"
+                className={`rounded-2xl border-white/5 font-bold text-xs transition-all ${filters.transmission === t.value ? 'bg-primary text-primary-foreground border-primary' : 'bg-white/5 hover:border-primary/50'}`}
+                onClick={() => update('transmission', filters.transmission === t.value ? 'all' : t.value)}
+              >
+                {t.label}
+              </Button>
+            ))}
+          </div>
+        </FilterSection>
+
+        {/* Precio */}
+        <FilterSection title="Precio">
+          <div className="flex gap-2 mb-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className={`rounded-xl text-[10px] font-bold flex-1 ${filters.currency === 'USD' ? 'bg-primary text-primary-foreground border-primary' : 'bg-white/5 border-white/10'}`}
+              onClick={() => update('currency', 'USD')}
+            >USD</Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className={`rounded-xl text-[10px] font-bold flex-1 ${filters.currency === 'ARS' ? 'bg-primary text-primary-foreground border-primary' : 'bg-white/5 border-white/10'}`}
+              onClick={() => update('currency', 'ARS')}
+            >ARS</Button>
+          </div>
+          <div className="flex gap-2">
+            <Input placeholder="Min" className="h-11 rounded-2xl bg-white/5 border-white/10 font-bold text-sm" value={filters.minPrice} onChange={e => update('minPrice', e.target.value)} type="number" />
+            <Input placeholder="Max" className="h-11 rounded-2xl bg-white/5 border-white/10 font-bold text-sm" value={filters.maxPrice} onChange={e => update('maxPrice', e.target.value)} type="number" />
+          </div>
+        </FilterSection>
+
+        {/* Ubicación */}
+        <FilterSection title="Ubicación">
+          <Select value={filters.province} onValueChange={v => update('province', v)}>
+            <SelectTrigger className="rounded-2xl bg-white/5 border-white/10 h-11 font-bold text-sm">
+              <SelectValue placeholder="Toda Argentina" />
+            </SelectTrigger>
+            <SelectContent className="rounded-2xl max-h-60">
+              <SelectItem value="all">Toda Argentina</SelectItem>
+              {provincias.map(p => (
+                <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {filters.province !== 'all' && localidades.length > 0 && (
+            <Select value={filters.city} onValueChange={v => update('city', v)}>
+              <SelectTrigger className="rounded-2xl bg-white/5 border-white/10 h-11 font-bold text-sm mt-2">
+                <SelectValue placeholder="Toda la provincia" />
+              </SelectTrigger>
+              <SelectContent className="rounded-2xl max-h-60">
+                <SelectItem value="all">Toda la provincia</SelectItem>
+                {localidades.map(l => (
+                  <SelectItem key={l.id} value={l.nombre}>{l.nombre}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </FilterSection>
+
+        {/* Color */}
+        <FilterSection title="Color" defaultOpen={false}>
+          <div className="grid grid-cols-4 gap-2">
+            {COLORS.map(c => (
+              <button
+                key={c.value}
+                onClick={() => update('color', filters.color === c.value ? 'all' : c.value)}
+                className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${filters.color === c.value ? 'bg-primary/10 border border-primary' : 'hover:bg-white/5 border border-transparent'}`}
+                title={c.label}
+              >
+                <div
+                  className="h-6 w-6 rounded-full border border-white/20 shadow-inner"
+                  style={{ backgroundColor: c.hex }}
+                />
+                <span className="text-[8px] font-bold uppercase tracking-wider text-muted-foreground truncate w-full text-center">{c.label.split('/')[0]}</span>
+              </button>
+            ))}
+          </div>
+        </FilterSection>
+      </div>
+    </div>
+  );
+}
