@@ -1,6 +1,7 @@
 import { X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { FilterState, INITIAL_FILTERS } from './FilterSidebar';
+import { getProvinciaById } from '@/src/data/argentina-geo';
 
 interface FilterChipsProps {
   filters: FilterState;
@@ -29,8 +30,8 @@ const LABELS: Partial<Record<keyof FilterState, string>> = {
 export function FilterChips({ filters, onRemove, onClearAll }: FilterChipsProps) {
   const chips: { key: keyof FilterState; label: string; value: string; resetValue: string | null }[] = [];
 
-  const add = (key: keyof FilterState, value: string, resetValue: string | null = 'all') => {
-    if (value && value !== 'all' && value !== '') {
+  const add = (key: keyof FilterState, value: string, resetValue: string | null = 'todos') => {
+    if (value && value !== 'todos' && value !== '') {
       chips.push({ key, label: LABELS[key] || key, value, resetValue });
     }
   };
@@ -42,12 +43,17 @@ export function FilterChips({ filters, onRemove, onClearAll }: FilterChipsProps)
   add('version', filters.version);
   if (filters.yearFrom) add('yearFrom', filters.yearFrom, '');
   if (filters.yearTo) add('yearTo', filters.yearTo, '');
-  if (filters.kmRange !== 'all') add('kmRange', filters.kmRange === 'custom' ? 'Personalizado' : filters.kmRange);
+  if (filters.kmRange !== 'todos') add('kmRange', filters.kmRange === 'custom' ? 'Personalizado' : filters.kmRange);
   add('fuelType', filters.fuelType);
-  if (filters.transmission !== 'all') add('transmission', filters.transmission === 'MANUAL' ? 'Manual' : 'Automática');
+  if (filters.transmission !== 'todos') add('transmission', filters.transmission === 'MANUAL' ? 'Manual' : 'Automática');
   if (filters.minPrice) add('minPrice', `${filters.currency} ${Number(filters.minPrice).toLocaleString()}`, '');
   if (filters.maxPrice) add('maxPrice', `${filters.currency} ${Number(filters.maxPrice).toLocaleString()}`, '');
-  add('province', filters.province);
+  let provinceLabel = filters.province;
+  if (filters.province && filters.province !== 'todos') {
+    const p = getProvinciaById(filters.province);
+    if (p) provinceLabel = p.nombre;
+  }
+  add('province', provinceLabel);
   add('city', filters.city);
   add('color', filters.color);
 

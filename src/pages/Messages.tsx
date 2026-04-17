@@ -41,14 +41,14 @@ export function Messages() {
   const currentUserId = user?.uid || 'demo-user';
   const currentUserName = user?.displayName || 'Mi Concesionaria';
 
+  const convoId = searchParams.get('conversation');
+  const targetUserId = searchParams.get('userId');
+  const targetUserName = searchParams.get('userName');
+  const targetCompany = searchParams.get('company');
+  const vehicleId = searchParams.get('vehicleId');
+
   // Handle deep link from vehicle detail or colleague contact
   useEffect(() => {
-    const targetUserId = searchParams.get('userId');
-    const targetUserName = searchParams.get('userName');
-    const targetCompany = searchParams.get('company');
-    const vehicleId = searchParams.get('vehicleId');
-    const convoId = searchParams.get('conversation');
-
     if (convoId) {
       setSelectedConvoId(convoId);
       return;
@@ -69,7 +69,7 @@ export function Messages() {
       };
       initConvo();
     }
-  }, [searchParams, currentUserId, currentUserName]);
+  }, [convoId, targetUserId, targetUserName, targetCompany, vehicleId, currentUserId, currentUserName]);
 
   // Subscribe to conversations
   useEffect(() => {

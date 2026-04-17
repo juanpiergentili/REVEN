@@ -203,18 +203,9 @@ export function Header() {
       <div className="container mx-auto flex h-20 items-center justify-between px-4 md:px-8">
         <div className="flex items-center gap-12">
           <Link to="/" className="flex items-center space-x-2 group">
-            <img 
-              src="/logo-blanco.svg" 
-              alt="REVEN" 
-              className="h-[30px] w-auto dark:block hidden object-contain rounded-xl"
-              referrerPolicy="no-referrer"
-            />
-            <img 
-              src="/logo-negro.svg" 
-              alt="REVEN" 
-              className="h-[30px] w-auto block dark:hidden object-contain rounded-xl"
-              referrerPolicy="no-referrer"
-            />
+            <div className="font-['Nunito'] font-bold text-2xl tracking-widest text-foreground">
+              <span className="text-primary">R</span>EVEN
+            </div>
           </Link>
 
           <nav className="hidden md:flex items-center gap-8">
@@ -388,7 +379,9 @@ export function Header() {
         <DialogContent className="max-w-lg p-0 overflow-hidden rounded-[2.5rem] border-border bg-card/95 backdrop-blur-2xl shadow-2xl">
           <div className="p-10 md:p-12">
             <div className="text-center mb-10">
-              <img src={isDark ? "/logo-blanco.svg" : "/logo-negro.svg"} alt="REVEN" className="h-[30px] w-auto mx-auto mb-6 object-contain rounded-xl" />
+              <div className="font-['Nunito'] font-bold text-4xl tracking-widest text-foreground mb-6">
+                <span className="text-primary">R</span>EVEN
+              </div>
               <h3 className="text-3xl font-bold tracking-tighter uppercase leading-none">Bienvenido</h3>
               <p className="text-base text-muted-foreground font-medium mt-2">Accede a la red B2B más exclusiva.</p>
             </div>

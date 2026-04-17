@@ -37,23 +37,23 @@ export interface FilterState {
 export const INITIAL_FILTERS: FilterState = {
   searchQuery: '',
   condition: null,
-  bodyType: 'all',
-  brand: 'all',
-  model: 'all',
-  version: 'all',
+  bodyType: 'todos',
+  brand: 'todos',
+  model: 'todos',
+  version: 'todos',
   yearFrom: '',
   yearTo: '',
-  kmRange: 'all',
+  kmRange: 'todos',
   kmMin: '',
   kmMax: '',
-  fuelType: 'all',
-  transmission: 'all',
+  fuelType: 'todos',
+  transmission: 'todos',
   minPrice: '',
   maxPrice: '',
   currency: 'USD',
-  province: 'all',
-  city: 'all',
-  color: 'all',
+  province: 'todos',
+  city: 'todos',
+  color: 'todos',
 };
 
 interface FilterSidebarProps {
@@ -87,19 +87,19 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
   const update = (key: keyof FilterState, value: string | null) => {
     const next = { ...filters, [key]: value };
     // Reset dependents
-    if (key === 'brand') { next.model = 'all'; next.version = 'all'; }
-    if (key === 'model') { next.version = 'all'; }
-    if (key === 'province') { next.city = 'all'; }
-    if (key === 'kmRange' && value !== 'all' && value !== 'custom') {
+    if (key === 'brand') { next.model = 'todos'; next.version = 'todos'; }
+    if (key === 'model') { next.version = 'todos'; }
+    if (key === 'province') { next.city = 'todos'; }
+    if (key === 'kmRange' && value !== 'todos' && value !== 'custom') {
       const range = KM_RANGES.find(r => r.value === value);
       if (range) { next.kmMin = String(range.min); next.kmMax = String(range.max); }
     }
-    if (key === 'kmRange' && value === 'all') { next.kmMin = ''; next.kmMax = ''; }
+    if (key === 'kmRange' && value === 'todos') { next.kmMin = ''; next.kmMax = ''; }
     onFilterChange(next);
   };
 
   useEffect(() => {
-    if (filters.brand && filters.brand !== 'all') {
+    if (filters.brand && filters.brand !== 'todos') {
       setModels(getModelsByBrand(filters.brand));
     } else {
       setModels([]);
@@ -107,7 +107,7 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
   }, [filters.brand]);
 
   useEffect(() => {
-    if (filters.brand !== 'all' && filters.model !== 'all') {
+    if (filters.brand !== 'todos' && filters.model !== 'todos') {
       setVersions(getVersionsByBrandAndModel(filters.brand, filters.model));
     } else {
       setVersions([]);
@@ -115,7 +115,7 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
   }, [filters.brand, filters.model]);
 
   useEffect(() => {
-    if (filters.province && filters.province !== 'all') {
+    if (filters.province && filters.province !== 'todos') {
       setLocalidades(getLocalidadesByProvinciaId(filters.province));
     } else {
       setLocalidades([]);
@@ -129,7 +129,7 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
   const hasActiveFilters = Object.entries(filters).some(([key, val]) => {
     if (key === 'searchQuery') return false;
     if (key === 'currency') return false;
-    if (val === null || val === 'all' || val === '') return false;
+    if (val === null || val === 'todos' || val === '') return false;
     return true;
   });
 
@@ -173,11 +173,11 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
         {/* Tipo de vehículo */}
         <FilterSection title="Tipo de Vehículo">
           <Select value={filters.bodyType} onValueChange={v => update('bodyType', v)}>
-            <SelectTrigger className="rounded-2xl bg-white/5 border-white/10 h-11 font-bold text-sm">
+            <SelectTrigger className="rounded-sm bg-white/5 border-white/10 h-11 font-bold text-sm">
               <SelectValue placeholder="Todos los tipos" />
             </SelectTrigger>
-            <SelectContent className="rounded-2xl">
-              <SelectItem value="all">Todos</SelectItem>
+            <SelectContent className="rounded-sm">
+              <SelectItem value="todos">Todos</SelectItem>
               {BODY_TYPES.map(bt => (
                 <SelectItem key={bt.value} value={bt.value}>{bt.label}</SelectItem>
               ))}
@@ -188,11 +188,11 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
         {/* Marca */}
         <FilterSection title="Marca">
           <Select value={filters.brand} onValueChange={v => update('brand', v)}>
-            <SelectTrigger className="rounded-2xl bg-white/5 border-white/10 h-11 font-bold text-sm">
+            <SelectTrigger className="rounded-sm bg-white/5 border-white/10 h-11 font-bold text-sm">
               <SelectValue placeholder="Todas las marcas" />
             </SelectTrigger>
-            <SelectContent className="rounded-2xl max-h-60">
-              <SelectItem value="all">Todas</SelectItem>
+            <SelectContent className="rounded-sm max-h-60">
+              <SelectItem value="todos">Todas</SelectItem>
               {brands.map(b => (
                 <SelectItem key={b} value={b}>{b}</SelectItem>
               ))}
@@ -201,14 +201,14 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
         </FilterSection>
 
         {/* Modelo */}
-        {filters.brand !== 'all' && models.length > 0 && (
+        {filters.brand !== 'todos' && models.length > 0 && (
           <FilterSection title="Modelo">
             <Select value={filters.model} onValueChange={v => update('model', v)}>
-              <SelectTrigger className="rounded-2xl bg-white/5 border-white/10 h-11 font-bold text-sm">
+              <SelectTrigger className="rounded-sm bg-white/5 border-white/10 h-11 font-bold text-sm">
                 <SelectValue placeholder="Todos los modelos" />
               </SelectTrigger>
-              <SelectContent className="rounded-2xl max-h-60">
-                <SelectItem value="all">Todos</SelectItem>
+              <SelectContent className="rounded-sm max-h-60">
+                <SelectItem value="todos">Todos</SelectItem>
                 {models.map(m => (
                   <SelectItem key={m.nombre} value={m.nombre}>{m.nombre}</SelectItem>
                 ))}
@@ -218,14 +218,14 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
         )}
 
         {/* Versión */}
-        {filters.model !== 'all' && versions.length > 0 && (
+        {filters.model !== 'todos' && versions.length > 0 && (
           <FilterSection title="Versión">
             <Select value={filters.version} onValueChange={v => update('version', v)}>
-              <SelectTrigger className="rounded-2xl bg-white/5 border-white/10 h-11 font-bold text-sm">
+              <SelectTrigger className="rounded-sm bg-white/5 border-white/10 h-11 font-bold text-sm">
                 <SelectValue placeholder="Todas las versiones" />
               </SelectTrigger>
-              <SelectContent className="rounded-2xl max-h-60">
-                <SelectItem value="all">Todas</SelectItem>
+              <SelectContent className="rounded-sm max-h-60">
+                <SelectItem value="todos">Todas</SelectItem>
                 {versions.map(vr => (
                   <SelectItem key={vr.nombre} value={vr.nombre}>{vr.nombre}</SelectItem>
                 ))}
@@ -238,10 +238,10 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
         <FilterSection title="Año" defaultOpen={false}>
           <div className="flex gap-2">
             <Select value={filters.yearFrom} onValueChange={v => update('yearFrom', v)}>
-              <SelectTrigger className="rounded-2xl bg-white/5 border-white/10 h-11 font-bold text-sm">
+              <SelectTrigger className="rounded-sm bg-white/5 border-white/10 h-11 font-bold text-sm">
                 <SelectValue placeholder="Desde" />
               </SelectTrigger>
-              <SelectContent className="rounded-2xl max-h-52">
+              <SelectContent className="rounded-sm max-h-52">
                 <SelectItem value="">Desde</SelectItem>
                 {years.map(y => (
                   <SelectItem key={y} value={String(y)}>{y}</SelectItem>
@@ -249,10 +249,10 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
               </SelectContent>
             </Select>
             <Select value={filters.yearTo} onValueChange={v => update('yearTo', v)}>
-              <SelectTrigger className="rounded-2xl bg-white/5 border-white/10 h-11 font-bold text-sm">
+              <SelectTrigger className="rounded-sm bg-white/5 border-white/10 h-11 font-bold text-sm">
                 <SelectValue placeholder="Hasta" />
               </SelectTrigger>
-              <SelectContent className="rounded-2xl max-h-52">
+              <SelectContent className="rounded-sm max-h-52">
                 <SelectItem value="">Hasta</SelectItem>
                 {years.map(y => (
                   <SelectItem key={y} value={String(y)}>{y}</SelectItem>
@@ -265,11 +265,11 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
         {/* Kilometraje */}
         <FilterSection title="Kilometraje" defaultOpen={false}>
           <Select value={filters.kmRange} onValueChange={v => update('kmRange', v)}>
-            <SelectTrigger className="rounded-2xl bg-white/5 border-white/10 h-11 font-bold text-sm">
+            <SelectTrigger className="rounded-sm bg-white/5 border-white/10 h-11 font-bold text-sm">
               <SelectValue placeholder="Todos" />
             </SelectTrigger>
-            <SelectContent className="rounded-2xl">
-              <SelectItem value="all">Todos</SelectItem>
+            <SelectContent className="rounded-sm">
+              <SelectItem value="todos">Todos</SelectItem>
               {KM_RANGES.map(r => (
                 <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
               ))}
@@ -287,11 +287,11 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
         {/* Combustible */}
         <FilterSection title="Combustible" defaultOpen={false}>
           <Select value={filters.fuelType} onValueChange={v => update('fuelType', v)}>
-            <SelectTrigger className="rounded-2xl bg-white/5 border-white/10 h-11 font-bold text-sm">
+            <SelectTrigger className="rounded-sm bg-white/5 border-white/10 h-11 font-bold text-sm">
               <SelectValue placeholder="Todos" />
             </SelectTrigger>
-            <SelectContent className="rounded-2xl">
-              <SelectItem value="all">Todos</SelectItem>
+            <SelectContent className="rounded-sm">
+              <SelectItem value="todos">Todos</SelectItem>
               {FUEL_TYPES.map(f => (
                 <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
               ))}
@@ -307,7 +307,7 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
                 key={t.value}
                 variant="outline"
                 className={`rounded-2xl border-white/5 font-bold text-xs transition-all ${filters.transmission === t.value ? 'bg-primary text-primary-foreground border-primary' : 'bg-white/5 hover:border-primary/50'}`}
-                onClick={() => update('transmission', filters.transmission === t.value ? 'all' : t.value)}
+                onClick={() => update('transmission', filters.transmission === t.value ? 'todos' : t.value)}
               >
                 {t.label}
               </Button>
@@ -340,23 +340,23 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
         {/* Ubicación */}
         <FilterSection title="Ubicación">
           <Select value={filters.province} onValueChange={v => update('province', v)}>
-            <SelectTrigger className="rounded-2xl bg-white/5 border-white/10 h-11 font-bold text-sm">
+            <SelectTrigger className="rounded-sm bg-white/5 border-white/10 h-11 font-bold text-sm">
               <SelectValue placeholder="Toda Argentina" />
             </SelectTrigger>
-            <SelectContent className="rounded-2xl max-h-60">
-              <SelectItem value="all">Toda Argentina</SelectItem>
+            <SelectContent className="rounded-sm max-h-60">
+              <SelectItem value="todos">Toda Argentina</SelectItem>
               {provincias.map(p => (
                 <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
-          {filters.province !== 'all' && localidades.length > 0 && (
+          {filters.province !== 'todos' && localidades.length > 0 && (
             <Select value={filters.city} onValueChange={v => update('city', v)}>
-              <SelectTrigger className="rounded-2xl bg-white/5 border-white/10 h-11 font-bold text-sm mt-2">
+              <SelectTrigger className="rounded-sm bg-white/5 border-white/10 h-11 font-bold text-sm mt-2">
                 <SelectValue placeholder="Toda la provincia" />
               </SelectTrigger>
-              <SelectContent className="rounded-2xl max-h-60">
-                <SelectItem value="all">Toda la provincia</SelectItem>
+              <SelectContent className="rounded-sm max-h-60">
+                <SelectItem value="todos">Toda la provincia</SelectItem>
                 {localidades.map(l => (
                   <SelectItem key={l.id} value={l.nombre}>{l.nombre}</SelectItem>
                 ))}
@@ -371,7 +371,7 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
             {COLORS.map(c => (
               <button
                 key={c.value}
-                onClick={() => update('color', filters.color === c.value ? 'all' : c.value)}
+                onClick={() => update('color', filters.color === c.value ? 'todos' : c.value)}
                 className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${filters.color === c.value ? 'bg-primary/10 border border-primary' : 'hover:bg-white/5 border border-transparent'}`}
                 title={c.label}
               >

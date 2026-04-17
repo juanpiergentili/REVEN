@@ -136,21 +136,21 @@ export function Marketplace() {
         if (!v.brand.toLowerCase().includes(q) && !v.model.toLowerCase().includes(q) && !v.version.toLowerCase().includes(q)) return false;
       }
       if (filters.condition && v.condition !== filters.condition) return false;
-      if (filters.bodyType !== 'all' && v.bodyType && v.bodyType !== filters.bodyType) return false;
-      if (filters.brand !== 'all' && v.brand.toLowerCase() !== filters.brand.toLowerCase()) return false;
-      if (filters.model !== 'all' && v.model.toLowerCase() !== filters.model.toLowerCase()) return false;
-      if (filters.version !== 'all' && !v.version.toLowerCase().includes(filters.version.toLowerCase())) return false;
+      if (filters.bodyType !== 'todos' && v.bodyType && v.bodyType !== filters.bodyType) return false;
+      if (filters.brand !== 'todos' && v.brand.toLowerCase() !== filters.brand.toLowerCase()) return false;
+      if (filters.model !== 'todos' && v.model.toLowerCase() !== filters.model.toLowerCase()) return false;
+      if (filters.version !== 'todos' && !v.version.toLowerCase().includes(filters.version.toLowerCase())) return false;
       if (filters.yearFrom && v.year < Number(filters.yearFrom)) return false;
       if (filters.yearTo && v.year > Number(filters.yearTo)) return false;
       if (filters.kmMin && v.km < Number(filters.kmMin)) return false;
       if (filters.kmMax && v.km > Number(filters.kmMax)) return false;
-      if (filters.fuelType !== 'all' && v.fuelType !== filters.fuelType) return false;
-      if (filters.transmission !== 'all' && v.transmission && v.transmission !== filters.transmission) return false;
+      if (filters.fuelType !== 'todos' && v.fuelType !== filters.fuelType) return false;
+      if (filters.transmission !== 'todos' && v.transmission && v.transmission !== filters.transmission) return false;
       if (filters.minPrice && v.price && v.price < Number(filters.minPrice)) return false;
       if (filters.maxPrice && v.price && v.price > Number(filters.maxPrice)) return false;
-      if (filters.province !== 'all' && v.province && v.province !== filters.province) return false;
-      if (filters.city !== 'all' && v.city && v.city !== filters.city) return false;
-      if (filters.color !== 'all' && v.color && v.color !== filters.color) return false;
+      if (filters.province !== 'todos' && v.province && v.province !== filters.province) return false;
+      if (filters.city !== 'todos' && v.city && v.city !== filters.city) return false;
+      if (filters.color !== 'todos' && v.color && v.color !== filters.color) return false;
       return true;
     });
   }, [filters]);
@@ -159,9 +159,9 @@ export function Marketplace() {
 
   const handleRemoveChip = (key: keyof FilterState, resetValue: string | null) => {
     const next = { ...filters, [key]: resetValue };
-    if (key === 'brand') { next.model = 'all'; next.version = 'all'; }
-    if (key === 'model') { next.version = 'all'; }
-    if (key === 'province') { next.city = 'all'; }
+    if (key === 'brand') { next.model = 'todos'; next.version = 'todos'; }
+    if (key === 'model') { next.version = 'todos'; }
+    if (key === 'province') { next.city = 'todos'; }
     if (key === 'kmRange') { next.kmMin = ''; next.kmMax = ''; }
     setFilters(next);
   };
