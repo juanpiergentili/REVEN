@@ -1,6 +1,11 @@
-import { useState, useMemo } from 'react';
-import { Search, Filter, SlidersHorizontal, ChevronDown, ChevronLeft, MessageCircle, Plus, ArrowRight, X } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Search, Filter, SlidersHorizontal, ChevronDown, ChevronLeft, MessageCircle, Plus, X, Loader2, AlertCircle } from 'lucide-react';
+import { subscribeToVehicles } from '@/src/lib/vehicles';
+import { subscribeToWantedSearches, createWantedSearch } from '@/src/lib/wantedSearches';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { VehicleCard } from '@/src/components/marketplace/VehicleCard';
 import { FilterSidebar, FilterState, INITIAL_FILTERS } from '@/src/components/marketplace/FilterSidebar';
@@ -11,7 +16,10 @@ import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { motion, AnimatePresence } from 'motion/react';
+import { useAuth, db } from '@/src/lib/firebase';
+import { getDoc, doc } from 'firebase/firestore';
 
 const MOCK_WANTED: WantedSearch[] = [
   {
@@ -30,7 +38,7 @@ const MOCK_WANTED: WantedSearch[] = [
   }
 ];
 
-const MOCK_VEHICLES: Vehicle[] = [
+const MOCK_VEHICLES_FALLBACK: Vehicle[] = [
   {
     id: '1', sellerId: 's1', sellerName: 'Concesionaria Norte',
     brand: 'Toyota', model: 'Hilux', version: '2.8 SRX 4X4 AT',
@@ -126,11 +134,27 @@ const MOCK_VEHICLES: Vehicle[] = [
 export function Marketplace() {
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [loadingVehicles, setLoadingVehicles] = useState(true);
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('stock');
 
+  useEffect(() => {
+    const unsub = subscribeToVehicles(
+      (data) => {
+        setVehicles(data.length > 0 ? data : MOCK_VEHICLES_FALLBACK);
+        setLoadingVehicles(false);
+      },
+      () => {
+        setVehicles(MOCK_VEHICLES_FALLBACK);
+        setLoadingVehicles(false);
+      },
+    );
+    return unsub;
+  }, []);
+
   const filteredVehicles = useMemo(() => {
-    return MOCK_VEHICLES.filter(v => {
+    return vehicles.filter(v => {
       if (filters.searchQuery) {
         const q = filters.searchQuery.toLowerCase();
         if (!v.brand.toLowerCase().includes(q) && !v.model.toLowerCase().includes(q) && !v.version.toLowerCase().includes(q)) return false;
@@ -153,7 +177,7 @@ export function Marketplace() {
       if (filters.color !== 'todos' && v.color && v.color !== filters.color) return false;
       return true;
     });
-  }, [filters]);
+  }, [filters, vehicles]);
 
   const clearFilters = () => setFilters(INITIAL_FILTERS);
 
@@ -254,11 +278,20 @@ export function Marketplace() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
-                  {filteredVehicles.map(vehicle => (
-                    <VehicleCard key={vehicle.id} vehicle={vehicle} />
-                  ))}
-                </div>
+                {loadingVehicles ? (
+                  <div className="flex items-center justify-center py-32 gap-3 text-muted-foreground">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    <span className="font-bold uppercase tracking-widest text-xs">Cargando stock...</span>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
+                    {filteredVehicles.map(vehicle => (
+                      <div key={vehicle.id}>
+                        <VehicleCard vehicle={vehicle} />
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {filteredVehicles.length === 0 && (
                   <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
