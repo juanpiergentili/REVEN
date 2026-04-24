@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useNavigate } from 'react-router-dom';
+import { Logo } from '../components/layout/Logo';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
@@ -182,20 +183,9 @@ export function Login() {
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.5 }}
-            className="inline-block mb-6"
+            className="flex justify-center mb-6"
           >
-            <img 
-              src="/logo-negro.svg" 
-              alt="REVEN" 
-              className="h-[40px] w-auto block dark:hidden object-contain rounded-xl"
-              referrerPolicy="no-referrer"
-            />
-            <img 
-              src="/logo-blanco.svg" 
-              alt="REVEN" 
-              className="h-[40px] w-auto hidden dark:block object-contain rounded-xl"
-              referrerPolicy="no-referrer"
-            />
+            <Logo className="text-5xl" variant="auto" />
           </motion.div>
           <h2 className="text-3xl font-bold tracking-tighter uppercase">
             {isLogin ? 'Bienvenido a la Comunidad' : 'Solicitud de Admisión'}

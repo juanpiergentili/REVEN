@@ -2,19 +2,19 @@ import React from 'react';
 
 interface LogoProps {
   className?: string;
-  variant?: 'light' | 'dark' | 'auto';
+  variant?: 'light' | 'dark' | 'auto' | 'footer';
 }
 
 export function Logo({ className = '', variant = 'auto' }: LogoProps) {
   return (
-    <div className={`font-logo font-bold tracking-tight select-none ${className}`}>
+    <div className={`font-['Sansation',sans-serif] font-bold tracking-tight select-none ${className}`}>
       <span className="text-primary">R</span>
       <span className={`
-        ${variant === 'light' ? 'text-white' : ''}
-        ${variant === 'dark' ? 'text-black' : ''}
-        ${variant === 'auto' ? 'text-foreground' : ''}
+        ${variant === 'light' ? 'text-black' : ''}
+        ${variant === 'dark' || variant === 'footer' ? 'text-white' : ''}
+        ${variant === 'auto' ? 'text-black dark:text-white' : ''}
       `}>
-        EVEN
+        even
       </span>
     </div>
   );

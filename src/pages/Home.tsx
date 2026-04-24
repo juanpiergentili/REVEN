@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link, useNavigate } from 'react-router-dom';
 import React, { useRef, useState } from 'react';
+import { Logo } from '../components/layout/Logo';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
@@ -681,7 +682,7 @@ export function Home() {
             <div className="md:col-span-4 lg:col-span-3 bg-primary p-10 flex flex-col justify-between text-primary-foreground relative overflow-hidden">
               <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-white/10 blur-3xl rounded-full" />
               <div className="z-10">
-                <img src="/logo-negro.png" alt="REVEN" className="h-[30px] w-auto mb-12 object-contain rounded-xl" />
+                <Logo variant="dark" className="text-4xl mb-6" />
                 <h3 className="text-3xl md:text-4xl font-bold tracking-tighter uppercase leading-[0.9] mb-6 text-primary-foreground">Unite a <br />la Elite</h3>
                 <p className="text-sm md:text-base font-medium opacity-90 leading-relaxed">Accedé al stock más exclusivo de Argentina y potenciá tu rentabilidad B2B.</p>
               </div>
@@ -941,8 +942,7 @@ export function Home() {
         <div className="container mx-auto px-6 md:px-12 mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16 text-center md:text-left">
             <div className="col-span-1 md:col-span-1 space-y-6 flex flex-col items-center md:items-start">
-              <img src="/logo-blanco.svg" alt="REVEN" className="h-[30px] w-auto hidden dark:block object-contain rounded-xl" />
-              <img src="/logo-negro.svg" alt="REVEN" className="h-[30px] w-auto block dark:hidden object-contain rounded-xl" />
+              <Logo variant="footer" className="text-4xl" />
               <p className="text-white/70 text-sm font-medium leading-relaxed max-w-xs">
                 La red B2B más exclusiva de Argentina. Conectamos profesionales del sector automotor con tecnología y transparencia.
               </p>
