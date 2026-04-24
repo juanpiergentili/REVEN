@@ -65,59 +65,53 @@ export function Login() {
     }
   };
 
-  const handleDemoLogin = async () => {
+  const handleDemoMode = async (type: 'demo' | 'vendedor' | 'comprador') => {
     setLoading(true);
     setError(null);
-    const demoEmail = 'DEMO@reven.com.ar';
-    const demoPass = 'DEMO1234';
+    
+    let demoEmail = 'DEMO@reven.com.ar';
+    let demoPass = 'DEMO1234';
+    
+    if (type === 'vendedor') {
+      demoEmail = 'vendedor@reven.com.ar';
+      demoPass = 'REVEN2026';
+    } else if (type === 'comprador') {
+      demoEmail = 'comprador@reven.com.ar';
+      demoPass = 'REVEN2026';
+    }
     
     try {
-      // Try to sign in
       await signInWithEmailAndPassword(auth, demoEmail, demoPass);
       navigate('/marketplace');
     } catch (err: any) {
-      console.error('Demo Login Error:', err.code, err.message);
-      
-      // If user doesn't exist, create it for the demo
       if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/invalid-login-credentials') {
         try {
           const userCredential = await createUserWithEmailAndPassword(auth, demoEmail, demoPass);
           const user = userCredential.user;
           
-          await updateProfile(user, {
-            displayName: 'Usuario Demo'
-          });
+          const displayName = type === 'vendedor' ? 'Vendedor REVEN' : (type === 'comprador' ? 'Comprador REVEN' : 'Usuario Demo');
+          const companyName = type === 'vendedor' ? 'REVEN Motors (Vendedor)' : (type === 'comprador' ? 'AutoSelect B2B (Comprador)' : 'Reven Demo Dealer');
 
-          const userPath = `users/${user.uid}`;
-          try {
-            await setDoc(doc(db, 'users', user.uid), {
-              uid: user.uid,
-              email: demoEmail,
-              name: 'Usuario',
-              lastName: 'Demo',
-              cuil: '20-12345678-9',
-              phone: '+54 9 11 1234-5678',
-              company: 'Reven Demo Dealer',
-              plan: 'platinum',
-              role: 'user',
-              status: 'approved', // Auto-approve demo user
-              createdAt: serverTimestamp()
-            });
-          } catch (fsErr) {
-            handleFirestoreError(fsErr, OperationType.WRITE, userPath);
-          }
+          await updateProfile(user, { displayName });
+
+          await setDoc(doc(db, 'users', user.uid), {
+            uid: user.uid,
+            email: demoEmail,
+            name: displayName.split(' ')[0],
+            lastName: displayName.split(' ')[1] || 'Demo',
+            cuil: type === 'vendedor' ? '20-99999999-9' : '20-88888888-8',
+            phone: type === 'vendedor' ? '+54 9 11 5555-0001' : '+54 9 11 5555-0002',
+            company: companyName,
+            plan: 'platinum',
+            role: 'user',
+            status: 'approved',
+            createdAt: serverTimestamp()
+          });
           
           navigate('/marketplace');
         } catch (regErr: any) {
-          console.error('Demo Registration Error:', regErr.code, regErr.message);
-          if (regErr.code === 'auth/operation-not-allowed') {
-            setError('El método de inicio de sesión con Email/Password no está habilitado en Firebase. Por favor, habilitalo en la consola de Firebase.');
-          } else {
-            setError(`Error al inicializar el usuario demo: ${regErr.message}`);
-          }
+          setError(`Error al inicializar acceso: ${regErr.message}`);
         }
-      } else if (err.code === 'auth/operation-not-allowed') {
-        setError('El método de inicio de sesión con Email/Password no está habilitado en Firebase. Por favor, habilitalo en la consola de Firebase.');
       } else {
         setError(`Error en el acceso demo: ${err.message}`);
       }
@@ -259,24 +253,29 @@ export function Login() {
                   )}
                 </Button>
 
-                <div className="relative py-4">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t border-border" />
+                  <div className="space-y-4 pt-4 border-t border-white/5">
+                    <p className="text-[10px] text-center font-bold uppercase tracking-[0.2em] text-muted-foreground mb-4">Accesos Rápidos de Prueba</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button 
+                        type="button"
+                        variant="outline" 
+                        className="rounded-2xl h-11 text-[10px] font-bold uppercase tracking-widest border-primary/20 hover:bg-primary/5 hover:text-primary transition-all"
+                        onClick={() => handleDemoMode('vendedor')}
+                        disabled={loading}
+                      >
+                        Rol Vendedor
+                      </Button>
+                      <Button 
+                        type="button"
+                        variant="outline" 
+                        className="rounded-2xl h-11 text-[10px] font-bold uppercase tracking-widest border-primary/20 hover:bg-primary/5 hover:text-primary transition-all"
+                        onClick={() => handleDemoMode('comprador')}
+                        disabled={loading}
+                      >
+                        Rol Comprador
+                      </Button>
+                    </div>
                   </div>
-                  <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-widest">
-                    <span className="bg-card px-2 text-muted-foreground">O probá el sistema</span>
-                  </div>
-                </div>
-
-                <Button 
-                  type="button"
-                  variant="outline"
-                  onClick={handleDemoLogin}
-                  disabled={loading}
-                  className="w-full h-14 rounded-2xl font-bold text-sm border-primary/20 hover:bg-primary/5 text-primary transition-all uppercase tracking-widest"
-                >
-                  {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'ACCESO DEMO RÁPIDO'}
-                </Button>
               </motion.form>
             ) : (
               <motion.form 

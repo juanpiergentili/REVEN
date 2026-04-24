@@ -124,8 +124,11 @@ export function Header() {
     setLoading(true);
     setError(null);
     
-    // Check if it's the demo account
-    if (email.toLowerCase() === 'demo@reven.com.ar' && password === 'DEMO1234') {
+    const isDemo = email.toLowerCase() === 'demo@reven.com.ar' && password === 'DEMO1234';
+    const isVendedor = email.toLowerCase() === 'vendedor@reven.com.ar' && password === 'REVEN2026';
+    const isComprador = email.toLowerCase() === 'comprador@reven.com.ar' && password === 'REVEN2026';
+
+    if (isDemo || isVendedor || isComprador) {
       try {
         await signInWithEmailAndPassword(auth, email, password);
         setIsLoginOpen(false);
@@ -136,8 +139,11 @@ export function Header() {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
             
+            const displayName = isVendedor ? 'Vendedor REVEN' : (isComprador ? 'Comprador REVEN' : 'Usuario Demo');
+            const companyName = isVendedor ? 'REVEN Motors (Vendedor)' : (isComprador ? 'AutoSelect B2B (Comprador)' : 'Reven Demo Dealer');
+
             await updateProfile(user, {
-              displayName: 'Usuario Demo'
+              displayName: displayName
             });
 
             const userPath = `users/${user.uid}`;
@@ -145,11 +151,11 @@ export function Header() {
               await setDoc(doc(db, 'users', user.uid), {
                 uid: user.uid,
                 email: email,
-                name: 'Usuario',
-                lastName: 'Demo',
-                cuil: '20-12345678-9',
-                phone: '+54 9 11 1234-5678',
-                company: 'Reven Demo Dealer',
+                name: displayName.split(' ')[0],
+                lastName: displayName.split(' ')[1] || 'Demo',
+                cuil: isVendedor ? '20-99999999-9' : '20-88888888-8',
+                phone: isVendedor ? '+54 9 11 5555-0001' : '+54 9 11 5555-0002',
+                company: companyName,
                 plan: 'platinum',
                 role: 'user',
                 status: 'approved',
@@ -162,12 +168,7 @@ export function Header() {
             setIsLoginOpen(false);
             navigate('/marketplace');
           } catch (regErr: any) {
-            console.error('Demo Registration Error:', regErr.code, regErr.message);
-            if (regErr.code === 'auth/operation-not-allowed') {
-              setError('El método de inicio de sesión con Email/Password no está habilitado en Firebase.');
-            } else {
-              setError(`Error al inicializar el usuario demo: ${regErr.message}`);
-            }
+            setError(`Error al inicializar acceso: ${regErr.message}`);
           }
         } else if (err.code === 'auth/operation-not-allowed') {
           setError('El método de inicio de sesión con Email/Password no está habilitado en Firebase.');
