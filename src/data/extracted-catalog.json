@@ -1,0 +1,2247 @@
+[
+  {
+    "brand": "RAM",
+    "models": [
+      {
+        "model": "1500",
+        "versions": [
+          {
+            "version": "5.7 DC 4X4 LARAMIE AT L13",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "5.7 DC 4X4 LARAMIE AT",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "2500",
+        "versions": [
+          {
+            "version": "TDI DCAB 4X4 LARAMIE L14",
+            "fuels": [
+              "DIESEL"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "brand": "FORD",
+    "models": [
+      {
+        "model": "RANGER",
+        "versions": [
+          {
+            "version": "3.2 TDI 4X4 DC LIMITED AT L19",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "3.0 TD V6 DC 4X4 XLS AT",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "3.2 TDI 4X2 DC XLT L19",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "2.0 TDI 4X4 DC RAPTOR L19",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "2.2 TDI 4X2 DC XL L19",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "2.2 TDI 4X4 SC XL L19",
+            "fuels": [
+              "DIESEL"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "KUGA",
+        "versions": [
+          {
+            "version": "2.5 4X2 SE HIBRIDA AT L20",
+            "fuels": [
+              "HIBRIDO"
+            ]
+          },
+          {
+            "version": "2.0 4X4 SEL AT L17",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "ECO SPORT",
+        "versions": [
+          {
+            "version": "2.0 TITANIUM L13",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.5 TITANIUM",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.6 TITANIUM L13",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.5 TITANIUM AT",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "FIESTA",
+        "versions": [
+          {
+            "version": "1.6 SE KD 5P L14",
+            "fuels": [
+              "NAFTA",
+              "GNC"
+            ]
+          },
+          {
+            "version": "1.6 S KD 5P L14",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.6 TITANIUM POWERSHIFT KD 5P L13",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "F-150",
+        "versions": [
+          {
+            "version": "3.5 4X4 RAPTOR AT",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "MAVERICK",
+        "versions": [
+          {
+            "version": "2.5 T 4X4 LARIAT HIBRIDA AT L25",
+            "fuels": [
+              "HIBRIDO"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "MONDEO",
+        "versions": [
+          {
+            "version": "2.0 VIGNALE HIBRIDO L19",
+            "fuels": [
+              "HIBRIDO"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "TERRITORY",
+        "versions": [
+          {
+            "version": "1.5 T SEL L20",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.5 T TITANIUM L20",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.8 T SEL AT7 L23",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.8 T TITANIUM AT7 L23",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "EVEREST",
+        "versions": [
+          {
+            "version": "2.3 4X4 TITANIUM AT10",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "brand": "TOYOTA",
+    "models": [
+      {
+        "model": "COROLLA",
+        "versions": [
+          {
+            "version": "1.8 XLI L17",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.8 XEI L14",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "2.0 SE-G CVT",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "2.0 XEI CVT L20",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "2.0 SE-G CVT L19",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.8 XLI CVT L17",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.8 SE-G CVT L17",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "HILUX",
+        "versions": [
+          {
+            "version": "2.4 TDI 4X2 DC DX L16",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "3.0 TDI 4X4 DC SRV CUERO L12",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "2.8 TDI 4X2 DC SRV AT6 L21",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "2.8 TDI 4X2 SRX AT6",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "2.8 TDI 4X2 DC SRX AT6 L16",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "2.8 TDI 4X4 DC SRX AT6 L21",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "2.8 TDI 4X2 DC SRX AT6 L21",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "2.4 TDI 4X2 CS DX ",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "2.8 TDI 4X2 SRV",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "2.8 TDI 4X4 DC SR L16",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "2.8 TDI 4X4 DC SRX L16",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "2.8 TDI 4X4 SRX AT6",
+            "fuels": [
+              "DIESEL"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "LAND CRUISER",
+        "versions": [
+          {
+            "version": "4.5 D4-D 200 VX AT",
+            "fuels": [
+              "DIESEL"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "SW4",
+        "versions": [
+          {
+            "version": "TDI SRV CUERO AT L12",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "TDI SRX AT L21",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "2.8 TDI 4X4 GR-S AT6",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "2.7 VVTI SRV 7AS L13",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "TDI SR AT L16",
+            "fuels": [
+              "DIESEL"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "ETIOS",
+        "versions": [
+          {
+            "version": "1.5 XLS AT4 5P",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.5 XLS AT4 5P L16",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "COROLLA CROSS",
+        "versions": [
+          {
+            "version": "2.0 XLI CVT",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.8 SEG HV E-CVT",
+            "fuels": [
+              "HIBRIDO"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "YARIS",
+        "versions": [
+          {
+            "version": "1.5 XS CVT 5P",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.5 S CVT 5P",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "brand": "GWM",
+    "models": [
+      {
+        "model": "TANK",
+        "versions": [
+          {
+            "version": "300",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "HAVAL JOLION PRO",
+        "versions": [
+          {
+            "version": "HEV DELUXE",
+            "fuels": [
+              "HIBRIDO"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "brand": "FIAT",
+    "models": [
+      {
+        "model": "500",
+        "versions": [
+          {
+            "version": "1.4 ABARTH TURISMO 595 L14",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.4 FIRE CULT L11",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "600",
+        "versions": [
+          {
+            "version": "1.2 HYBRID EDCT",
+            "fuels": [
+              "HIBRIDO"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "CRONOS",
+        "versions": [
+          {
+            "version": "1.3 DRIVE L18",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.3 DRIVE LOW ATTRACTIVE L21",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.3 GSE DRIVE PACK PLUS L23",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.3 GSE DRIVE CVT L23",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.3 GSE LIKE L23",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.3 GSE PRECISION CVT L23",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.3 GSE LIKE L26",
+            "fuels": [
+              "GNC"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "STRADA",
+        "versions": [
+          {
+            "version": "1.3 DC FIRE FLY VOLCANO CVT",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.3 DC FIRE FLY FREEDOM",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.6 DC ADVENTURE LOCKER L14",
+            "fuels": [
+              "GNC"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "ARGO",
+        "versions": [
+          {
+            "version": "1.8 PRECISION L17",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.3 GSE DRIVE PACK CONECTIVIDAD L17",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.3 GSE FIREFLY DRIVE L26",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "FASTBACK",
+        "versions": [
+          {
+            "version": "1.3 T GSE AT6 L24",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.3 T GSE AT6 L26",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "TORO",
+        "versions": [
+          {
+            "version": "2.0 TDI 4X4 VOLCANO AT9 L24",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "1.3 T 4X2 FREEDOM AT6 L24",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "2.0 TDI 4X4 VOLCANO AT L16",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "2.0 TDI 4X4 FREEDOM AT L18",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "1.8 MPI 4X2 FREEDOM AT6 L24",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "TITANO",
+        "versions": [
+          {
+            "version": "2.2 TD AWD FREEDOM PLUS AT8",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "2.2 TD AWD RANCH AT8",
+            "fuels": [
+              "DIESEL"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "FIORINO",
+        "versions": [
+          {
+            "version": "1.4 ENDURANCE L24",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.4 EVO TOP L14",
+            "fuels": [
+              "GNC"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "PULSE",
+        "versions": [
+          {
+            "version": "1.0 IMPETUS L23",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "MOBI",
+        "versions": [
+          {
+            "version": "1.0 FIRE TREKKING",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "PALIO",
+        "versions": [
+          {
+            "version": "1.4 ATTRACTIVE TOP 5P L15",
+            "fuels": [
+              "GNC"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "brand": "CITROEN",
+    "models": [
+      {
+        "model": "C4 CACTUS",
+        "versions": [
+          {
+            "version": "1.6 VTI FEEL PACK AT6",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "AIRCROSS",
+        "versions": [
+          {
+            "version": "1.0 T200 FEEL PACK L26",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "C3",
+        "versions": [
+          {
+            "version": "1.6 VTI FEEL PACK AT L22",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.5 FEEL L16",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.6 VTI FEEL L26",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "C4 LOUNGE",
+        "versions": [
+          {
+            "version": "1.6 HDI FEEL PACK L18",
+            "fuels": [
+              "DIESEL"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "brand": "AUDI",
+    "models": [
+      {
+        "model": "A3",
+        "versions": [
+          {
+            "version": "1.4 T SPORTBACK L10",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.6 3P L04",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "2.0 T SPORTBACK S-TRONIC L17",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "A1",
+        "versions": [
+          {
+            "version": "1.4 T AMBITION S-TRONIC L11",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "brand": "HUSQVARNA",
+    "models": [
+      {
+        "model": "VITPILEN",
+        "versions": [
+          {
+            "version": "401",
+            "fuels": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "brand": "JEEP",
+    "models": [
+      {
+        "model": "COMPASS",
+        "versions": [
+          {
+            "version": "2.4 LONGITUDE AT9 OE L17",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.3 T 270 SPORT AT6 L21",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.3 T 270 SERIE-S AT6",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "2.4 LONGITUDE AT6 4X2 L18",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "GLADIATOR",
+        "versions": [
+          {
+            "version": "3.6 V6 4X4 OVERLAND AT8",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "RENEGADE",
+        "versions": [
+          {
+            "version": "1.8 4X2 SPORT AT6",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.8 4X2 LONGITUDE AT L18",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.8 4X2 SPORT AT L18",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.3 T 270 4X2 SPORT AT6",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.3 T 270 4X4 WILLYS AT9",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.8 4X2 SPORT L16",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "GRAND CHEROKEE",
+        "versions": [
+          {
+            "version": "3.6 TC LIMITED L13",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "brand": "VOLKSWAGEN",
+    "models": [
+      {
+        "model": "POLO",
+        "versions": [
+          {
+            "version": "1.6 HIGHLINE 5P L18",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.6 MSI TRACK L25",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.6 MSI TRACK 1ST EDITION ",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.6 MSI TREND",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.0 170 TSI HIGHLINE TIPTRONIC",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "NIVUS",
+        "versions": [
+          {
+            "version": "200 TSI COMFORTLINE AT L25",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "200 TSI COMFORTLINE AT L22",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "200 TSI HIGHLINE AT L20",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "GOL",
+        "versions": [
+          {
+            "version": "1.6 TREND 5P L12",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "TAOS",
+        "versions": [
+          {
+            "version": "1.4 250 TSI COMFORTLINE TIPTRONIC L24",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.4 250 TSI HIGHLINE TIPTRONIC L24",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "BORA",
+        "versions": [
+          {
+            "version": "2.0 MPI TRENDLINE L07",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "TERA",
+        "versions": [
+          {
+            "version": "1.0 170 TS COMFORTLINE AT",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "AMAROK",
+        "versions": [
+          {
+            "version": "2.0 TD 180HP 4X2 DC COMFORTLINE AT G2",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "3.0 TD V6 258HP 4X4 DC EXTREME AT L20",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "2.0 TD 180HP 4X2 DC HIGHLINE AT L17",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "2.0 TD 180HP 4X2 DC HIGHLINE PACK AT",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "2.0 TD 180HP 4X2 DC STARLINE L12",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "2.0 TD 140HP 4X2 DC STARLINE L13",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "2.0 TD 180HP 4X2 DC HIGHLINE L17",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "3.0 TD V6 258HP 4X4 DC COMFORTLINE AT L20",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "3.0 TD V6 258HP 4X4 DC HIGHLINE AT L20",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "2.0 TD 180HP 4X2 DC HIGHLINE L12",
+            "fuels": [
+              "DIESEL"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "GOLF",
+        "versions": [
+          {
+            "version": "1.6 VII FSI TRENDLINE L15",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "TIGUAN",
+        "versions": [
+          {
+            "version": "2.0 T ALLSPACE HIGHLINE AT L17",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.4 T 250 TSI ALLSPACE TRENDLINE AT L20",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "2.0 TDI EXCLUSIVE TIPTRONIC L12",
+            "fuels": [
+              "DIESEL"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "SAVEIRO",
+        "versions": [
+          {
+            "version": "1.6 AA PS L13",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.6 CS TRENDLINE L18",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.6 AA PS SAFETY L13",
+            "fuels": [
+              "GNC"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "SURAN",
+        "versions": [
+          {
+            "version": "1.6 TRENDLINE L15",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.6 TRENDLINE L10",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.6 HIGHLINE I MOTION L15",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "T-CROSS",
+        "versions": [
+          {
+            "version": "1.6 TRENDLINE L19",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "VENTO",
+        "versions": [
+          {
+            "version": "2.0 8V ADVANCE L15",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "2.5 170HP ADVANCE PLUS TIPTRONIC L15",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.4 TSI BM TECH COMFORTLINE DSG L16",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "brand": "BAIC",
+    "models": [
+      {
+        "model": "BJ30",
+        "versions": [
+          {
+            "version": "1.5 T 4X2 HYBRID DHT",
+            "fuels": [
+              "HIBRIDO"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "brand": "RENAULT",
+    "models": [
+      {
+        "model": "SANDERO",
+        "versions": [
+          {
+            "version": "1.6 16V GT LINE L12",
+            "fuels": [
+              "GNC"
+            ]
+          },
+          {
+            "version": "1.6 8V PACK L11",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "2.0 16V RS RACING SPIRIT L17",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.6 16V LIFE L19",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.6 16V INTENS CVT ",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "2.0 16V RS L16",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "KANGOO",
+        "versions": [
+          {
+            "version": "EXPRESS 1.5 DCI CONFORT 5AS L18",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "1.6 EXPRESS CONFORT 1 PLC L14",
+            "fuels": [
+              "NAFTA",
+              "GNC"
+            ]
+          },
+          {
+            "version": "EXPRESS 1.6 SCE CONFORT L18",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "DUSTER",
+        "versions": [
+          {
+            "version": "1.3 T 4X4 ICONIC L23",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.3 T 4X2 ICONIC CVT",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.6 4X2 PRIVILEGE L15",
+            "fuels": [
+              "GNC"
+            ]
+          },
+          {
+            "version": "1.6 4X2 EXPRESSION L11",
+            "fuels": [
+              "GNC"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "LOGAN",
+        "versions": [
+          {
+            "version": "1.6 16V PRIVILEGE L13",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "II 1.6 INTENS",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "II 1.6 16V LIFE",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "CAPTUR",
+        "versions": [
+          {
+            "version": "2.0 ZEN",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.6 INTENS CVT",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "KWID",
+        "versions": [
+          {
+            "version": "1.0 OUTSIDER",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.0 ICONIC BT L25",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "STEPWAY",
+        "versions": [
+          {
+            "version": "1.6 INTENS L19",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.6 ZEN",
+            "fuels": [
+              "GNC"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "KARDIAN",
+        "versions": [
+          {
+            "version": "1.6 EVOLUTION L24",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.0 T TECHNO EDC L25",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "CLIO",
+        "versions": [
+          {
+            "version": "MIO 1.2 5 P CONFORT PLUS",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "MIO 1.2 3 P CONFORT",
+            "fuels": [
+              "GNC"
+            ]
+          },
+          {
+            "version": "2 F2 1.2 5 P. AUTHENTIQ PK I",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "brand": "PEUGEOT",
+    "models": [
+      {
+        "model": "207",
+        "versions": [
+          {
+            "version": "COMPACT 2.0 5 P XT HDI",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "COMPACT 1.4 HDI 5 P.XSALLURE",
+            "fuels": [
+              "DIESEL"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "208",
+        "versions": [
+          {
+            "version": "1.6 FELINE TIPTRONIC L24",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.6 ALLURE TOUCH 5P L14",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.6 ALLURE AT L25",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.0 T200 GT AT L26",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.6 LIKE PACK L20",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.5 ACTIVE 5P L13",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.6 ALLURE NAV TIPTRONIC 5P L15",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.5 ALLURE TOUCH 5P L13",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.0 T200 ALLURE PACK AT L25",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.2 LIKE L20",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.6 ACTIVE TIPTRONIC L20",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "308",
+        "versions": [
+          {
+            "version": "1.6 ALLURE L12",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.6 HDI FELINE",
+            "fuels": [
+              "DIESEL"
+            ]
+          },
+          {
+            "version": "1.6 THP ALLURE PACK TIPTRONIC L18",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.6 ALLURE NAV L12",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.6 THP FELINE TIPTRONIC",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.6 ALLURE PACK",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.6 THP CC L09",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "2008",
+        "versions": [
+          {
+            "version": "1.0 T 200 GT CVT L24",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.6 ALLURE L19",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.6 FELINE L16",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.0 T 200 GT CVT L26",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.6 CROSSWAY L18",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "BOXER",
+        "versions": [
+          {
+            "version": "2.2 HDI 140 L2H2 L23",
+            "fuels": [
+              "DIESEL"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "brand": "NISSAN",
+    "models": [
+      {
+        "model": "MARCH",
+        "versions": [
+          {
+            "version": "1.6 ACTIVE PURE DRIVE L14",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "TIIDA",
+        "versions": [
+          {
+            "version": "1.8 ACENTA 5P L10",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "KICKS",
+        "versions": [
+          {
+            "version": "1.6 ADVANCE CVT L17",
+            "fuels": [
+              "GNC"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "VERSA",
+        "versions": [
+          {
+            "version": "1.6 SENSE CVT L21",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.6 ADVANCE PURE DRIVE L15",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "FRONTIER",
+        "versions": [
+          {
+            "version": "2.3 BI TURBO D 4X4 CD X-GEAR AT L22",
+            "fuels": [
+              "DIESEL"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "NOTE",
+        "versions": [
+          {
+            "version": "1.6 EXCLUSIVE PURE DRIVE CVT L15",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "brand": "BMW",
+    "models": [
+      {
+        "model": "118",
+        "versions": [
+          {
+            "version": "I ACTIVE AT 5P L16",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "320",
+        "versions": [
+          {
+            "version": "I SEDAN SPORTLINE",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "I SEDAN SPORTLINE L18",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "X1",
+        "versions": [
+          {
+            "version": "20 I SDRIVE SPORT",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "X3",
+        "versions": [
+          {
+            "version": "20 D XDRIVE EXECUTIVE",
+            "fuels": [
+              "DIESEL"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "X4",
+        "versions": [
+          {
+            "version": "20 I XDRIVE ACTIVE",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "X2",
+        "versions": [
+          {
+            "version": "20I SDRIVE M SPORT III",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "brand": "DS AUTOMOBILES",
+    "models": [
+      {
+        "model": "DS7",
+        "versions": [
+          {
+            "version": "1.6 THP CROSSBACK PERFOR. LINE L19",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.6 THP E-TENSE 4X4 BASTILLE+",
+            "fuels": [
+              "HIBRIDO"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "DS3",
+        "versions": [
+          {
+            "version": "1.2 T CROSSBACK RIVOLI PURETECH AT8",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.2 T PURE TECH SO CHIC CABRIO L17",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "brand": "MERCEDES BENZ",
+    "models": [
+      {
+        "model": "C",
+        "versions": [
+          {
+            "version": "250 AVANTGARDE AUT",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "200 AVANTGARDE AT",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "A",
+        "versions": [
+          {
+            "version": "200 SEDAN PROGRESSIVE L19",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "VITO",
+        "versions": [
+          {
+            "version": "111 CDI FURGON PLUS AA L17",
+            "fuels": [
+              "DIESEL"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "brand": "CHEVROLET",
+    "models": [
+      {
+        "model": "ONIX",
+        "versions": [
+          {
+            "version": "1.0 T PREMIER 5P L19",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.0 T LT 5P L24",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "SPIN",
+        "versions": [
+          {
+            "version": "1.8 LTZ AT 7AS L12",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "TRACKER",
+        "versions": [
+          {
+            "version": "1.8 4X2 LTZ L13",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.2 T LT AT L26",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "S-10",
+        "versions": [
+          {
+            "version": "2.8 TD DC 4X4 WT AT L26",
+            "fuels": [
+              "DIESEL"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "PRISMA",
+        "versions": [
+          {
+            "version": "1.4 LTZ L16",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "EQUINOX",
+        "versions": [
+          {
+            "version": "1.5 T 4X2 LS AT6 L18",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "CLASSIC",
+        "versions": [
+          {
+            "version": "1.4 LS ABS AB 4P L14",
+            "fuels": [
+              "GNC"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "CELTA",
+        "versions": [
+          {
+            "version": "1.4 LT AB ABS 5P L13",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "brand": "MINI",
+    "models": [
+      {
+        "model": "COOPER",
+        "versions": [
+          {
+            "version": "S CHILI 5P L15",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "PEPPER 5P AT",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "S CHILI L15",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "COUPE",
+        "versions": [
+          {
+            "version": "S L12",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "brand": "HONDA",
+    "models": [
+      {
+        "model": "HRV",
+        "versions": [
+          {
+            "version": "1.8 EX CVT L15",
+            "fuels": [
+              "NAFTA"
+            ]
+          },
+          {
+            "version": "1.8 LX CVT L15",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "FIT",
+        "versions": [
+          {
+            "version": "1.4 LXL 5P L09",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "CRV",
+        "versions": [
+          {
+            "version": "2.4 4X4 EXL AT L07",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "brand": "HYUNDAI",
+    "models": [
+      {
+        "model": "GRAND SANTA FE",
+        "versions": [
+          {
+            "version": "2.2 CRDI GLS AT6 7P L18",
+            "fuels": [
+              "DIESEL"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "H1",
+        "versions": [
+          {
+            "version": "2.5 CRDI VGT FULL 12AS L12",
+            "fuels": [
+              "DIESEL"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "TUCSON",
+        "versions": [
+          {
+            "version": "2.0 4X4 PREMIUM AT L16",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "brand": "DODGE",
+    "models": [
+      {
+        "model": "JOURNEY",
+        "versions": [
+          {
+            "version": "2.4 SXT FULL L10",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "brand": "PORSCHE",
+    "models": [
+      {
+        "model": "CAYENNE",
+        "versions": [
+          {
+            "version": "3.0 TD TIPTRONIC L11",
+            "fuels": [
+              "DIESEL"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "brand": "CHANGAN",
+    "models": [
+      {
+        "model": "CS55 PLUS",
+        "versions": [
+          {
+            "version": "1.5 HEV DHT",
+            "fuels": [
+              "HIBRIDO"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "brand": "CHERY",
+    "models": [
+      {
+        "model": "TIGGO",
+        "versions": [
+          {
+            "version": "3 1.6 4X2 LUXURY L17",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "TIGGO 4PRO",
+        "versions": [
+          {
+            "version": "1.5 16V LUXURY CVT",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "brand": "KIA",
+    "models": [
+      {
+        "model": "CERATO",
+        "versions": [
+          {
+            "version": "2.0 SX AT 5P L18",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      },
+      {
+        "model": "RIO",
+        "versions": [
+          {
+            "version": "1.6 SX 5P AT",
+            "fuels": [
+              "NAFTA"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "brand": "BENELLI",
+    "models": [
+      {
+        "model": "LEONCINO",
+        "versions": [
+          {
+            "version": "500",
+            "fuels": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "brand": "BETAMOTOR",
+    "models": [
+      {
+        "model": "ZONTES",
+        "versions": [
+          {
+            "version": "T310",
+            "fuels": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "brand": "CFMOTO",
+    "models": [
+      {
+        "model": "700CLX",
+        "versions": [
+          {
+            "version": "HERITAGE",
+            "fuels": []
+          }
+        ]
+      }
+    ]
+  }
+]
