@@ -68,7 +68,19 @@ export function Publish() {
   useEffect(() => {
     if (!user) return;
     getDoc(doc(db, 'users', user.uid)).then(snap => {
-      if (snap.exists()) setUserProfile(snap.data());
+      if (snap.exists()) {
+        const data = snap.data();
+        setUserProfile(data);
+        
+        // Pre-llenado de ubicación basada en la concesionaria
+        if (data.province || data.city) {
+          setFormData(prev => ({
+            ...prev,
+            province: data.province || prev.province,
+            city: data.city || prev.city
+          }));
+        }
+      }
     });
   }, [user]);
 

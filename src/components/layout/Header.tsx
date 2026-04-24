@@ -156,6 +156,8 @@ export function Header() {
                 cuil: isVendedor ? '20-99999999-9' : '20-88888888-8',
                 phone: isVendedor ? '+54 9 11 5555-0001' : '+54 9 11 5555-0002',
                 company: companyName,
+                province: isVendedor ? 'buenosaires' : (isComprador ? 'caba' : ''),
+                city: isVendedor ? 'ba-sanisidro' : (isComprador ? 'caba-palermo' : ''),
                 plan: 'platinum',
                 role: 'user',
                 status: 'approved',
@@ -278,7 +280,10 @@ export function Header() {
                       <User className="mr-2 h-4 w-4" />
                       Perfil
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="rounded-xl font-bold uppercase tracking-widest text-[10px] px-3 py-2 cursor-pointer">
+                    <DropdownMenuItem 
+                      className="rounded-xl font-bold uppercase tracking-widest text-[10px] px-3 py-2 cursor-pointer"
+                      onClick={() => navigate('/profile')}
+                    >
                       <Building2 className="mr-2 h-4 w-4" />
                       Mi Concesionaria
                     </DropdownMenuItem>

@@ -102,6 +102,8 @@ export function Login() {
             cuil: type === 'vendedor' ? '20-99999999-9' : '20-88888888-8',
             phone: type === 'vendedor' ? '+54 9 11 5555-0001' : '+54 9 11 5555-0002',
             company: companyName,
+            province: type === 'vendedor' ? 'buenosaires' : (type === 'comprador' ? 'caba' : ''),
+            city: type === 'vendedor' ? 'ba-sanisidro' : (type === 'comprador' ? 'caba-palermo' : ''),
             plan: 'platinum',
             role: 'user',
             status: 'approved',
