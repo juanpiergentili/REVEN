@@ -142,7 +142,8 @@ export function Marketplace() {
   useEffect(() => {
     const unsub = subscribeToVehicles(
       (data) => {
-        setVehicles(data.length > 0 ? data : MOCK_VEHICLES_FALLBACK);
+        // Combinamos los datos reales con los mocks para que no se vea vacío durante desarrollo
+        setVehicles([...data, ...MOCK_VEHICLES_FALLBACK]);
         setLoadingVehicles(false);
       },
       () => {
