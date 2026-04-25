@@ -167,9 +167,11 @@ export function Publish() {
     setSubmitting(true);
     setError(null);
     try {
-      const cityName = selectedProvince?.localidades.find(l => l.id === formData.city)?.nombre || '';
-      const provinceName = selectedProvince?.nombre || '';
+      const cityName = selectedProvince?.localidades.find(l => l.id === formData.city)?.nombre || formData.city || '';
+      const provinceName = selectedProvince?.nombre || formData.province || '';
       const location = cityName ? `${cityName}, ${provinceName}` : provinceName;
+
+      console.log('Creating vehicle with data:', { sellerId: user.uid, location });
 
       const vehicleId = await createVehicle({
         sellerId: user.uid,
@@ -200,14 +202,18 @@ export function Publish() {
 
       if (photos.length > 0) {
         try {
+          console.log('Uploading', photos.length, 'photos for vehicle:', vehicleId);
           const urls = await uploadVehiclePhotos(photos, vehicleId);
           await updateVehiclePhotos(vehicleId, urls);
-        } catch (photoErr) {
-          // Vehicle is already created — navigate anyway, photos can be added later
-          console.warn('Photo upload failed, vehicle created without photos:', photoErr);
+          console.log('Photos uploaded successfully');
+        } catch (photoErr: any) {
+          console.error('Photo upload failed:', photoErr);
+          // Don't block the user if only photos failed, but alert them
+          alert('El vehículo se publicó pero no pudimos subir las fotos. Podrás agregarlas luego desde tu perfil.');
         }
       }
 
+      console.log('Publishing complete, navigating...');
       navigate('/marketplace');
     } catch (e: any) {
       console.error('Publish error:', e?.code, e?.message, e);
@@ -442,9 +448,18 @@ export function Publish() {
 
                 {/* Provincia */}
                 <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Provincia</Label>
-                  <Select value={formData.province} onValueChange={v => { update('province', v); update('city', ''); }}>
-                    <SelectTrigger className="h-14 rounded-2xl bg-white/5 border-white/10 font-bold">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Provincia</Label>
+                    {userProfile?.province && (
+                      <span className="text-[8px] font-bold text-primary uppercase">Vinculado a tu Agencia</span>
+                    )}
+                  </div>
+                  <Select 
+                    value={formData.province} 
+                    onValueChange={v => { update('province', v); update('city', ''); }}
+                    disabled={!!userProfile?.province}
+                  >
+                    <SelectTrigger className={`h-14 rounded-2xl bg-white/5 border-white/10 font-bold ${userProfile?.province ? 'opacity-70' : ''}`}>
                       <SelectValue placeholder="Seleccionar provincia" />
                     </SelectTrigger>
                     <SelectContent className="rounded-2xl max-h-72">
@@ -457,13 +472,18 @@ export function Publish() {
 
                 {/* Ciudad */}
                 <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Localidad</Label>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Localidad</Label>
+                    {userProfile?.city && (
+                      <span className="text-[8px] font-bold text-primary uppercase">Vinculado a tu Agencia</span>
+                    )}
+                  </div>
                   <Select
                     value={formData.city}
                     onValueChange={v => update('city', v)}
-                    disabled={!selectedProvince}
+                    disabled={!selectedProvince || !!userProfile?.city}
                   >
-                    <SelectTrigger className="h-14 rounded-2xl bg-white/5 border-white/10 font-bold">
+                    <SelectTrigger className={`h-14 rounded-2xl bg-white/5 border-white/10 font-bold ${userProfile?.city ? 'opacity-70' : ''}`}>
                       <SelectValue placeholder={selectedProvince ? 'Seleccionar localidad' : 'Primero elegí provincia'} />
                     </SelectTrigger>
                     <SelectContent className="rounded-2xl max-h-72">

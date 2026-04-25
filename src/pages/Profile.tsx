@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Eye, MessageSquare, Clock, BarChart3, Calendar, TrendingUp, Award, MapPin, Building2, Phone, Mail, Loader2 } from 'lucide-react';
+import { ChevronLeft, Eye, MessageSquare, Clock, BarChart3, Calendar, TrendingUp, Award, MapPin, Building2, Phone, Mail, Loader2, ShoppingBag, Plus, Settings, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { motion } from 'motion/react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatLastOnline, getAverageResponseTime, getResponseBadge } from '@/src/lib/analytics';
 import { useAuth, db } from '@/src/lib/firebase';
-import { doc, getDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, orderBy, updateDoc } from 'firebase/firestore';
 import { PROVINCIAS_ARGENTINA } from '@/src/data/argentina-geo';
 import { MOCK_VEHICLES_FALLBACK } from '@/src/data/mock-vehicles';
 import type { Vehicle } from '../types';
@@ -46,6 +50,16 @@ export function Profile() {
   const [loading, setLoading] = useState(true);
   const [profileData, setProfileData] = useState<any>(null);
   const [userListings, setUserListings] = useState<Vehicle[]>([]);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
+  const [editForm, setEditForm] = useState({
+    company: '',
+    province: '',
+    city: '',
+    phone: '',
+    name: '',
+    lastName: ''
+  });
   
   const targetUid = uid || user?.uid;
   const isOwnProfile = !uid || uid === user?.uid;
@@ -56,13 +70,19 @@ export function Profile() {
       
       setLoading(true);
       try {
-        // Fetch user document
         const userDoc = await getDoc(doc(db, 'users', targetUid));
         if (userDoc.exists()) {
           const data = userDoc.data();
           setProfileData(data);
+          setEditForm({
+            company: data.company || '',
+            province: data.province || '',
+            city: data.city || '',
+            phone: data.phone || '',
+            name: data.name || '',
+            lastName: data.lastName || ''
+          });
           
-          // Fetch user listings from Firestore
           const listingsQuery = query(
             collection(db, 'vehicles'),
             where('sellerId', '==', targetUid),
@@ -71,10 +91,8 @@ export function Profile() {
           const listingsSnap = await getDocs(listingsQuery);
           const realVehicles = listingsSnap.docs.map(d => ({ ...d.data(), id: d.id } as Vehicle));
           
-          // Inyectar MOCK data específicos según el rol para el test de mensajería
           let mockListings: Vehicle[] = [];
           if (data.email === 'vendedor.test@reven.com.ar') {
-            // El Vendedor es el dueño de los 3 vehículos principales para que el comprador pueda consultarle
             mockListings = MOCK_VEHICLES_FALLBACK.filter(v => ['1', '2', '3'].includes(v.id));
           }
           
@@ -89,6 +107,23 @@ export function Profile() {
     
     fetchProfile();
   }, [targetUid]);
+
+  const handleUpdateProfile = async () => {
+    if (!user) return;
+    setEditLoading(true);
+    try {
+      await updateDoc(doc(db, 'users', user.uid), {
+        ...editForm,
+        updatedAt: new Date()
+      });
+      setProfileData((prev: any) => ({ ...prev, ...editForm }));
+      setIsEditDialogOpen(false);
+    } catch (err) {
+      console.error('Error updating profile:', err);
+    } finally {
+      setEditLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -111,13 +146,11 @@ export function Profile() {
   const responseTimestamps = profileData.responseTimestamps || [12, 15, 8, 20];
   const responseBadge = getResponseBadge(responseTimestamps);
   
-  // Localización legible
   const provinceName = PROVINCIAS_ARGENTINA.find(p => p.id === profileData.province)?.nombre || profileData.province || 'No especificada';
   const cityName = PROVINCIAS_ARGENTINA.find(p => p.id === profileData.province)?.localidades.find(l => l.id === profileData.city)?.nombre || profileData.city || '';
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      {/* Header */}
       <div className="border-b border-white/5 bg-black/40 backdrop-blur-xl sticky top-20 z-40">
         <div className="container mx-auto px-4 md:px-8 py-6 flex items-center justify-between">
           <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="rounded-full font-bold uppercase tracking-widest text-[10px] gap-2">
@@ -132,7 +165,6 @@ export function Profile() {
       </div>
 
       <main className="container mx-auto px-4 md:px-8 py-12 max-w-6xl">
-        {/* Profile Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -177,6 +209,27 @@ export function Profile() {
               <span className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" /> {profileData.email}</span>
               <span className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" /> {profileData.phone}</span>
             </div>
+            
+            {isOwnProfile && (
+              <div className="pt-4 flex gap-4">
+                <Button 
+                  onClick={() => setIsEditDialogOpen(true)}
+                  variant="outline" 
+                  size="sm"
+                  className="rounded-xl font-bold uppercase tracking-widest text-[10px] gap-2 border-primary/20 hover:bg-primary/5"
+                >
+                  <Settings className="h-3.5 w-3.5" /> Configurar Mi Concesionaria
+                </Button>
+                <Button 
+                  onClick={() => navigate('/publish')}
+                  variant="default" 
+                  size="sm"
+                  className="rounded-xl font-bold uppercase tracking-widest text-[10px] gap-2 shadow-lg shadow-primary/20"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Publicar Unidad
+                </Button>
+              </div>
+            )}
           </div>
 
           {!isOwnProfile && (
@@ -190,7 +243,6 @@ export function Profile() {
           )}
         </motion.div>
 
-        {/* Stats Grid */}
         <div className="mb-16">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-2xl font-bold tracking-tighter uppercase flex items-center gap-3">
@@ -213,7 +265,6 @@ export function Profile() {
 
         <Separator className="bg-white/5 mb-16" />
 
-        {/* Listings */}
         <div>
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-2xl font-bold tracking-tighter uppercase flex items-center gap-3">
@@ -279,9 +330,96 @@ export function Profile() {
           )}
         </div>
       </main>
+
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-2xl rounded-[2.5rem] border-border bg-card/95 backdrop-blur-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-3xl font-bold tracking-tighter uppercase">Configuración de Concesionaria</DialogTitle>
+            <DialogDescription className="font-medium">Viculá los datos de tu agencia para que se reflejen en tus publicaciones.</DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+            <div className="space-y-2 col-span-1 md:col-span-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Nombre de la Agencia / Concesionaria</Label>
+              <Input 
+                value={editForm.company}
+                onChange={e => setEditForm(prev => ({ ...prev, company: e.target.value }))}
+                placeholder="Automotores Reven S.A." 
+                className="h-12 rounded-xl bg-white/5 border-white/10 font-bold"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Provincia</Label>
+              <Select 
+                value={editForm.province} 
+                onValueChange={v => setEditForm(prev => ({ ...prev, province: v, city: '' }))}
+              >
+                <SelectTrigger className="h-12 rounded-xl bg-white/5 border-white/10 font-bold">
+                  <SelectValue placeholder="Seleccionar" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  {PROVINCIAS_ARGENTINA.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Localidad</Label>
+              <Select 
+                value={editForm.city} 
+                onValueChange={v => setEditForm(prev => ({ ...prev, city: v }))}
+                disabled={!editForm.province}
+              >
+                <SelectTrigger className="h-12 rounded-xl bg-white/5 border-white/10 font-bold">
+                  <SelectValue placeholder="Seleccionar" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  {PROVINCIAS_ARGENTINA.find(p => p.id === editForm.province)?.localidades.map(l => (
+                    <SelectItem key={l.id} value={l.id}>{l.nombre}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Teléfono Público</Label>
+              <Input 
+                value={editForm.phone}
+                onChange={e => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="+54 9 11 ..." 
+                className="h-12 rounded-xl bg-white/5 border-white/10 font-bold"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Tu Nombre de Contacto</Label>
+              <Input 
+                value={editForm.name}
+                onChange={e => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Nombre" 
+                className="h-12 rounded-xl bg-white/5 border-white/10 font-bold"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="pt-4">
+            <Button variant="ghost" onClick={() => setIsEditDialogOpen(false)} className="rounded-xl font-bold uppercase tracking-widest text-xs">
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleUpdateProfile} 
+              disabled={editLoading}
+              className="rounded-xl font-bold uppercase tracking-widest text-xs gap-2 min-w-[140px]"
+            >
+              {editLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Guardar Cambios
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-
-// Missing imports fix
-import { ShoppingBag, Plus } from 'lucide-react';

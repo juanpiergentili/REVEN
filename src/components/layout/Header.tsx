@@ -211,7 +211,7 @@ export function Header() {
       <div className="container mx-auto flex h-20 items-center justify-between px-4 md:px-8">
         <div className="flex items-center gap-12">
           <Link to="/" className="flex items-center space-x-2 group">
-            <Logo className="text-2xl" variant="auto" />
+            <Logo className="text-4xl" variant="auto" />
           </Link>
 
           <nav className="hidden md:flex items-center gap-8">
