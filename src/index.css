@@ -74,16 +74,9 @@
     --card-radius: 2.5rem;
 }
 
-* {
-  border-radius: inherit;
+.capitalize-first::first-letter {
+  text-transform: uppercase;
 }
-
-  /* Solo los triggers de los selectores (dropdowns) tienen 5px */
-  [role="combobox"], 
-  button[id^="radix-"],
-  .select-trigger-5px {
-    border-radius: 5px !important;
-  }
 
   .capitalize-first::first-letter {
     text-transform: uppercase;

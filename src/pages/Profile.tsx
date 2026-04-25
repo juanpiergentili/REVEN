@@ -216,7 +216,7 @@ export function Profile() {
                   onClick={() => setIsEditDialogOpen(true)}
                   variant="outline" 
                   size="sm"
-                  className="rounded-xl font-bold uppercase tracking-widest text-[10px] gap-2 border-primary/20 hover:bg-primary/5"
+                  className="rounded-full font-bold uppercase tracking-widest text-[10px] gap-2 border-primary/20 hover:bg-primary/5 h-10 px-6"
                 >
                   <Settings className="h-3.5 w-3.5" /> Configurar Mi Concesionaria
                 </Button>
@@ -224,7 +224,7 @@ export function Profile() {
                   onClick={() => navigate('/publish')}
                   variant="default" 
                   size="sm"
-                  className="rounded-xl font-bold uppercase tracking-widest text-[10px] gap-2 shadow-lg shadow-primary/20"
+                  className="rounded-full font-bold uppercase tracking-widest text-[10px] gap-2 shadow-lg shadow-primary/20 h-10 px-6"
                 >
                   <Plus className="h-3.5 w-3.5" /> Publicar Unidad
                 </Button>
@@ -332,35 +332,35 @@ export function Profile() {
       </main>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl rounded-[2.5rem] border-border bg-card/95 backdrop-blur-2xl">
+        <DialogContent className="max-w-2xl rounded-[3rem] border-border bg-card/95 backdrop-blur-2xl p-10">
           <DialogHeader>
             <DialogTitle className="text-3xl font-bold tracking-tighter uppercase">Configuración de Concesionaria</DialogTitle>
-            <DialogDescription className="font-medium">Viculá los datos de tu agencia para que se reflejen en tus publicaciones.</DialogDescription>
+            <DialogDescription className="font-medium text-white/50">Vinculá los datos de tu agencia para que se reflejen en tus publicaciones.</DialogDescription>
           </DialogHeader>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
-            <div className="space-y-2 col-span-1 md:col-span-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Nombre de la Agencia / Concesionaria</Label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6">
+            <div className="space-y-3 col-span-1 md:col-span-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-primary">Nombre de la Agencia / Concesionaria</Label>
               <Input 
                 value={editForm.company}
                 onChange={e => setEditForm(prev => ({ ...prev, company: e.target.value }))}
                 placeholder="Automotores Reven S.A." 
-                className="h-12 rounded-xl bg-white/5 border-white/10 font-bold"
+                className="h-14 rounded-[2.5rem] bg-white/5 border-white/10 font-bold px-6"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Provincia</Label>
+            <div className="space-y-3">
+              <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-primary">Provincia</Label>
               <Select 
                 value={editForm.province} 
                 onValueChange={v => setEditForm(prev => ({ ...prev, province: v, city: '' }))}
               >
-                <SelectTrigger className="h-12 bg-white/5 border-white/10 font-bold">
+                <SelectTrigger className="h-14 rounded-[2.5rem] bg-white/5 border-white/10 font-bold px-6">
                   <SelectValue>
                     {PROVINCIAS_ARGENTINA.find(p => p.id === editForm.province)?.nombre || 'Seleccionar'}
                   </SelectValue>
                 </SelectTrigger>
-                <SelectContent className="rounded-xl">
+                <SelectContent className="rounded-[2.5rem]">
                   {PROVINCIAS_ARGENTINA.map(p => (
                     <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
                   ))}
@@ -375,12 +375,12 @@ export function Profile() {
                 onValueChange={v => setEditForm(prev => ({ ...prev, city: v }))}
                 disabled={!editForm.province}
               >
-                <SelectTrigger className="h-12 bg-white/5 border-white/10 font-bold">
+                <SelectTrigger className="h-14 rounded-[2.5rem] bg-white/5 border-white/10 font-bold px-6">
                   <SelectValue>
                     {PROVINCIAS_ARGENTINA.find(p => p.id === editForm.province)?.localidades.find(l => l.id === editForm.city)?.nombre || 'Seleccionar'}
                   </SelectValue>
                 </SelectTrigger>
-                <SelectContent className="rounded-xl">
+                <SelectContent className="rounded-[2.5rem]">
                   {PROVINCIAS_ARGENTINA.find(p => p.id === editForm.province)?.localidades.map(l => (
                     <SelectItem key={l.id} value={l.id}>{l.nombre}</SelectItem>
                   ))}

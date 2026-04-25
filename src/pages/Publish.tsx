@@ -246,10 +246,9 @@ export function Publish() {
         ))}
       </div>
 
-      <Card className="border-white/5 bg-white/5 backdrop-blur-xl shadow-2xl rounded-[3rem] overflow-hidden">
+      <Card className="border-white/5 bg-white/5 backdrop-blur-xl shadow-2xl rounded-[3.5rem] overflow-hidden">
         <CardContent className="p-10">
 
-          {/* Error banner */}
           {error && (
             <div className="flex items-center gap-3 mb-6 p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium">
               <AlertCircle className="h-4 w-4 shrink-0" />
@@ -257,12 +256,10 @@ export function Publish() {
             </div>
           )}
 
-          {/* STEP 1 — Datos del vehículo */}
           {step === 1 && (
             <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
-                {/* Marca */}
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Marca</Label>
                   <Select value={formData.brand} onValueChange={handleBrandSelect}>
@@ -277,7 +274,6 @@ export function Publish() {
                   </Select>
                 </div>
 
-                {/* Modelo */}
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Modelo</Label>
                   {selectedBrand ? (
@@ -301,7 +297,6 @@ export function Publish() {
                   )}
                 </div>
 
-                {/* Versión */}
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Versión</Label>
                   {selectedModel ? (
@@ -325,7 +320,6 @@ export function Publish() {
                   )}
                 </div>
 
-                {/* Año */}
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Año</Label>
                   <Select value={formData.year} onValueChange={v => update('year', v)}>
@@ -340,7 +334,6 @@ export function Publish() {
                   </Select>
                 </div>
 
-                {/* Kilometraje */}
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Kilometraje</Label>
                   <Input
@@ -353,7 +346,6 @@ export function Publish() {
                   />
                 </div>
 
-                {/* Condición */}
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Condición</Label>
                   <Select value={formData.condition} onValueChange={v => update('condition', v as 'USADO' | '0KM')}>
@@ -367,7 +359,6 @@ export function Publish() {
                   </Select>
                 </div>
 
-                {/* Combustible */}
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Combustible</Label>
                   <Select value={formData.fuelType} onValueChange={v => update('fuelType', v)}>
@@ -382,7 +373,6 @@ export function Publish() {
                   </Select>
                 </div>
 
-                {/* Transmisión */}
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Transmisión</Label>
                   <Select value={formData.transmission} onValueChange={v => update('transmission', v)}>
@@ -397,7 +387,6 @@ export function Publish() {
                   </Select>
                 </div>
 
-                {/* Carrocería */}
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Carrocería</Label>
                   <Select value={formData.bodyType} onValueChange={v => update('bodyType', v)}>
@@ -412,7 +401,6 @@ export function Publish() {
                   </Select>
                 </div>
 
-                {/* Color */}
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Color</Label>
                   <Select value={formData.color} onValueChange={v => update('color', v)}>
@@ -432,7 +420,6 @@ export function Publish() {
                   </Select>
                 </div>
 
-                {/* Provincia */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Provincia</Label>
@@ -445,7 +432,7 @@ export function Publish() {
                     onValueChange={v => { update('province', v); update('city', ''); }}
                     disabled={!!userProfile?.province}
                   >
-                    <SelectTrigger className={`h-14 bg-white/5 border-white/10 font-bold ${userProfile?.province ? 'opacity-70' : ''}`}>
+                    <SelectTrigger className={`h-14 rounded-2xl bg-white/5 border-white/10 font-bold ${userProfile?.province ? 'opacity-70' : ''}`}>
                       <SelectValue>
                         {PROVINCIAS_ARGENTINA.find(p => p.id === formData.province)?.nombre || 'Seleccionar provincia'}
                       </SelectValue>
@@ -458,7 +445,6 @@ export function Publish() {
                   </Select>
                 </div>
 
-                {/* Ciudad */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Localidad</Label>
@@ -471,7 +457,7 @@ export function Publish() {
                     onValueChange={v => update('city', v)}
                     disabled={!selectedProvince || !!userProfile?.city}
                   >
-                    <SelectTrigger className={`h-14 bg-white/5 border-white/10 font-bold ${userProfile?.city ? 'opacity-70' : ''}`}>
+                    <SelectTrigger className={`h-14 rounded-2xl bg-white/5 border-white/10 font-bold ${userProfile?.city ? 'opacity-70' : ''}`}>
                       <SelectValue>
                         {selectedProvince?.localidades.find(l => l.id === formData.city)?.nombre || (selectedProvince ? 'Seleccionar localidad' : 'Primero elegí provincia')}
                       </SelectValue>
@@ -493,7 +479,6 @@ export function Publish() {
             </motion.div>
           )}
 
-          {/* STEP 2 — Fotos */}
           {step === 2 && (
             <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-8">
               <input
@@ -505,7 +490,6 @@ export function Publish() {
                 onChange={e => addPhotos(e.target.files)}
               />
 
-              {/* Drop zone */}
               <div
                 className={`border-4 border-dashed rounded-[2rem] p-12 text-center space-y-6 cursor-pointer transition-all group ${
                   isDragging ? 'border-primary/60 bg-primary/5' : 'border-white/5 bg-white/5 hover:border-primary/30'
@@ -533,7 +517,6 @@ export function Publish() {
                 )}
               </div>
 
-              {/* Previews */}
               {photoPreviews.length > 0 && (
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
                   {photoPreviews.map((url, i) => (
@@ -566,7 +549,6 @@ export function Publish() {
             </motion.div>
           )}
 
-          {/* STEP 3 — Legal y Estado */}
           {step === 3 && (
             <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-8">
               <h3 className="text-xl font-bold tracking-tighter uppercase">Documentación y Estado</h3>
@@ -615,7 +597,6 @@ export function Publish() {
             </motion.div>
           )}
 
-          {/* STEP 4 — Precio */}
           {step === 4 && (
             <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-8">
               <h3 className="text-xl font-bold tracking-tighter uppercase">Precio y Condiciones de Venta</h3>
@@ -646,7 +627,6 @@ export function Publish() {
                 </div>
               </div>
 
-              {/* Resumen */}
               <div className="p-6 rounded-3xl bg-white/5 border border-white/10 space-y-3 text-sm">
                 <p className="font-black uppercase tracking-widest text-[10px] text-muted-foreground mb-4">Resumen de publicación</p>
                 <p><span className="text-muted-foreground">Vehículo:</span> <span className="font-bold">{formData.brand} {formData.model} {formData.version}</span></p>
@@ -666,10 +646,11 @@ export function Publish() {
                 <Button variant="ghost" onClick={prevStep} disabled={submitting} className="h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-white/5">
                   <ArrowLeft className="h-5 w-5 stroke-[3]" /> Anterior
                 </Button>
-                <Button
+                <Button 
+                  type="submit" 
                   onClick={handleSubmit}
                   disabled={submitting}
-                  className="h-14 px-10 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
+                  className="w-full h-16 rounded-full font-bold uppercase tracking-[0.2em] text-lg shadow-xl shadow-primary/20 group relative overflow-hidden active:scale-[0.98] transition-transform"
                 >
                   {submitting ? (
                     <><Loader2 className="h-5 w-5 animate-spin" /> Publicando...</>
