@@ -48,6 +48,7 @@
     --radius-2xl: calc(var(--radius) * 1.8);
     --radius-3xl: calc(var(--radius) * 2.2);
     --radius-4xl: calc(var(--radius) * 2.6);
+    --radius: 5px;
 }
 
 :root {
@@ -69,8 +70,21 @@
     --border: oklch(0.85 0.01 0);
     --input: oklch(0.85 0.01 0);
     --ring: oklch(0.75 0.21 115);
-    --radius: 1.25rem;
+    --radius: 5px;
+    --card-radius: 5px;
 }
+
+* {
+  border-radius: inherit;
+}
+
+  input, select, textarea, button, div[class*="rounded-"] {
+    border-radius: 5px !important;
+  }
+
+  .capitalize-first::first-letter {
+    text-transform: uppercase;
+  }
 
 .dark {
     --background: oklch(0.25 0.01 0); /* #292929 */

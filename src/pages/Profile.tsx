@@ -355,8 +355,10 @@ export function Profile() {
                 value={editForm.province} 
                 onValueChange={v => setEditForm(prev => ({ ...prev, province: v, city: '' }))}
               >
-                <SelectTrigger className="h-12 rounded-xl bg-white/5 border-white/10 font-bold">
-                  <SelectValue placeholder="Seleccionar" />
+                <SelectTrigger className="h-12 rounded bg-white/5 border-white/10 font-bold">
+                  <SelectValue>
+                    {PROVINCIAS_ARGENTINA.find(p => p.id === editForm.province)?.nombre || 'Seleccionar'}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
                   {PROVINCIAS_ARGENTINA.map(p => (
@@ -373,8 +375,10 @@ export function Profile() {
                 onValueChange={v => setEditForm(prev => ({ ...prev, city: v }))}
                 disabled={!editForm.province}
               >
-                <SelectTrigger className="h-12 rounded-xl bg-white/5 border-white/10 font-bold">
-                  <SelectValue placeholder="Seleccionar" />
+                <SelectTrigger className="h-12 rounded bg-white/5 border-white/10 font-bold">
+                  <SelectValue>
+                    {PROVINCIAS_ARGENTINA.find(p => p.id === editForm.province)?.localidades.find(l => l.id === editForm.city)?.nombre || 'Seleccionar'}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
                   {PROVINCIAS_ARGENTINA.find(p => p.id === editForm.province)?.localidades.map(l => (

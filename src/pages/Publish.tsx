@@ -137,15 +137,17 @@ export function Publish() {
 
   const validateStep = (s: number): string | null => {
     if (s === 1) {
-      if (!formData.brand) return 'Seleccioná una marca';
-      if (!formData.model) return 'Seleccioná o ingresá el modelo';
-      if (!formData.year) return 'Seleccioná el año';
-      if (formData.km === '') return 'Ingresá el kilometraje';
-      if (!formData.fuelType) return 'Seleccioná el combustible';
-      if (!formData.province) return 'Seleccioná la provincia';
+      if (!formData.brand) return 'Por favor, seleccioná la marca del vehículo.';
+      if (!formData.model) return 'Ingresá el modelo para continuar.';
+      if (!formData.year) return 'Debés indicar el año de fabricación.';
+      if (formData.condition === 'USADO' && (formData.km === '' || Number(formData.km) < 0)) {
+        return 'Para vehículos usados, el kilometraje es obligatorio.';
+      }
+      if (!formData.fuelType) return 'Seleccioná el tipo de combustible.';
+      if (!formData.province) return 'Indicá en qué provincia se encuentra la unidad.';
     }
     if (s === 4) {
-      if (!formData.price || Number(formData.price) <= 0) return 'Ingresá un precio válido';
+      if (!formData.price || Number(formData.price) <= 0) return 'El precio debe ser mayor a 0.';
     }
     return null;
   };
@@ -171,16 +173,14 @@ export function Publish() {
       const provinceName = selectedProvince?.nombre || formData.province || '';
       const location = cityName ? `${cityName}, ${provinceName}` : provinceName;
 
-      console.log('Creating vehicle with data:', { sellerId: user.uid, location });
-
-      const vehicleId = await createVehicle({
+      const vId = await createVehicle({
         sellerId: user.uid,
-        sellerName: userProfile?.companyName || userProfile?.company || userProfile?.name || user.displayName || 'Agencia',
+        sellerName: userProfile?.company || userProfile?.name || user.displayName || 'Agencia',
         brand: formData.brand,
         model: formData.model,
         version: formData.version,
         year: Number(formData.year),
-        km: Number(formData.km),
+        km: formData.condition === '0KM' ? 0 : Number(formData.km),
         fuelType: formData.fuelType as FuelType,
         bodyType: (formData.bodyType || undefined) as BodyType | undefined,
         transmission: (formData.transmission || undefined) as Transmission | undefined,
@@ -200,32 +200,18 @@ export function Publish() {
         gncObleaVigente: formData.gncObleaVigente,
       });
 
+      // Start upload in background and REDIRECT IMMEDIATELY
       if (photos.length > 0) {
-        try {
-          console.log('Uploading', photos.length, 'photos for vehicle:', vehicleId);
-          const urls = await uploadVehiclePhotos(photos, vehicleId);
-          await updateVehiclePhotos(vehicleId, urls);
-          console.log('Photos uploaded successfully');
-        } catch (photoErr: any) {
-          console.error('Photo upload failed:', photoErr);
-          // Don't block the user if only photos failed, but alert them
-          alert('El vehículo se publicó pero no pudimos subir las fotos. Podrás agregarlas luego desde tu perfil.');
-        }
+        uploadVehiclePhotos(photos, vId)
+          .then(urls => updateVehiclePhotos(vId, urls))
+          .catch(err => console.error('Background photo upload error:', err));
       }
 
-      console.log('Publishing complete, navigating...');
       navigate('/marketplace');
     } catch (e: any) {
-      console.error('Publish error:', e?.code, e?.message, e);
-      if (e?.code === 'permission-denied') {
-        setError('Sin permisos: tu cuenta puede no estar aprobada aún. Contactá al administrador.');
-      } else if (e?.code === 'unauthenticated') {
-        setError('Sesión expirada. Volvé a iniciar sesión.');
-      } else {
-        setError(`Error al publicar: ${e?.message || 'error desconocido'}`);
-      }
-    } finally {
-      setSubmitting(false);
+      console.error('Publish error:', e);
+      setError(`No pudimos publicar: ${e?.message || 'error de conexión'}`);
+      setSubmitting(false); // Only reset if failed
     }
   };
 
@@ -459,8 +445,10 @@ export function Publish() {
                     onValueChange={v => { update('province', v); update('city', ''); }}
                     disabled={!!userProfile?.province}
                   >
-                    <SelectTrigger className={`h-14 rounded-2xl bg-white/5 border-white/10 font-bold ${userProfile?.province ? 'opacity-70' : ''}`}>
-                      <SelectValue placeholder="Seleccionar provincia" />
+                    <SelectTrigger className={`h-14 rounded bg-white/5 border-white/10 font-bold ${userProfile?.province ? 'opacity-70' : ''}`}>
+                      <SelectValue>
+                        {PROVINCIAS_ARGENTINA.find(p => p.id === formData.province)?.nombre || 'Seleccionar provincia'}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent className="rounded-2xl max-h-72">
                       {PROVINCIAS_ARGENTINA.map(p => (
@@ -483,8 +471,10 @@ export function Publish() {
                     onValueChange={v => update('city', v)}
                     disabled={!selectedProvince || !!userProfile?.city}
                   >
-                    <SelectTrigger className={`h-14 rounded-2xl bg-white/5 border-white/10 font-bold ${userProfile?.city ? 'opacity-70' : ''}`}>
-                      <SelectValue placeholder={selectedProvince ? 'Seleccionar localidad' : 'Primero elegí provincia'} />
+                    <SelectTrigger className={`h-14 rounded bg-white/5 border-white/10 font-bold ${userProfile?.city ? 'opacity-70' : ''}`}>
+                      <SelectValue>
+                        {selectedProvince?.localidades.find(l => l.id === formData.city)?.nombre || (selectedProvince ? 'Seleccionar localidad' : 'Primero elegí provincia')}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent className="rounded-2xl max-h-72">
                       {selectedProvince?.localidades.map(l => (
