@@ -70,15 +70,18 @@
     --border: oklch(0.85 0.01 0);
     --input: oklch(0.85 0.01 0);
     --ring: oklch(0.75 0.21 115);
-    --radius: 5px;
-    --card-radius: 5px;
+    --radius: 1.25rem;
+    --card-radius: 2.5rem;
 }
 
 * {
   border-radius: inherit;
 }
 
-  input, select, textarea, button, div[class*="rounded-"] {
+  /* Solo los triggers de los selectores (dropdowns) tienen 5px */
+  [role="combobox"], 
+  button[id^="radix-"],
+  .select-trigger-5px {
     border-radius: 5px !important;
   }
 

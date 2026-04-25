@@ -445,7 +445,7 @@ export function Publish() {
                     onValueChange={v => { update('province', v); update('city', ''); }}
                     disabled={!!userProfile?.province}
                   >
-                    <SelectTrigger className={`h-14 rounded bg-white/5 border-white/10 font-bold ${userProfile?.province ? 'opacity-70' : ''}`}>
+                    <SelectTrigger className={`h-14 bg-white/5 border-white/10 font-bold ${userProfile?.province ? 'opacity-70' : ''}`}>
                       <SelectValue>
                         {PROVINCIAS_ARGENTINA.find(p => p.id === formData.province)?.nombre || 'Seleccionar provincia'}
                       </SelectValue>
@@ -471,7 +471,7 @@ export function Publish() {
                     onValueChange={v => update('city', v)}
                     disabled={!selectedProvince || !!userProfile?.city}
                   >
-                    <SelectTrigger className={`h-14 rounded bg-white/5 border-white/10 font-bold ${userProfile?.city ? 'opacity-70' : ''}`}>
+                    <SelectTrigger className={`h-14 bg-white/5 border-white/10 font-bold ${userProfile?.city ? 'opacity-70' : ''}`}>
                       <SelectValue>
                         {selectedProvince?.localidades.find(l => l.id === formData.city)?.nombre || (selectedProvince ? 'Seleccionar localidad' : 'Primero elegí provincia')}
                       </SelectValue>
