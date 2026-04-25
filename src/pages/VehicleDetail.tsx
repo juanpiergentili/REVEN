@@ -12,6 +12,8 @@ import { doc, getDoc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '@/src/lib/firebase';
 import type { Vehicle } from '@/src/types';
 
+import { MOCK_VEHICLES_FALLBACK } from '@/src/data/mock-vehicles';
+
 export function VehicleDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -23,20 +25,39 @@ export function VehicleDetail() {
   useEffect(() => {
     if (!id) { setNotFound(true); setLoading(false); return; }
 
-    getDoc(doc(db, 'vehicles', id)).then(snap => {
-      if (!snap.exists()) {
-        setNotFound(true);
-      } else {
-        const data = snap.data();
-        setVehicle({ ...data, id: snap.id } as Vehicle);
-        // Increment view count without blocking render
-        updateDoc(snap.ref, { viewCount: increment(1) }).catch(() => {});
+    async function fetchVehicle() {
+      try {
+        const snap = await getDoc(doc(db, 'vehicles', id));
+        if (snap.exists()) {
+          const data = snap.data();
+          setVehicle({ ...data, id: snap.id } as Vehicle);
+          updateDoc(snap.ref, { viewCount: increment(1) }).catch(() => {});
+          setLoading(false);
+          return;
+        }
+
+        // Fallback to MOCK data
+        const mockVehicle = MOCK_VEHICLES_FALLBACK.find(v => v.id === id);
+        if (mockVehicle) {
+          setVehicle(mockVehicle);
+          setLoading(false);
+        } else {
+          setNotFound(true);
+          setLoading(false);
+        }
+      } catch (err) {
+        // Even if Firestore fails, try mock
+        const mockVehicle = MOCK_VEHICLES_FALLBACK.find(v => v.id === id);
+        if (mockVehicle) {
+          setVehicle(mockVehicle);
+        } else {
+          setNotFound(true);
+        }
+        setLoading(false);
       }
-      setLoading(false);
-    }).catch(() => {
-      setNotFound(true);
-      setLoading(false);
-    });
+    }
+
+    fetchVehicle();
   }, [id]);
 
   const formatDate = (dateString: string) => {

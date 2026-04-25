@@ -10,6 +10,7 @@ import { formatLastOnline, getAverageResponseTime, getResponseBadge } from '@/sr
 import { useAuth, db } from '@/src/lib/firebase';
 import { doc, getDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { PROVINCIAS_ARGENTINA } from '@/src/data/argentina-geo';
+import { MOCK_VEHICLES_FALLBACK } from '@/src/data/mock-vehicles';
 import type { Vehicle } from '../types';
 
 function StatCard({ icon: Icon, label, value, accent = false }: { icon: any; label: string; value: string | number; accent?: boolean }) {
@@ -58,17 +59,29 @@ export function Profile() {
         // Fetch user document
         const userDoc = await getDoc(doc(db, 'users', targetUid));
         if (userDoc.exists()) {
-          setProfileData(userDoc.data());
+          const data = userDoc.data();
+          setProfileData(data);
           
-          // Fetch user listings
+          // Fetch user listings from Firestore
           const listingsQuery = query(
             collection(db, 'vehicles'),
             where('sellerId', '==', targetUid),
             orderBy('createdAt', 'desc')
           );
           const listingsSnap = await getDocs(listingsQuery);
-          const vehicles = listingsSnap.docs.map(d => ({ ...d.data(), id: d.id } as Vehicle));
-          setUserListings(vehicles);
+          const realVehicles = listingsSnap.docs.map(d => ({ ...d.data(), id: d.id } as Vehicle));
+          
+          // Inject MOCK data for test accounts to make them look populated and DIFFERENT
+          let mockListings: Vehicle[] = [];
+          if (data.email === 'vendedor.test@reven.com.ar') {
+            // Vendedor gets "Concesionaria Norte" stock (Trucks)
+            mockListings = MOCK_VEHICLES_FALLBACK.filter(v => ['1', '4', '9'].includes(v.id));
+          } else if (data.email === 'comprador.test@reven.com.ar') {
+            // Comprador gets "AutoSelect B2B" stock (SUVs/Others)
+            mockListings = MOCK_VEHICLES_FALLBACK.filter(v => ['2', '6', '8'].includes(v.id));
+          }
+          
+          setUserListings([...realVehicles, ...mockListings]);
         }
       } catch (err) {
         console.error('Error fetching profile:', err);
