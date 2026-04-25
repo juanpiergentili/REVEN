@@ -170,7 +170,11 @@ export function Header() {
             setIsLoginOpen(false);
             navigate('/marketplace');
           } catch (regErr: any) {
-            setError(`Error al inicializar acceso: ${regErr.message}`);
+            if (regErr.code === 'auth/email-already-in-use') {
+              setError(`El usuario '${email}' ya existe con otra contraseña. Por favor usa la correcta o solicita recuperar contraseña.`);
+            } else {
+              setError(`Error al inicializar acceso: ${regErr.message}`);
+            }
           }
         } else if (err.code === 'auth/operation-not-allowed') {
           setError('El método de inicio de sesión con Email/Password no está habilitado en Firebase.');

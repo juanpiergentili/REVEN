@@ -112,7 +112,11 @@ export function Login() {
           
           navigate('/marketplace');
         } catch (regErr: any) {
-          setError(`Error al inicializar acceso: ${regErr.message}`);
+          if (regErr.code === 'auth/email-already-in-use') {
+            setError(`El usuario '${demoEmail}' ya existe con otra contraseña. Por favor usa la correcta.`);
+          } else {
+            setError(`Error al inicializar acceso: ${regErr.message}`);
+          }
         }
       } else {
         setError(`Error en el acceso demo: ${err.message}`);
