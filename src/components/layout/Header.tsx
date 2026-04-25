@@ -125,8 +125,8 @@ export function Header() {
     setError(null);
     
     const isDemo = email.toLowerCase() === 'demo@reven.com.ar' && password === 'DEMO1234';
-    const isVendedor = email.toLowerCase() === 'vendedor@reven.com.ar' && password === 'REVEN2026';
-    const isComprador = email.toLowerCase() === 'comprador@reven.com.ar' && password === 'REVEN2026';
+    const isVendedor = email.toLowerCase() === 'vendedor.test@reven.com.ar' && password === 'REVEN2026';
+    const isComprador = email.toLowerCase() === 'comprador.test@reven.com.ar' && password === 'REVEN2026';
 
     if (isDemo || isVendedor || isComprador) {
       try {

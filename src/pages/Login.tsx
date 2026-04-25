@@ -73,10 +73,10 @@ export function Login() {
     let demoPass = 'DEMO1234';
     
     if (type === 'vendedor') {
-      demoEmail = 'vendedor@reven.com.ar';
+      demoEmail = 'vendedor.test@reven.com.ar';
       demoPass = 'REVEN2026';
     } else if (type === 'comprador') {
-      demoEmail = 'comprador@reven.com.ar';
+      demoEmail = 'comprador.test@reven.com.ar';
       demoPass = 'REVEN2026';
     }
     
