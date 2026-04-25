@@ -71,14 +71,11 @@ export function Profile() {
           const listingsSnap = await getDocs(listingsQuery);
           const realVehicles = listingsSnap.docs.map(d => ({ ...d.data(), id: d.id } as Vehicle));
           
-          // Inject MOCK data for test accounts to make them look populated and DIFFERENT
+          // Inyectar MOCK data específicos según el rol para el test de mensajería
           let mockListings: Vehicle[] = [];
           if (data.email === 'vendedor.test@reven.com.ar') {
-            // Vendedor gets "Concesionaria Norte" stock (Trucks)
-            mockListings = MOCK_VEHICLES_FALLBACK.filter(v => ['1', '4', '9'].includes(v.id));
-          } else if (data.email === 'comprador.test@reven.com.ar') {
-            // Comprador gets "AutoSelect B2B" stock (SUVs/Others)
-            mockListings = MOCK_VEHICLES_FALLBACK.filter(v => ['2', '6', '8'].includes(v.id));
+            // El Vendedor es el dueño de los 3 vehículos principales para que el comprador pueda consultarle
+            mockListings = MOCK_VEHICLES_FALLBACK.filter(v => ['1', '2', '3'].includes(v.id));
           }
           
           setUserListings([...realVehicles, ...mockListings]);
