@@ -147,11 +147,16 @@ export async function sendMessage(
     read: false,
   });
 
-  // Update conversation's last message
+  // Update conversation's last message and unread status
   const convoRef = doc(db, 'conversations', conversationId);
+  const convoSnap = await getDoc(convoRef);
+  const convoData = convoSnap.data();
+  const recipientId = convoData?.participants.find((p: string) => p !== senderId);
+
   await updateDoc(convoRef, {
     lastMessage: text,
     lastMessageAt: Timestamp.now(),
+    unreadBy: [recipientId] // Mark as unread for the recipient
   });
 }
 
@@ -174,4 +179,47 @@ export async function markMessagesAsRead(
     updateDoc(doc(db, 'conversations', conversationId, 'messages', docSnap.id), { read: true })
   );
   await Promise.all(updates);
+
+  // Clear unreadBy for this user in the conversation doc
+  const convoRef = doc(db, 'conversations', conversationId);
+  const convoSnap = await getDoc(convoRef);
+  if (convoSnap.exists()) {
+    const unreadBy = convoSnap.data().unreadBy || [];
+    if (unreadBy.includes(userId)) {
+      await updateDoc(convoRef, {
+        unreadBy: unreadBy.filter((id: string) => id !== userId)
+      });
+    }
+  }
+}
+
+/**
+ * Subscribe to the total unread message count for a user.
+ */
+export function subscribeToUnreadCount(
+  userId: string,
+  callback: (count: number) => void
+) {
+  const conversationsRef = collection(db, 'conversations');
+  const q = query(
+    conversationsRef,
+    where('participants', 'array-contains', userId)
+  );
+
+  return onSnapshot(q, async (snapshot) => {
+    let totals = 0;
+    // Note: In a production app, it's better to store unread count in the conversation doc 
+    // or use a separate counter to avoid nested subscriptions here.
+    // For now, we'll sum up conversations where the user has messages to read.
+    // However, the conversation doc doesn't have an unread count per user yet.
+    // Let's assume we add an 'unreadBy' array to the conversation doc.
+    
+    snapshot.docs.forEach(docSnap => {
+      const data = docSnap.data();
+      if (data.unreadBy && data.unreadBy.includes(userId)) {
+        totals += 1;
+      }
+    });
+    callback(totals);
+  });
 }

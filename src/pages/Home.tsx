@@ -137,8 +137,15 @@ export function Home() {
   const [isAdmissionOpen, setIsAdmissionOpen] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const PLAN_PRICES = {
+    plata: { monthly: 99, annual: 950 },
+    oro: { monthly: 199, annual: 1900 },
+    platinum: { monthly: 399, annual: 3800 }
+  };
 
   // Form States
   const [name, setName] = useState('');
@@ -149,13 +156,6 @@ export function Home() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [plan, setPlan] = useState('plata');
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
-
-  const PLAN_PRICES = {
-    plata: { monthly: 120, annual: 999 },
-    oro: { monthly: 180, annual: 1500 },
-    platinum: { monthly: 300, annual: 2500 }
-  };
 
   const [discountCode, setDiscountCode] = useState('');
   const [isDiscountApplied, setIsDiscountApplied] = useState(false);
@@ -183,7 +183,6 @@ export function Home() {
         displayName: `${name} ${lastName}`
       });
 
-      const userPath = `users/${user.uid}`;
       try {
         await setDoc(doc(db, 'users', user.uid), {
           uid: user.uid,
@@ -201,15 +200,23 @@ export function Home() {
           createdAt: serverTimestamp()
         });
       } catch (fsErr) {
-        handleFirestoreError(fsErr, OperationType.WRITE, userPath);
+        console.error('Firestore Error:', fsErr);
+        // We continue even if firestore fails initially, though usually it shouldn't
       }
 
       setIsAdmissionOpen(false);
       navigate('/login');
-      // Note: We could show a success message here or redirect to a "thank you" page
     } catch (err: any) {
-      console.error(err);
-      setError('Error al procesar la solicitud. Intenta nuevamente.');
+      console.error('Auth Error:', err);
+      if (err.code === 'auth/email-already-in-use') {
+        setError('El email ya se encuentra registrado. Intentá iniciar sesión.');
+      } else if (err.code === 'auth/weak-password') {
+        setError('La contraseña debe tener al menos 6 caracteres.');
+      } else if (err.code === 'auth/invalid-email') {
+        setError('El formato del email es inválido.');
+      } else {
+        setError('Error al procesar la solicitud. Intenta nuevamente.');
+      }
     } finally {
       setLoading(false);
     }
@@ -569,33 +576,52 @@ export function Home() {
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-secondary/10 blur-[120px] rounded-full -z-0" />
 
         <div className="container mx-auto px-6 md:px-12 mx-auto relative z-10">
-          <div className="text-center mb-20">
-            <h2 className="text-5xl md:text-7xl font-bold tracking-tighter uppercase mb-6 text-background dark:text-foreground">Planes de Membresía</h2>
-            <p className="text-muted-foreground text-xl max-w-2xl mx-auto font-medium">Elegí el nivel de acceso que mejor se adapte al volumen de tu negocio.</p>
+          <div className="text-center max-w-3xl mx-auto mb-20 space-y-4">
+            <h2 className="text-5xl md:text-7xl font-bold tracking-tighter uppercase mb-6 text-background dark:text-foreground">Membresías <br /><span className="text-primary">Exclusivas</span></h2>
+            <p className="text-muted-foreground text-xl mx-auto font-medium mb-10">Elegí el nivel de acceso que mejor se adapte al volumen de tu negocio.</p>
+            
+            <div className="flex justify-center">
+              <Tabs value={billingCycle} onValueChange={(v) => setBillingCycle(v as any)} className="w-full max-w-xs">
+                <TabsList className="grid w-full grid-cols-2 h-14 rounded-2xl bg-white/5 border border-white/10 p-1 backdrop-blur-xl">
+                  <TabsTrigger 
+                    value="monthly" 
+                    className="rounded-xl font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+                  >
+                    Mensual
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="annual" 
+                    className="rounded-xl font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+                  >
+                    Anual <span className="ml-1 opacity-60 text-[8px]">-20%</span>
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 max-w-7xl mx-auto items-center">
             {[
               {
                 name: 'Plata',
-                price: '120',
-                annual: '999',
+                price: billingCycle === 'monthly' ? PLAN_PRICES.plata.monthly : Math.round(PLAN_PRICES.plata.annual / 12),
+                annual: PLAN_PRICES.plata.annual,
                 features: ['Hasta 5 autos publicados', 'Acceso al Marketplace B2B', 'Mensajería directa', 'Soporte estándar'],
                 popular: false,
                 color: 'border-border'
               },
               {
                 name: 'Oro',
-                price: '180',
-                annual: '1500',
+                price: billingCycle === 'monthly' ? PLAN_PRICES.oro.monthly : Math.round(PLAN_PRICES.oro.annual / 12),
+                annual: PLAN_PRICES.oro.annual,
                 features: ['Hasta 25 autos publicados', 'Acceso al Marketplace B2B', 'Mensajería prioritaria', 'Soporte 24/7', 'Badge de Verificado'],
                 popular: true,
                 color: 'border-primary shadow-primary/20'
               },
               {
                 name: 'Platinum',
-                price: '300',
-                annual: '2500',
+                price: billingCycle === 'monthly' ? PLAN_PRICES.platinum.monthly : Math.round(PLAN_PRICES.platinum.annual / 12),
+                annual: PLAN_PRICES.platinum.annual,
                 features: ['Hasta 150 autos publicados', 'Acceso al Marketplace B2B', 'Gestoría preferencial', 'Destacados ilimitados', 'Account Manager dedicado'],
                 popular: false,
                 color: 'border-secondary shadow-secondary/20'
@@ -617,10 +643,12 @@ export function Home() {
                 <div className="mb-10">
                   <h3 className={`text-4xl font-black tracking-tighter uppercase mb-3 ${plan.popular ? 'text-primary' : 'text-background dark:text-foreground'}`}>{plan.name}</h3>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-7xl font-black tracking-tighter text-background dark:text-foreground">U$D {plan.price}</span>
-                    <span className="text-muted-foreground font-bold uppercase tracking-widest text-sm">/ mes</span>
+                    <span className="text-5xl font-black tracking-tighter text-background dark:text-foreground">U$D {plan.price}</span>
+                    <span className="text-muted-foreground font-black uppercase tracking-tighter text-sm">/ mes</span>
                   </div>
-                  <p className="text-primary font-black text-base mt-5 tracking-tighter uppercase bg-primary/10 inline-block px-4 py-1 rounded-full">U$D {plan.annual} ANUAL</p>
+                  {billingCycle === 'annual' && (
+                    <p className="text-primary font-black text-xs mt-3 tracking-widest uppercase">U$D {plan.annual} FACTURADO ANUAL</p>
+                  )}
                 </div>
 
                 <ul className="space-y-6 mb-14 flex-1">
@@ -678,224 +706,245 @@ export function Home() {
 
       {/* Admission Dialog */}
       <Dialog open={isAdmissionOpen} onOpenChange={setIsAdmissionOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-4xl p-0 overflow-hidden rounded-[2.5rem] border-border bg-card/95 backdrop-blur-2xl shadow-2xl">
-          <div className="grid grid-cols-1 md:grid-cols-12 h-full min-h-[600px]">
-            <div className="md:col-span-4 lg:col-span-3 bg-primary p-10 flex flex-col justify-between text-primary-foreground relative overflow-hidden">
-              <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-white/10 blur-3xl rounded-full" />
-              <div className="z-10">
-                <Logo variant="dark" className="text-4xl mb-6" />
-                <h3 className="text-3xl md:text-4xl font-bold tracking-tighter uppercase leading-[0.9] mb-6 text-primary-foreground">Unite a <br />la Elite</h3>
-                <p className="text-sm md:text-base font-medium opacity-90 leading-relaxed">Accedé al stock más exclusivo de Argentina y potenciá tu rentabilidad B2B.</p>
-              </div>
-              <div className="z-10 space-y-6">
-                <div className="flex items-center gap-4">
-                  <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center">
-                    <ShieldCheck className="h-6 w-6" />
-                  </div>
-                  <span className="text-[10px] font-bold uppercase tracking-widest">100% Verificado</span>
+        <DialogContent className="max-w-[95vw] sm:max-w-3xl p-0 overflow-hidden rounded-[2.5rem] border-border bg-card/95 backdrop-blur-2xl shadow-2xl max-h-[90vh] flex flex-col md:flex-row">
+          {/* Left Column - Redesigned with Glassmorphism and better contrast */}
+          <div className="hidden md:flex md:w-1/3 bg-primary p-1 flex-col relative overflow-hidden shrink-0">
+            {/* Glass Layers */}
+            <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/95 to-primary/90" />
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2" />
+            
+            <div className="relative z-10 flex flex-col justify-between h-full p-10 text-primary-foreground">
+              <div className="space-y-12">
+                <Logo variant="mono-white" className="text-4xl" />
+                
+                <div className="space-y-4">
+                  <div className="h-1 w-12 bg-white/40 rounded-full" />
+                  <h3 className="text-3xl font-black tracking-tighter uppercase leading-[0.85] text-white">
+                    Unite a <br />la Elite
+                  </h3>
+                  <p className="text-sm font-medium opacity-80 leading-relaxed text-white/90">
+                    Accedé al stock más exclusivo de Argentina y potenciá tu rentabilidad B2B.
+                  </p>
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center">
-                    <Zap className="h-6 w-6" />
+              </div>
+              
+              <div className="space-y-4 pt-10">
+                <div className="flex items-center gap-4 bg-white/10 backdrop-blur-xl p-4 rounded-2xl border border-white/20">
+                  <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                    <ShieldCheck className="h-5 w-5" />
                   </div>
-                  <span className="text-[10px] font-bold uppercase tracking-widest">Operaciones Rápidas</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-white">100% Verificado</span>
+                </div>
+                <div className="flex items-center gap-4 bg-white/10 backdrop-blur-xl p-4 rounded-2xl border border-white/20">
+                  <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                    <Zap className="h-5 w-5" />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-white">Operaciones Rápidas</span>
                 </div>
               </div>
             </div>
-            <div className="md:col-span-8 lg:col-span-9 p-8 md:p-12">
-              <DialogHeader className="mb-8 md:mb-12">
-                <DialogTitle className="text-3xl md:text-5xl font-bold tracking-tighter uppercase leading-none">Solicitud de Admisión</DialogTitle>
-                <DialogDescription className="font-medium text-sm md:text-base mt-3">Completá tus datos profesionales para iniciar el proceso de verificación.</DialogDescription>
-              </DialogHeader>
 
-              <form className="space-y-6" onSubmit={handleAdmissionSubmit}>
-                {error && (
-                  <div className="p-3 rounded-xl bg-destructive/10 text-destructive text-[10px] font-bold uppercase tracking-widest text-center">
-                    {error}
-                  </div>
-                )}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="pop-name" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Nombre</Label>
-                    <Input
-                      id="pop-name"
-                      required
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Juan"
-                      className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="pop-lastname" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Apellido</Label>
-                    <Input
-                      id="pop-lastname"
-                      required
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      placeholder="Pérez"
-                      className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4"
-                    />
-                  </div>
-                </div>
+            {/* Frosty effect at the bottom */}
+            <div className="absolute bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+          </div>
+          
+          {/* Right Column - Form with ScrollArea */}
+          <div className="flex-1 flex flex-col bg-background/50 overflow-hidden">
+            <ScrollArea className="flex-1">
+              <div className="p-8 md:p-12">
+                <DialogHeader className="mb-10 text-left">
+                  <DialogTitle className="text-3xl md:text-5xl font-black tracking-tighter uppercase leading-none">
+                    Solicitud de Admisión
+                  </DialogTitle>
+                  <DialogDescription className="font-medium text-sm md:text-base mt-3 text-muted-foreground/80">
+                    Completá tus datos profesionales para iniciar el proceso de verificación.
+                  </DialogDescription>
+                </DialogHeader>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="pop-cuil" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">CUIL / CUIT</Label>
-                    <Input
-                      id="pop-cuil"
-                      required
-                      value={cuil}
-                      onChange={(e) => setCuil(e.target.value)}
-                      placeholder="20-XXXXXXXX-X"
-                      className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="pop-phone" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Teléfono</Label>
-                    <Input
-                      id="pop-phone"
-                      required
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+54 9 11 ..."
-                      className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="pop-company" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Concesionaria</Label>
-                  <Input
-                    id="pop-company"
-                    required
-                    value={company}
-                    onChange={(e) => setCompany(e.target.value)}
-                    placeholder="Automotores Reven S.A."
-                    className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="pop-email" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Email Corporativo</Label>
-                    <Input
-                      id="pop-email"
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="juan@concesionaria.com"
-                      className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="pop-pass" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Contraseña</Label>
-                    <Input
-                      id="pop-pass"
-                      type="password"
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Plan de Membresía</Label>
-                    <Select value={plan} onValueChange={setPlan}>
-                      <SelectTrigger className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4">
-                        <SelectValue placeholder="Seleccionar plan" />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl">
-                        <SelectItem value="plata">PLAN PLATA (Hasta 5 autos)</SelectItem>
-                        <SelectItem value="oro">PLAN ORO (Hasta 25 autos)</SelectItem>
-                        <SelectItem value="platinum">PLAN PLATINUM (Hasta 150 autos)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Ciclo de Facturación</Label>
-                    <Tabs value={billingCycle} onValueChange={(v) => setBillingCycle(v as any)} className="w-full">
-                      <TabsList className="grid w-full grid-cols-2 h-12 rounded-xl bg-background/50 border border-border p-1">
-                        <TabsTrigger value="monthly" className="rounded-lg font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Mensual</TabsTrigger>
-                        <TabsTrigger value="annual" className="rounded-lg font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Anual</TabsTrigger>
-                      </TabsList>
-                    </Tabs>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Total a pagar</p>
-                    <p className="text-xl font-bold tracking-tighter text-primary">
-                      U$D {billingCycle === 'monthly' ? PLAN_PRICES[plan as keyof typeof PLAN_PRICES].monthly : PLAN_PRICES[plan as keyof typeof PLAN_PRICES].annual}
-                      <span className="text-xs text-muted-foreground ml-1">/ {billingCycle === 'monthly' ? 'mes' : 'año'}</span>
-                    </p>
-                  </div>
-                  {billingCycle === 'annual' && (
-                    <Badge className="bg-primary text-primary-foreground font-bold tracking-tighter px-3 py-1 rounded-full text-[10px]">
-                      AHORRÁ U$D {PLAN_PRICES[plan as keyof typeof PLAN_PRICES].monthly * 12 - PLAN_PRICES[plan as keyof typeof PLAN_PRICES].annual}
-                    </Badge>
+                <form className="space-y-6" onSubmit={handleAdmissionSubmit}>
+                  {error && (
+                    <div className="p-4 rounded-xl bg-destructive/10 text-destructive text-[10px] font-black uppercase tracking-widest text-center animate-in fade-in zoom-in duration-300">
+                      {error}
+                    </div>
                   )}
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="pop-discount" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Código de Descuento</Label>
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="pop-name" className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground/70">Nombre</Label>
+                      <Input
+                        id="pop-name"
+                        required
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Juan"
+                        className="h-12 rounded-xl bg-background border-border font-bold text-sm px-4 focus:ring-2 focus:ring-primary/20"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="pop-lastname" className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground/70">Apellido</Label>
+                      <Input
+                        id="pop-lastname"
+                        required
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        placeholder="Pérez"
+                        className="h-12 rounded-xl bg-background border-border font-bold text-sm px-4 focus:ring-2 focus:ring-primary/20"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="pop-cuil" className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground/70">CUIL / CUIT</Label>
+                      <Input
+                        id="pop-cuil"
+                        required
+                        value={cuil}
+                        onChange={(e) => setCuil(e.target.value)}
+                        placeholder="20-XXXXXXXX-X"
+                        className="h-12 rounded-xl bg-background border-border font-bold text-sm px-4 focus:ring-2 focus:ring-primary/20"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="pop-phone" className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground/70">Teléfono</Label>
+                      <Input
+                        id="pop-phone"
+                        required
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="+54 9 11 ..."
+                        className="h-12 rounded-xl bg-background border-border font-bold text-sm px-4 focus:ring-2 focus:ring-primary/20"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="pop-company" className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground/70">Concesionaria</Label>
                     <Input
-                      id="pop-discount"
-                      value={discountCode}
-                      onChange={(e) => setDiscountCode(e.target.value)}
-                      placeholder="REVEN20"
-                      className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4 flex-1"
+                      id="pop-company"
+                      required
+                      value={company}
+                      onChange={(e) => setCompany(e.target.value)}
+                      placeholder="Automotores Reven S.A."
+                      className="h-12 rounded-xl bg-background border-border font-bold text-sm px-4 focus:ring-2 focus:ring-primary/20"
                     />
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={handleApplyDiscount}
-                      className="h-12 rounded-xl font-bold px-6"
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="pop-email" className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground/70">Email Corporativo</Label>
+                      <Input
+                        id="pop-email"
+                        type="email"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="juan@concesionaria.com"
+                        className="h-12 rounded-xl bg-background border-border font-bold text-sm px-4 focus:ring-2 focus:ring-primary/20"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="pop-pass" className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground/70">Contraseña</Label>
+                      <Input
+                        id="pop-pass"
+                        type="password"
+                        required
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="h-12 rounded-xl bg-background border-border font-bold text-sm px-4 focus:ring-2 focus:ring-primary/20"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground/70">Plan de Membresía</Label>
+                      <Select value={plan} onValueChange={setPlan}>
+                        <SelectTrigger className="h-12 rounded-xl bg-background border-border font-bold text-sm px-4 focus:ring-2 focus:ring-primary/20">
+                          <SelectValue placeholder="Seleccionar plan" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-border bg-card">
+                          <SelectItem value="plata" className="font-bold">PLAN PLATA</SelectItem>
+                          <SelectItem value="oro" className="font-bold">PLAN ORO</SelectItem>
+                          <SelectItem value="platinum" className="font-bold">PLAN PLATINUM</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground/70">Ciclo de Facturación</Label>
+                      <Tabs value={billingCycle} onValueChange={(v) => setBillingCycle(v as any)} className="w-full">
+                        <TabsList className="grid w-full grid-cols-2 h-12 rounded-xl bg-background border border-border p-1">
+                          <TabsTrigger value="monthly" className="rounded-lg font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Mensual</TabsTrigger>
+                          <TabsTrigger value="annual" className="rounded-lg font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Anual</TabsTrigger>
+                        </TabsList>
+                      </Tabs>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">Total a pagar</p>
+                      <p className="text-2xl font-black tracking-tighter text-primary">
+                        U$D {billingCycle === 'monthly' ? PLAN_PRICES[plan as keyof typeof PLAN_PRICES].monthly : PLAN_PRICES[plan as keyof typeof PLAN_PRICES].annual}
+                        <span className="text-xs text-muted-foreground/60 ml-1">/ {billingCycle === 'monthly' ? 'mes' : 'año'}</span>
+                      </p>
+                    </div>
+                    {billingCycle === 'annual' && (
+                      <Badge className="bg-primary text-primary-foreground font-black tracking-tighter px-3 py-1 rounded-full text-[10px]">
+                        AHORRÁ U$D {PLAN_PRICES[plan as keyof typeof PLAN_PRICES].monthly * 12 - PLAN_PRICES[plan as keyof typeof PLAN_PRICES].annual}
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="pop-discount" className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground/70">Código de Descuento</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="pop-discount"
+                        value={discountCode}
+                        onChange={(e) => setDiscountCode(e.target.value)}
+                        placeholder="REVEN20"
+                        className="h-12 rounded-xl bg-background border-border font-bold text-sm px-4 flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={handleApplyDiscount}
+                        className="h-12 rounded-xl font-bold px-6"
+                      >
+                        APLICAR
+                      </Button>
+                    </div>
+                    {isDiscountApplied && (
+                      <p className="text-[10px] font-black text-primary uppercase tracking-widest ml-1">¡Descuento aplicado!</p>
+                    )}
+                  </div>
+
+                  <div className="pt-6 border-t border-border/50">
+                    <div className="flex items-center gap-3 mb-6">
+                      <Checkbox 
+                        id="terms" 
+                        checked={acceptedTerms} 
+                        onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
+                        className="rounded-lg h-6 w-6 border-primary data-[state=checked]:bg-primary"
+                      />
+                      <label htmlFor="terms" className="text-[11px] font-bold leading-tight text-muted-foreground select-none cursor-pointer">
+                        Acepto los <button type="button" onClick={() => setShowTerms(true)} className="text-primary hover:underline">términos de uso</button> y la política de privacidad B2B.
+                      </label>
+                    </div>
+
+                    <Button 
+                      type="submit"
+                      disabled={loading || !acceptedTerms}
+                      className="w-full h-16 rounded-2xl font-black text-xl shadow-xl shadow-primary/20 uppercase tracking-tighter"
                     >
-                      APLICAR
+                      {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : 'ENVIAR SOLICITUD'}
                     </Button>
                   </div>
-                  {isDiscountApplied && (
-                    <p className="text-[10px] font-bold text-primary uppercase tracking-widest ml-1">¡Descuento aplicado con éxito!</p>
-                  )}
-                </div>
-
-                <div className="flex items-start space-x-4 pt-2">
-                  <Checkbox
-                    id="terms"
-                    checked={acceptedTerms}
-                    onCheckedChange={(checked) => setAcceptedTerms(checked as boolean)}
-                    className="mt-1 border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground h-5 w-5 rounded-md"
-                  />
-                  <div className="grid gap-1.5 leading-none">
-                    <label
-                      htmlFor="terms"
-                      className="text-[11px] font-bold uppercase tracking-wide leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Acepto las <button type="button" onClick={() => setShowTerms(true)} className="text-primary hover:underline">Bases y Condiciones</button>
-                    </label>
-                    <p className="text-[10px] text-muted-foreground font-medium">
-                      Declaro que soy un profesional del sector automotor.
-                    </p>
-                  </div>
-                </div>
-
-                <Button
-                  type="submit"
-                  disabled={!acceptedTerms || loading}
-                  className="w-full h-14 rounded-xl font-bold text-lg shadow-xl shadow-primary/20 mt-4 uppercase tracking-tighter"
-                >
-                  {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : 'ENVIAR SOLICITUD'}
-                </Button>
-              </form>
-            </div>
+                </form>
+              </div>
+            </ScrollArea>
           </div>
         </DialogContent>
       </Dialog>

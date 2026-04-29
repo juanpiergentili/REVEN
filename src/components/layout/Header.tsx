@@ -33,6 +33,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { signInWithEmailAndPassword, onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
 import { auth, db, handleFirestoreError, OperationType } from '@/src/lib/firebase';
+import { subscribeToUnreadCount } from '@/src/lib/chat';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -56,6 +57,7 @@ export function Header() {
   const [password, setPassword] = useState('');
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -77,6 +79,17 @@ export function Header() {
     });
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setUnreadCount(0);
+      return;
+    }
+    const unsub = subscribeToUnreadCount(user.uid, (count) => {
+      setUnreadCount(count);
+    });
+    return unsub;
+  }, [user]);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -109,7 +122,7 @@ export function Header() {
   const navItems = [
     { name: 'Inicio', path: '/', icon: LayoutDashboard },
     { name: 'Marketplace', path: '/marketplace', icon: Car },
-    { name: 'Mensajes', path: '/messages', icon: MessageSquare, badge: 3 },
+    { name: 'Mensajes', path: '/messages', icon: MessageSquare, badge: unreadCount },
   ];
 
   const handleNavClick = (path: string, e: MouseEvent) => {

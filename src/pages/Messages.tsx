@@ -56,16 +56,23 @@ export function Messages() {
 
     if (targetUserId && targetUserName) {
       const initConvo = async () => {
-        const id = await findOrCreateConversation({
-          buyerId: currentUserId,
-          sellerId: targetUserId,
-          buyerName: currentUserName,
-          sellerName: targetUserName,
-          buyerCompany: currentUserName,
-          sellerCompany: targetCompany || targetUserName,
-          vehicleId: vehicleId || undefined,
-        });
-        setSelectedConvoId(id);
+        try {
+          setIsInitializing(true);
+          const id = await findOrCreateConversation({
+            buyerId: currentUserId,
+            sellerId: targetUserId,
+            buyerName: currentUserName,
+            sellerName: targetUserName,
+            buyerCompany: currentUserName,
+            sellerCompany: targetCompany || targetUserName,
+            vehicleId: vehicleId || undefined,
+          });
+          setSelectedConvoId(id);
+        } catch (err) {
+          console.error('Error initializing conversation:', err);
+        } finally {
+          setIsInitializing(false);
+        }
       };
       initConvo();
     }
@@ -105,7 +112,12 @@ export function Messages() {
     }
   };
 
+  const [isInitializing, setIsInitializing] = useState(false);
+
   const selectedConvo = conversations.find(c => c.id === selectedConvoId);
+
+  // If we have selectedConvoId but it's not in the list yet, it might be a new one
+  const isDeepLinkCreating = !selectedConvo && selectedConvoId && (targetUserId || convoId);
 
   const getDisplayName = (convo: ConversationData) => {
     return convo.buyerId === currentUserId ? convo.sellerName : convo.buyerName;
@@ -154,53 +166,69 @@ export function Messages() {
               <div className="flex items-center justify-center py-20 text-muted-foreground">
                 <Clock className="h-5 w-5 animate-spin mr-2" /> Cargando...
               </div>
-            ) : filteredConversations.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 px-6 text-center space-y-4">
-                <div className="bg-white/5 p-6 rounded-full">
-                  <MessageCircle className="h-10 w-10 text-muted-foreground opacity-30" />
-                </div>
-                <div className="space-y-1">
-                  <h3 className="font-bold tracking-tighter uppercase">Sin conversaciones</h3>
-                  <p className="text-xs text-muted-foreground">Contactá a un colega desde el marketplace para iniciar un chat.</p>
-                </div>
-                <Button variant="outline" className="rounded-2xl text-[10px] font-bold uppercase tracking-widest" onClick={() => navigate('/marketplace')}>
-                  Ir al Marketplace
-                </Button>
-              </div>
             ) : (
-              filteredConversations.map(convo => (
-                <button
-                  key={convo.id}
-                  onClick={() => setSelectedConvoId(convo.id)}
-                  className={`w-full flex items-center gap-4 p-4 text-left border-b border-white/5 transition-all hover:bg-white/5 ${selectedConvoId === convo.id ? 'bg-primary/5 border-l-2 border-l-primary' : ''}`}
-                >
-                  <Avatar className="h-12 w-12 shrink-0 border-2 border-primary/20">
-                    <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
-                      {getDisplayName(convo).split(' ').map(n => n[0]).join('').slice(0, 2)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <h4 className="text-sm font-bold tracking-tighter uppercase truncate">{getDisplayName(convo)}</h4>
-                      <span className="text-[10px] text-muted-foreground font-bold shrink-0 ml-2">{formatTime(convo.lastMessageAt)}</span>
+              <>
+                {isInitializing && !selectedConvo && (
+                  <div className="p-4 border-b border-white/5 animate-pulse bg-primary/5">
+                    <div className="flex items-center gap-4">
+                      <div className="h-12 w-12 rounded-full bg-primary/20" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-3 w-1/2 bg-primary/20 rounded" />
+                        <div className="h-2 w-3/4 bg-primary/10 rounded" />
+                      </div>
                     </div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-1">{getDisplayCompany(convo)}</p>
-                    <p className="text-xs text-muted-foreground truncate">{convo.lastMessage || 'Conversación nueva'}</p>
-                    {convo.vehicleInfo && (
-                      <Badge variant="outline" className="mt-1 text-[8px] font-bold tracking-wider border-white/10 rounded-full px-2 py-0">
-                        {convo.vehicleInfo.brand} {convo.vehicleInfo.model} {convo.vehicleInfo.year}
-                      </Badge>
-                    )}
                   </div>
-                </button>
-              ))
+                )}
+                {filteredConversations.length === 0 && !isInitializing ? (
+                  <div className="flex flex-col items-center justify-center py-20 px-6 text-center space-y-4">
+                    <div className="bg-white/5 p-6 rounded-full">
+                      <MessageCircle className="h-10 w-10 text-muted-foreground opacity-30" />
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="font-bold tracking-tighter uppercase">Sin conversaciones</h3>
+                      <p className="text-xs text-muted-foreground">Contactá a un colega desde el marketplace para iniciar un chat.</p>
+                    </div>
+                  </div>
+                ) : (
+                  filteredConversations.map(convo => {
+                    const isSelected = selectedConvoId === convo.id;
+                    const hasUnread = convo.unreadBy?.includes(currentUserId);
+                    return (
+                      <button
+                        key={convo.id}
+                        onClick={() => setSelectedConvoId(convo.id)}
+                        className={`w-full flex items-center gap-4 p-4 text-left border-b border-white/5 transition-all hover:bg-white/5 ${isSelected ? 'bg-primary/5 border-l-2 border-l-primary' : ''}`}
+                      >
+                        <div className="relative">
+                          <Avatar className="h-12 w-12 shrink-0 border-2 border-primary/20">
+                            <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
+                              {getDisplayName(convo).split(' ').map(n => n[0]).join('').slice(0, 2)}
+                            </AvatarFallback>
+                          </Avatar>
+                          {hasUnread && (
+                            <span className="absolute -top-1 -right-1 h-4 w-4 bg-primary rounded-full border-2 border-background animate-pulse" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <h4 className={`text-sm font-bold tracking-tighter uppercase truncate ${hasUnread ? 'text-primary' : ''}`}>{getDisplayName(convo)}</h4>
+                            <span className="text-[10px] text-muted-foreground font-bold shrink-0 ml-2">{formatTime(convo.lastMessageAt)}</span>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-1">{getDisplayCompany(convo)}</p>
+                          <p className={`text-xs truncate ${hasUnread ? 'text-foreground font-bold' : 'text-muted-foreground'}`}>{convo.lastMessage || 'Conversación nueva'}</p>
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </>
             )}
           </ScrollArea>
         </aside>
 
         {/* Chat Area */}
         <div className={`flex-1 flex flex-col ${selectedConvoId ? 'flex' : 'hidden md:flex'}`}>
-          {selectedConvo ? (
+          {selectedConvo || isDeepLinkCreating ? (
             <>
               {/* Chat Header */}
               <div className="p-4 border-b border-white/5 bg-background/50 backdrop-blur-xl flex items-center gap-4">
@@ -209,16 +237,20 @@ export function Messages() {
                 </Button>
                 <Avatar className="h-10 w-10 border-2 border-primary/20">
                   <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
-                    {getDisplayName(selectedConvo).split(' ').map(n => n[0]).join('').slice(0, 2)}
+                    {(selectedConvo ? getDisplayName(selectedConvo) : targetUserName || '...').split(' ').map(n => n[0]).join('').slice(0, 2)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-bold uppercase tracking-tighter text-sm truncate">{getDisplayName(selectedConvo)}</h3>
-                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{getDisplayCompany(selectedConvo)}</p>
+                  <h3 className="font-bold uppercase tracking-tighter text-sm truncate">
+                    {selectedConvo ? getDisplayName(selectedConvo) : targetUserName}
+                  </h3>
+                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
+                    {selectedConvo ? getDisplayCompany(selectedConvo) : targetCompany || targetUserName}
+                  </p>
                 </div>
-                {selectedConvo.vehicleInfo && (
+                {(selectedConvo?.vehicleInfo || (vehicleId && !selectedConvo)) && (
                   <Badge className="bg-white/5 border-white/10 text-xs font-bold rounded-full px-3 py-1 hidden sm:flex">
-                    {selectedConvo.vehicleInfo.brand} {selectedConvo.vehicleInfo.model}
+                    {selectedConvo?.vehicleInfo?.brand || 'Consulta de Vehículo'} {selectedConvo?.vehicleInfo?.model || ''}
                   </Badge>
                 )}
               </div>
@@ -226,27 +258,39 @@ export function Messages() {
               {/* Messages */}
               <ScrollArea className="flex-1 p-6">
                 <div className="max-w-3xl mx-auto space-y-4">
-                  <AnimatePresence>
-                    {messages.map((msg) => {
-                      const isMine = msg.senderId === currentUserId;
-                      return (
-                        <motion.div
-                          key={msg.id}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}
-                        >
-                          <div className={`max-w-[75%] px-5 py-3 rounded-3xl ${isMine ? 'bg-primary text-primary-foreground rounded-br-lg' : 'bg-white/5 rounded-bl-lg'}`}>
-                            <p className="text-sm font-medium leading-relaxed break-words">{msg.text}</p>
-                            <div className={`flex items-center gap-1 mt-1 ${isMine ? 'justify-end' : ''}`}>
-                              <span className="text-[10px] opacity-60">{formatTime(msg.createdAt)}</span>
-                              {isMine && (msg.read ? <CheckCheck className="h-3 w-3 opacity-60 text-blue-400" /> : <Check className="h-3 w-3 opacity-60" />)}
+                  {!selectedConvo && isInitializing ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-muted-foreground animate-pulse">
+                      <Clock className="h-8 w-8 mb-4 animate-spin" />
+                      <p className="text-sm font-bold uppercase tracking-widest">Iniciando conversación...</p>
+                    </div>
+                  ) : messages.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-muted-foreground opacity-40">
+                      <MessageCircle className="h-10 w-10 mb-4" />
+                      <p className="text-xs font-bold uppercase tracking-widest">Sin mensajes aún. ¡Saludá!</p>
+                    </div>
+                  ) : (
+                    <AnimatePresence>
+                      {messages.map((msg) => {
+                        const isMine = msg.senderId === currentUserId;
+                        return (
+                          <motion.div
+                            key={msg.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}
+                          >
+                            <div className={`max-w-[75%] px-5 py-3 rounded-3xl ${isMine ? 'bg-primary text-primary-foreground rounded-br-lg' : 'bg-white/5 rounded-bl-lg'}`}>
+                              <p className="text-sm font-medium leading-relaxed break-words">{msg.text}</p>
+                              <div className={`flex items-center gap-1 mt-1 ${isMine ? 'justify-end' : ''}`}>
+                                <span className="text-[10px] opacity-60">{formatTime(msg.createdAt)}</span>
+                                {isMine && (msg.read ? <CheckCheck className="h-3 w-3 opacity-60 text-blue-400" /> : <Check className="h-3 w-3 opacity-60" />)}
+                              </div>
                             </div>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </AnimatePresence>
+                          </motion.div>
+                        );
+                      })}
+                    </AnimatePresence>
+                  )}
                   <div ref={messagesEndRef} />
                 </div>
               </ScrollArea>

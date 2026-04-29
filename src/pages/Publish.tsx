@@ -200,18 +200,24 @@ export function Publish() {
         gncObleaVigente: formData.gncObleaVigente,
       });
 
-      // Start upload in background and REDIRECT IMMEDIATELY
+      // Wait for photos to upload if any
       if (photos.length > 0) {
-        uploadVehiclePhotos(photos, vId)
-          .then(urls => updateVehiclePhotos(vId, urls))
-          .catch(err => console.error('Background photo upload error:', err));
+        try {
+          const urls = await uploadVehiclePhotos(photos, vId);
+          await updateVehiclePhotos(vId, urls);
+        } catch (photoErr) {
+          console.error('Photo upload error:', photoErr);
+          // We don't block the whole publication if photos fail, 
+          // but we should notify or handle it.
+        }
       }
 
       navigate('/marketplace');
     } catch (e: any) {
       console.error('Publish error:', e);
       setError(`No pudimos publicar: ${e?.message || 'error de conexión'}`);
-      setSubmitting(false); // Only reset if failed
+    } finally {
+      setSubmitting(false);
     }
   };
 
