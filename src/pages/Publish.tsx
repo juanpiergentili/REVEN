@@ -164,9 +164,6 @@ export function Publish() {
         bodyType: (formData.bodyType || undefined) as BodyType | undefined,
         transmission: (formData.transmission || undefined) as Transmission | undefined,
         color: formData.color || undefined,
-        doors: formData.doors ? Number(formData.doors) : undefined,
-        seats: formData.seats ? Number(formData.seats) : undefined,
-        engine: formData.engine || undefined,
         condition: formData.condition as VehicleCondition,
         location,
         province: formData.province || undefined,
@@ -416,45 +413,6 @@ export function Publish() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Motor (Opcional)</Label>
-                  <Input
-                    value={formData.engine}
-                    onChange={e => update('engine', e.target.value)}
-                    placeholder="Ej: 2.0 TDI"
-                    className="h-14 rounded-xl bg-white/5 border-white/10 font-bold"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-3">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Puertas</Label>
-                    <Select value={formData.doors} onValueChange={v => update('doors', v)}>
-                      <SelectTrigger className="h-14 rounded-xl bg-white/5 border-white/10 font-bold">
-                        <SelectValue placeholder="-" />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl">
-                        {['2', '3', '4', '5'].map(n => (
-                          <SelectItem key={n} value={n}>{n}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-3">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Asientos</Label>
-                    <Select value={formData.seats} onValueChange={v => update('seats', v)}>
-                      <SelectTrigger className="h-14 rounded-xl bg-white/5 border-white/10 font-bold">
-                        <SelectValue placeholder="-" />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl">
-                        {['2', '4', '5', '7', '8+'].map(n => (
-                          <SelectItem key={n} value={n}>{n}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
                 </div>
 
                 <div className="space-y-3">

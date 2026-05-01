@@ -114,9 +114,6 @@ export type PublishFormData = {
   bodyType: string;
   transmission: string;
   color: string;
-  doors: string;
-  seats: string;
-  engine: string;
   condition: 'USADO' | '0KM';
   province: string;
   city: string;
@@ -133,7 +130,6 @@ export type PublishFormData = {
 export const INITIAL_FORM: PublishFormData = {
   brand: '', model: '', version: '', year: '', km: '',
   fuelType: '', bodyType: '', transmission: '', color: '',
-  doors: '', seats: '', engine: '',
   condition: 'USADO', province: '', city: '',
   hasVTV: false, hasPatenteAlDay: false, gncObleaVigente: false,
   uniqueOwner: false, officialService: false,
@@ -163,8 +159,6 @@ export function validateStep(
       if (!formData.transmission) return 'Seleccioná el tipo de transmisión.';
       if (!formData.bodyType) return 'Seleccioná el tipo de carrocería.';
       if (!formData.color) return 'Seleccioná el color del vehículo.';
-      if (!formData.doors) return 'Seleccioná la cantidad de puertas.';
-      if (!formData.seats) return 'Seleccioná la cantidad de asientos.';
       if (!formData.condition) return 'Seleccioná la condición del vehículo.';
       if (!formData.province) return 'Indicá en qué provincia se encuentra la unidad.';
       if (!formData.city) return 'Indicá en qué localidad se encuentra la unidad.';

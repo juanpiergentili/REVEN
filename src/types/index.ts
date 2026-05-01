@@ -127,9 +127,6 @@ export interface Vehicle {
   bodyType?: BodyType;
   transmission?: Transmission;
   color?: string;
-  doors?: number;
-  seats?: number;
-  engine?: string;
 
   // Ubicación
   province?: string;
