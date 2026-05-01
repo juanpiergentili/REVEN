@@ -33,8 +33,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { signInWithEmailAndPassword, onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
 import { auth, db, handleFirestoreError, OperationType } from '@/src/lib/firebase';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { loginDemoUser } from '@/src/lib/auth';
+import { doc, getDoc } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -123,81 +123,31 @@ export function Header() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    
-    const isDemo = email.toLowerCase() === 'demo@reven.com.ar' && password === 'DEMO1234';
-    const isVendedor = email.toLowerCase() === 'vendedor.test@reven.com.ar' && password === 'REVEN2026';
-    const isComprador = email.toLowerCase() === 'comprador.test@reven.com.ar' && password === 'REVEN2026';
 
-    if (isDemo || isVendedor || isComprador) {
-      try {
-        await signInWithEmailAndPassword(auth, email, password);
-        setIsLoginOpen(false);
-        navigate('/marketplace');
-      } catch (err: any) {
-        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/invalid-login-credentials') {
-          try {
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            const user = userCredential.user;
-            
-            const displayName = isVendedor ? 'Vendedor REVEN' : (isComprador ? 'Comprador REVEN' : 'Usuario Demo');
-            const companyName = isVendedor ? 'REVEN Motors (Vendedor)' : (isComprador ? 'AutoSelect B2B (Comprador)' : 'Reven Demo Dealer');
+    const emailLower = email.toLowerCase();
+    const isDemoAccount =
+      (emailLower === 'demo@reven.com.ar' && password === 'DEMO1234') ||
+      (emailLower === 'vendedor.test@reven.com.ar' && password === 'REVEN2026') ||
+      (emailLower === 'comprador.test@reven.com.ar' && password === 'REVEN2026');
 
-            await updateProfile(user, {
-              displayName: displayName
-            });
-
-            const userPath = `users/${user.uid}`;
-            try {
-              await setDoc(doc(db, 'users', user.uid), {
-                uid: user.uid,
-                email: email,
-                name: displayName.split(' ')[0],
-                lastName: displayName.split(' ')[1] || 'Demo',
-                cuil: isVendedor ? '20-99999999-9' : '20-88888888-8',
-                phone: isVendedor ? '+54 9 11 5555-0001' : '+54 9 11 5555-0002',
-                company: companyName,
-                province: isVendedor ? 'buenosaires' : (isComprador ? 'caba' : ''),
-                city: isVendedor ? 'ba-sanisidro' : (isComprador ? 'caba-palermo' : ''),
-                plan: 'platinum',
-                role: 'user',
-                status: 'approved',
-                createdAt: serverTimestamp()
-              });
-            } catch (fsErr) {
-              handleFirestoreError(fsErr, OperationType.WRITE, userPath);
-            }
-            
-            setIsLoginOpen(false);
-            navigate('/marketplace');
-          } catch (regErr: any) {
-            if (regErr.code === 'auth/email-already-in-use') {
-              setError(`El usuario '${email}' ya existe con otra contraseña. Por favor usa la correcta o solicita recuperar contraseña.`);
-            } else {
-              setError(`Error al inicializar acceso: ${regErr.message}`);
-            }
-          }
-        } else if (err.code === 'auth/operation-not-allowed') {
-          setError('El método de inicio de sesión con Email/Password no está habilitado en Firebase.');
-        } else {
-          setError(`Error en el acceso demo: ${err.message}`);
-        }
-      } finally {
-        setLoading(false);
-      }
-      return;
-    }
-
-    // Normal login flow
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      if (isDemoAccount) {
+        const type = emailLower.includes('vendedor') ? 'vendedor' : emailLower.includes('comprador') ? 'comprador' : 'demo';
+        await loginDemoUser(type);
+      } else {
+        await signInWithEmailAndPassword(auth, email, password);
+      }
       setIsLoginOpen(false);
       navigate('/marketplace');
     } catch (err: any) {
-      console.error(err);
       if (err.code === 'auth/user-not-found') {
         setError('El usuario no existe.');
       } else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         setError('Contraseña incorrecta.');
+      } else if (err.code === 'auth/email-already-in-use') {
+        setError(`El usuario '${email}' ya existe con otra contraseña.`);
+      } else if (err.code === 'auth/operation-not-allowed') {
+        setError('El método Email/Password no está habilitado en Firebase.');
       } else {
         setError('Credenciales inválidas o error de conexión.');
       }

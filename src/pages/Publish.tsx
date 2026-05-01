@@ -6,64 +6,46 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Camera, ArrowRight, ArrowLeft, CheckCircle2, X, Loader2, AlertCircle } from 'lucide-react';
+import { Camera, ArrowRight, ArrowLeft, CheckCircle2, X, Loader2, AlertCircle, ImageOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'motion/react';
 import { useAuth, db } from '@/src/lib/firebase';
 import { getDoc, doc } from 'firebase/firestore';
-import { createVehicle, uploadVehiclePhotos, updateVehiclePhotos } from '@/src/lib/vehicles';
+import { createVehicle, updateVehiclePhotos } from '@/src/lib/vehicles';
 import { VEHICLE_CATALOG, BODY_TYPES, FUEL_TYPES, TRANSMISSIONS, COLORS } from '@/src/data/vehicle-catalog';
 import { PROVINCIAS_ARGENTINA } from '@/src/data/argentina-geo';
 import type { FuelType, BodyType, Transmission, VehicleCondition } from '@/src/types';
+import { usePhotoUpload } from '@/src/hooks/usePhotoUpload';
+import { StepEstadoTecnico } from '@/src/components/publish/StepEstadoTecnico';
+import { StepPreview } from '@/src/components/publish/StepPreview';
+import {
+  formatArgentineNumber, parseArgentineNumber,
+  validateStep, getFirebaseErrorMessage, hasInspectionData,
+  INITIAL_INSPECTION, INITIAL_FORM,
+  type PublishFormData, type InspectionFormData,
+} from '@/src/lib/publish-helpers';
 
-type FormData = {
-  brand: string;
-  model: string;
-  version: string;
-  year: string;
-  km: string;
-  fuelType: string;
-  bodyType: string;
-  transmission: string;
-  color: string;
-  condition: 'USADO' | '0KM';
-  province: string;
-  city: string;
-  hasVTV: boolean;
-  hasPatenteAlDay: boolean;
-  gncObleaVigente: boolean;
-  uniqueOwner: boolean;
-  officialService: boolean;
-  description: string;
-  currency: 'USD' | 'ARS';
-  price: string;
-};
-
-const INITIAL_FORM: FormData = {
-  brand: '', model: '', version: '', year: '', km: '',
-  fuelType: '', bodyType: '', transmission: '', color: '',
-  condition: 'USADO', province: '', city: '',
-  hasVTV: false, hasPatenteAlDay: false, gncObleaVigente: false,
-  uniqueOwner: false, officialService: false,
-  description: '', currency: 'USD', price: '',
-};
-
+const TOTAL_STEPS = 6;
+const STEP_LABELS = ['Datos', 'Fotos', 'Legal', 'Estado', 'Precio', 'Preview'];
 const currentYear = new Date().getFullYear();
 const YEARS = Array.from({ length: currentYear - 1989 }, (_, i) => String(currentYear + 1 - i));
 
 export function Publish() {
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState<FormData>(INITIAL_FORM);
+  const [formData, setFormData] = useState<PublishFormData>(INITIAL_FORM);
+  const [inspection, setInspection] = useState<InspectionFormData>(INITIAL_INSPECTION);
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [showNoPhotosDialog, setShowNoPhotosDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const photoUpload = usePhotoUpload();
 
   useEffect(() => {
     if (!user) return;
@@ -84,7 +66,7 @@ export function Publish() {
     });
   }, [user]);
 
-  const update = useCallback(<K extends keyof FormData>(field: K, value: FormData[K]) => {
+  const update = useCallback(<K extends keyof PublishFormData>(field: K, value: PublishFormData[K]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setError(null);
   }, []);
@@ -135,26 +117,20 @@ export function Publish() {
     setPhotoPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
-  const validateStep = (s: number): string | null => {
-    if (s === 1) {
-      if (!formData.brand) return 'Por favor, seleccioná la marca del vehículo.';
-      if (!formData.model) return 'Ingresá el modelo para continuar.';
-      if (!formData.year) return 'Debés indicar el año de fabricación.';
-      if (formData.condition === 'USADO' && (formData.km === '' || Number(formData.km) < 0)) {
-        return 'Para vehículos usados, el kilometraje es obligatorio.';
-      }
-      if (!formData.fuelType) return 'Seleccioná el tipo de combustible.';
-      if (!formData.province) return 'Indicá en qué provincia se encuentra la unidad.';
+  const nextStep = () => {
+    // Step 2 special: confirm if no photos
+    if (step === 2 && photos.length === 0) {
+      setShowNoPhotosDialog(true);
+      return;
     }
-    if (s === 4) {
-      if (!formData.price || Number(formData.price) <= 0) return 'El precio debe ser mayor a 0.';
-    }
-    return null;
+    const err = validateStep(step, formData, photos);
+    if (err) { setError(err); return; }
+    setError(null);
+    setStep(s => s + 1);
   };
 
-  const nextStep = () => {
-    const err = validateStep(step);
-    if (err) { setError(err); return; }
+  const confirmNoPhotos = () => {
+    setShowNoPhotosDialog(false);
     setError(null);
     setStep(s => s + 1);
   };
@@ -162,8 +138,6 @@ export function Publish() {
   const prevStep = () => { setError(null); setStep(s => s - 1); };
 
   const handleSubmit = async () => {
-    const err = validateStep(4);
-    if (err) { setError(err); return; }
     if (!user) { setError('Debés iniciar sesión para publicar'); return; }
 
     setSubmitting(true);
@@ -172,46 +146,61 @@ export function Publish() {
       const cityName = selectedProvince?.localidades.find(l => l.id === formData.city)?.nombre || formData.city || '';
       const provinceName = selectedProvince?.nombre || formData.province || '';
       const location = cityName ? `${cityName}, ${provinceName}` : provinceName;
+      const kmRaw = parseArgentineNumber(formData.km);
+      const priceRaw = parseArgentineNumber(formData.price);
+
+      const inspData = hasInspectionData(inspection) ? inspection : undefined;
 
       const vId = await createVehicle({
         sellerId: user.uid,
-        sellerName: userProfile?.company || userProfile?.name || user.displayName || 'Agencia',
+        sellerName: userProfile?.companyName || userProfile?.name || user.displayName || 'Agencia',
+        sellerCompany: userProfile?.companyName || 'Agencia',
         brand: formData.brand,
         model: formData.model,
         version: formData.version,
         year: Number(formData.year),
-        km: formData.condition === '0KM' ? 0 : Number(formData.km),
+        km: formData.condition === '0KM' ? 0 : Number(kmRaw),
         fuelType: formData.fuelType as FuelType,
         bodyType: (formData.bodyType || undefined) as BodyType | undefined,
         transmission: (formData.transmission || undefined) as Transmission | undefined,
         color: formData.color || undefined,
+        doors: formData.doors ? Number(formData.doors) : undefined,
+        seats: formData.seats ? Number(formData.seats) : undefined,
+        engine: formData.engine || undefined,
         condition: formData.condition as VehicleCondition,
         location,
         province: formData.province || undefined,
         city: cityName || undefined,
-        price: formData.price ? Number(formData.price) : undefined,
+        price: priceRaw ? Number(priceRaw) : undefined,
         currency: formData.currency,
+        priceNegotiable: false,
         status: 'ACTIVE',
         isFeatured: false,
+        isInspected: false,
         photos: [],
         description: formData.description,
         hasVTV: formData.hasVTV,
         hasPatenteAlDay: formData.hasPatenteAlDay,
         gncObleaVigente: formData.gncObleaVigente,
+        inspectionData: inspData as any,
       });
 
-      // Start upload in background and REDIRECT IMMEDIATELY
       if (photos.length > 0) {
-        uploadVehiclePhotos(photos, vId)
-          .then(urls => updateVehiclePhotos(vId, urls))
-          .catch(err => console.error('Background photo upload error:', err));
+        try {
+          const urls = await photoUpload.uploadPhotos(photos, vId, user.uid);
+          await updateVehiclePhotos(vId, urls);
+        } catch (uploadErr: unknown) {
+          setError(`Vehículo publicado, pero hubo un error al subir las fotos: ${getFirebaseErrorMessage(uploadErr)}`);
+          setSubmitting(false);
+          return;
+        }
       }
 
       navigate('/marketplace');
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('Publish error:', e);
-      setError(`No pudimos publicar: ${e?.message || 'error de conexión'}`);
-      setSubmitting(false); // Only reset if failed
+      setError(getFirebaseErrorMessage(e));
+      setSubmitting(false);
     }
   };
 
@@ -221,26 +210,23 @@ export function Publish() {
         <Badge className="bg-primary/20 text-primary border-primary/20 font-bold tracking-tighter px-4 py-1.5 rounded-full text-sm">
           NUEVA PUBLICACIÓN
         </Badge>
-        <h1 className="text-5xl font-bold tracking-tighter uppercase">Sumar Stock</h1>
+        <h1 className="text-3xl md:text-5xl font-bold tracking-tighter uppercase">Sumar Stock</h1>
         <p className="text-muted-foreground font-medium">Completá los pasos para publicar tu unidad en la comunidad.</p>
       </div>
 
       {/* Step indicators */}
-      <div className="flex justify-between mb-12 relative max-w-md mx-auto">
+      <div className="flex justify-between mb-12 relative max-w-lg mx-auto">
         <div className="absolute top-1/2 left-0 w-full h-1 bg-white/5 -translate-y-1/2 z-0 rounded-full" />
-        {[1, 2, 3, 4].map((s) => (
+        {Array.from({ length: TOTAL_STEPS }, (_, i) => i + 1).map((s) => (
           <div
             key={s}
-            className={`relative z-10 flex items-center justify-center w-12 h-12 rounded-full border-4 transition-all duration-500 ${
+            className={`relative z-10 flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full border-4 transition-all duration-500 ${
               step >= s ? 'bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/20' : 'bg-background border-white/5 text-muted-foreground'
             }`}
           >
-            {step > s ? <CheckCircle2 className="h-6 w-6 stroke-[3]" /> : <span className="font-bold">{s}</span>}
-            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-max text-[8px] font-black uppercase tracking-widest text-muted-foreground">
-              {s === 1 && 'Datos'}
-              {s === 2 && 'Fotos'}
-              {s === 3 && 'Legal'}
-              {s === 4 && 'Precio'}
+            {step > s ? <CheckCircle2 className="h-5 w-5 md:h-6 md:w-6 stroke-[3]" /> : <span className="font-bold text-sm">{s}</span>}
+            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-max text-[7px] md:text-[8px] font-black uppercase tracking-widest text-muted-foreground">
+              {STEP_LABELS[s - 1]}
             </div>
           </div>
         ))}
@@ -250,7 +236,7 @@ export function Publish() {
         <CardContent className="p-10">
 
           {error && (
-            <div className="flex items-center gap-3 mb-6 p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium">
+            <div className="flex items-center gap-3 mb-6 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium">
               <AlertCircle className="h-4 w-4 shrink-0" />
               {error}
             </div>
@@ -263,10 +249,10 @@ export function Publish() {
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Marca</Label>
                   <Select value={formData.brand} onValueChange={handleBrandSelect}>
-                    <SelectTrigger className="h-14 rounded-2xl bg-white/5 border-white/10 font-bold">
+                    <SelectTrigger className="h-14 rounded-xl bg-white/5 border-white/10 font-bold">
                       <SelectValue placeholder="Seleccionar marca" />
                     </SelectTrigger>
-                    <SelectContent className="rounded-2xl max-h-72">
+                    <SelectContent className="rounded-xl max-h-72">
                       {VEHICLE_CATALOG.map(b => (
                         <SelectItem key={b.nombre} value={b.nombre}>{b.nombre}</SelectItem>
                       ))}
@@ -278,10 +264,10 @@ export function Publish() {
                   <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Modelo</Label>
                   {selectedBrand ? (
                     <Select value={formData.model} onValueChange={handleModelSelect}>
-                      <SelectTrigger className="h-14 rounded-2xl bg-white/5 border-white/10 font-bold">
+                      <SelectTrigger className="h-14 rounded-xl bg-white/5 border-white/10 font-bold">
                         <SelectValue placeholder="Seleccionar modelo" />
                       </SelectTrigger>
-                      <SelectContent className="rounded-2xl max-h-72">
+                      <SelectContent className="rounded-xl max-h-72">
                         {selectedBrand.modelos.map(m => (
                           <SelectItem key={m.nombre} value={m.nombre}>{m.nombre}</SelectItem>
                         ))}
@@ -292,7 +278,7 @@ export function Publish() {
                       value={formData.model}
                       onChange={e => update('model', e.target.value)}
                       placeholder="Ej: Hilux, Vento..."
-                      className="h-14 rounded-2xl bg-white/5 border-white/10 font-bold"
+                      className="h-14 rounded-xl bg-white/5 border-white/10 font-bold"
                     />
                   )}
                 </div>
@@ -301,10 +287,10 @@ export function Publish() {
                   <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Versión</Label>
                   {selectedModel ? (
                     <Select value={formData.version} onValueChange={handleVersionSelect}>
-                      <SelectTrigger className="h-14 rounded-2xl bg-white/5 border-white/10 font-bold">
+                      <SelectTrigger className="h-14 rounded-xl bg-white/5 border-white/10 font-bold">
                         <SelectValue placeholder="Seleccionar versión" />
                       </SelectTrigger>
-                      <SelectContent className="rounded-2xl max-h-72">
+                      <SelectContent className="rounded-xl max-h-72">
                         {selectedModel.versiones.map(v => (
                           <SelectItem key={v.nombre} value={v.nombre}>{v.nombre}</SelectItem>
                         ))}
@@ -315,7 +301,7 @@ export function Publish() {
                       value={formData.version}
                       onChange={e => update('version', e.target.value)}
                       placeholder="Ej: 2.8 SRX 4X4 AT"
-                      className="h-14 rounded-2xl bg-white/5 border-white/10 font-bold"
+                      className="h-14 rounded-xl bg-white/5 border-white/10 font-bold"
                     />
                   )}
                 </div>
@@ -323,10 +309,10 @@ export function Publish() {
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Año</Label>
                   <Select value={formData.year} onValueChange={v => update('year', v)}>
-                    <SelectTrigger className="h-14 rounded-2xl bg-white/5 border-white/10 font-bold">
+                    <SelectTrigger className="h-14 rounded-xl bg-white/5 border-white/10 font-bold">
                       <SelectValue placeholder="Seleccionar año" />
                     </SelectTrigger>
-                    <SelectContent className="rounded-2xl max-h-72">
+                    <SelectContent className="rounded-xl max-h-72">
                       {YEARS.map(y => (
                         <SelectItem key={y} value={y}>{y}</SelectItem>
                       ))}
@@ -337,35 +323,44 @@ export function Publish() {
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Kilometraje</Label>
                   <Input
-                    type="number"
-                    min={0}
-                    value={formData.km}
-                    onChange={e => update('km', e.target.value)}
+                    type="text"
+                    inputMode="numeric"
+                    value={formatArgentineNumber(formData.km)}
+                    onChange={e => update('km', parseArgentineNumber(e.target.value))}
                     placeholder="0"
-                    className="h-14 rounded-2xl bg-white/5 border-white/10 font-bold"
+                    className="h-14 rounded-xl bg-white/5 border-white/10 font-bold"
                   />
                 </div>
 
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Condición</Label>
-                  <Select value={formData.condition} onValueChange={v => update('condition', v as 'USADO' | '0KM')}>
-                    <SelectTrigger className="h-14 rounded-2xl bg-white/5 border-white/10 font-bold">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl">
-                      <SelectItem value="USADO">Usado</SelectItem>
-                      <SelectItem value="0KM">0 KM</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant="outline"
+                      type="button"
+                      onClick={() => update('condition', 'USADO')}
+                      className={`h-14 rounded-xl border-white/10 font-bold uppercase tracking-widest ${formData.condition === 'USADO' ? 'bg-primary text-primary-foreground border-primary' : 'bg-white/5 text-muted-foreground hover:bg-white/10'}`}
+                    >
+                      Usado
+                    </Button>
+                    <Button
+                      variant="outline"
+                      type="button"
+                      onClick={() => update('condition', '0KM')}
+                      className={`h-14 rounded-xl border-white/10 font-bold uppercase tracking-widest ${formData.condition === '0KM' ? 'bg-primary text-primary-foreground border-primary' : 'bg-white/5 text-muted-foreground hover:bg-white/10'}`}
+                    >
+                      0 KM
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Combustible</Label>
                   <Select value={formData.fuelType} onValueChange={v => update('fuelType', v)}>
-                    <SelectTrigger className="h-14 rounded-2xl bg-white/5 border-white/10 font-bold">
+                    <SelectTrigger className="h-14 rounded-xl bg-white/5 border-white/10 font-bold">
                       <SelectValue placeholder="Seleccionar" />
                     </SelectTrigger>
-                    <SelectContent className="rounded-2xl">
+                    <SelectContent className="rounded-xl">
                       {FUEL_TYPES.map(f => (
                         <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
                       ))}
@@ -375,25 +370,28 @@ export function Publish() {
 
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Transmisión</Label>
-                  <Select value={formData.transmission} onValueChange={v => update('transmission', v)}>
-                    <SelectTrigger className="h-14 rounded-2xl bg-white/5 border-white/10 font-bold">
-                      <SelectValue placeholder="Seleccionar" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl">
-                      {TRANSMISSIONS.map(t => (
-                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="grid grid-cols-2 gap-2">
+                    {TRANSMISSIONS.map(t => (
+                      <Button
+                        key={t.value}
+                        variant="outline"
+                        type="button"
+                        onClick={() => update('transmission', t.value)}
+                        className={`h-14 rounded-xl border-white/10 font-bold uppercase tracking-widest ${formData.transmission === t.value ? 'bg-primary text-primary-foreground border-primary' : 'bg-white/5 text-muted-foreground hover:bg-white/10'}`}
+                      >
+                        {t.label}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Carrocería</Label>
                   <Select value={formData.bodyType} onValueChange={v => update('bodyType', v)}>
-                    <SelectTrigger className="h-14 rounded-2xl bg-white/5 border-white/10 font-bold">
+                    <SelectTrigger className="h-14 rounded-xl bg-white/5 border-white/10 font-bold">
                       <SelectValue placeholder="Seleccionar" />
                     </SelectTrigger>
-                    <SelectContent className="rounded-2xl">
+                    <SelectContent className="rounded-xl">
                       {BODY_TYPES.map(b => (
                         <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
                       ))}
@@ -404,10 +402,10 @@ export function Publish() {
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Color</Label>
                   <Select value={formData.color} onValueChange={v => update('color', v)}>
-                    <SelectTrigger className="h-14 rounded-2xl bg-white/5 border-white/10 font-bold">
+                    <SelectTrigger className="h-14 rounded-xl bg-white/5 border-white/10 font-bold">
                       <SelectValue placeholder="Seleccionar" />
                     </SelectTrigger>
-                    <SelectContent className="rounded-2xl">
+                    <SelectContent className="rounded-xl">
                       {COLORS.map(c => (
                         <SelectItem key={c.value} value={c.value}>
                           <span className="flex items-center gap-2">
@@ -418,6 +416,45 @@ export function Publish() {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Motor (Opcional)</Label>
+                  <Input
+                    value={formData.engine}
+                    onChange={e => update('engine', e.target.value)}
+                    placeholder="Ej: 2.0 TDI"
+                    className="h-14 rounded-xl bg-white/5 border-white/10 font-bold"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Puertas</Label>
+                    <Select value={formData.doors} onValueChange={v => update('doors', v)}>
+                      <SelectTrigger className="h-14 rounded-xl bg-white/5 border-white/10 font-bold">
+                        <SelectValue placeholder="-" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        {['2', '3', '4', '5'].map(n => (
+                          <SelectItem key={n} value={n}>{n}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Asientos</Label>
+                    <Select value={formData.seats} onValueChange={v => update('seats', v)}>
+                      <SelectTrigger className="h-14 rounded-xl bg-white/5 border-white/10 font-bold">
+                        <SelectValue placeholder="-" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        {['2', '4', '5', '7', '8+'].map(n => (
+                          <SelectItem key={n} value={n}>{n}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 <div className="space-y-3">
@@ -432,12 +469,12 @@ export function Publish() {
                     onValueChange={v => { update('province', v); update('city', ''); }}
                     disabled={!!userProfile?.province}
                   >
-                    <SelectTrigger className={`h-14 rounded-2xl bg-white/5 border-white/10 font-bold ${userProfile?.province ? 'opacity-70' : ''}`}>
+                    <SelectTrigger className={`h-14 rounded-xl bg-white/5 border-white/10 font-bold ${userProfile?.province ? 'opacity-70' : ''}`}>
                       <SelectValue>
                         {PROVINCIAS_ARGENTINA.find(p => p.id === formData.province)?.nombre || 'Seleccionar provincia'}
                       </SelectValue>
                     </SelectTrigger>
-                    <SelectContent className="rounded-2xl max-h-72">
+                    <SelectContent className="rounded-xl max-h-72">
                       {PROVINCIAS_ARGENTINA.map(p => (
                         <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
                       ))}
@@ -457,12 +494,12 @@ export function Publish() {
                     onValueChange={v => update('city', v)}
                     disabled={!selectedProvince || !!userProfile?.city}
                   >
-                    <SelectTrigger className={`h-14 rounded-2xl bg-white/5 border-white/10 font-bold ${userProfile?.city ? 'opacity-70' : ''}`}>
+                    <SelectTrigger className={`h-14 rounded-xl bg-white/5 border-white/10 font-bold ${userProfile?.city ? 'opacity-70' : ''}`}>
                       <SelectValue>
                         {selectedProvince?.localidades.find(l => l.id === formData.city)?.nombre || (selectedProvince ? 'Seleccionar localidad' : 'Primero elegí provincia')}
                       </SelectValue>
                     </SelectTrigger>
-                    <SelectContent className="rounded-2xl max-h-72">
+                    <SelectContent className="rounded-xl max-h-72">
                       {selectedProvince?.localidades.map(l => (
                         <SelectItem key={l.id} value={l.id}>{l.nombre}</SelectItem>
                       ))}
@@ -520,7 +557,7 @@ export function Publish() {
               {photoPreviews.length > 0 && (
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
                   {photoPreviews.map((url, i) => (
-                    <div key={i} className="relative aspect-square rounded-2xl overflow-hidden group">
+                    <div key={i} className="relative aspect-square rounded-xl overflow-hidden group">
                       <img src={url} alt={`foto ${i + 1}`} className="w-full h-full object-cover" />
                       {i === 0 && (
                         <div className="absolute bottom-1 left-1 bg-primary/90 text-primary-foreground text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">
@@ -538,12 +575,31 @@ export function Publish() {
                 </div>
               )}
 
+              {/* No-photos confirmation dialog */}
+              {showNoPhotosDialog && (
+                <div className="p-6 rounded-3xl bg-amber-500/5 border border-amber-500/20 space-y-4">
+                  <div className="flex items-center gap-3">
+                    <ImageOff className="h-5 w-5 text-amber-500" />
+                    <p className="text-sm font-bold uppercase tracking-widest">¿Publicar sin fotos?</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground font-medium">Las publicaciones sin fotos tienen mucha menos visibilidad. ¿Estás seguro?</p>
+                  <div className="flex gap-3">
+                    <Button variant="outline" onClick={() => setShowNoPhotosDialog(false)} className="rounded-full px-6 border-white/10 font-bold uppercase tracking-widest text-xs">
+                      Volver
+                    </Button>
+                    <Button onClick={confirmNoPhotos} className="rounded-full px-6 font-bold uppercase tracking-widest text-xs bg-amber-500 hover:bg-amber-600">
+                      Continuar sin fotos
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               <div className="flex justify-between pt-4">
                 <Button variant="ghost" onClick={prevStep} className="h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-white/5">
                   <ArrowLeft className="h-5 w-5 stroke-[3]" /> Anterior
                 </Button>
                 <Button onClick={nextStep} className="h-14 px-10 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 shadow-lg shadow-primary/20">
-                  {photos.length === 0 ? 'Omitir' : 'Siguiente'} <ArrowRight className="h-5 w-5 stroke-[3]" />
+                  Siguiente <ArrowRight className="h-5 w-5 stroke-[3]" />
                 </Button>
               </div>
             </motion.div>
@@ -563,13 +619,13 @@ export function Publish() {
                   <label
                     key={id}
                     htmlFor={id}
-                    className="flex items-center space-x-3 border border-white/5 bg-white/5 p-6 rounded-2xl hover:border-primary/30 transition-all cursor-pointer"
+                    className="flex items-center space-x-3 border border-white/5 bg-white/5 p-6 rounded-xl hover:border-primary/30 transition-all cursor-pointer"
                   >
                     <Checkbox
                       id={id}
                       className="h-6 w-6 rounded-md border-white/20"
-                      checked={formData[id as keyof FormData] as boolean}
-                      onCheckedChange={v => update(id as keyof FormData, Boolean(v) as any)}
+                      checked={formData[id as keyof PublishFormData] as boolean}
+                      onCheckedChange={v => update(id as keyof PublishFormData, Boolean(v) as any)}
                     />
                     <span className="font-bold uppercase tracking-widest text-xs">{label}</span>
                   </label>
@@ -582,7 +638,7 @@ export function Publish() {
                   value={formData.description}
                   onChange={e => update('description', e.target.value)}
                   placeholder="Describí el estado general, equipamiento adicional, etc."
-                  className="min-h-[150px] rounded-2xl bg-white/5 border-white/10 font-bold p-6"
+                  className="min-h-[150px] rounded-xl bg-white/5 border-white/10 font-bold p-6"
                 />
               </div>
 
@@ -599,16 +655,29 @@ export function Publish() {
 
           {step === 4 && (
             <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-8">
-              <h3 className="text-xl font-bold tracking-tighter uppercase">Precio y Condiciones de Venta</h3>
+              <StepEstadoTecnico inspection={inspection} onChange={setInspection} />
+              <div className="flex justify-between pt-4">
+                <Button variant="ghost" onClick={prevStep} className="h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-white/5">
+                  <ArrowLeft className="h-5 w-5 stroke-[3]" /> Anterior
+                </Button>
+                <Button onClick={nextStep} className="h-14 px-10 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 shadow-lg shadow-primary/20">
+                  Siguiente <ArrowRight className="h-5 w-5 stroke-[3]" />
+                </Button>
+              </div>
+            </motion.div>
+          )}
 
+          {step === 5 && (
+            <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-8">
+              <h3 className="text-xl font-bold tracking-tighter uppercase">Precio y Condiciones de Venta</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Moneda</Label>
                   <Select value={formData.currency} onValueChange={v => update('currency', v as 'USD' | 'ARS')}>
-                    <SelectTrigger className="h-14 rounded-2xl bg-white/5 border-white/10 font-bold">
+                    <SelectTrigger className="h-14 rounded-xl bg-white/5 border-white/10 font-bold">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="rounded-2xl">
+                    <SelectContent className="rounded-xl">
                       <SelectItem value="USD">Dólares (USD)</SelectItem>
                       <SelectItem value="ARS">Pesos (ARS)</SelectItem>
                     </SelectContent>
@@ -616,46 +685,66 @@ export function Publish() {
                 </div>
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Precio</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={formData.price}
-                    onChange={e => update('price', e.target.value)}
-                    placeholder="0"
-                    className="h-14 rounded-2xl bg-white/5 border-white/10 font-bold text-2xl text-primary tracking-tighter"
-                  />
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-lg">
+                      {formData.currency === 'USD' ? 'U$D' : '$'}
+                    </span>
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      value={formatArgentineNumber(formData.price)}
+                      onChange={e => update('price', parseArgentineNumber(e.target.value))}
+                      placeholder="0"
+                      className="h-14 rounded-xl bg-white/5 border-white/10 font-bold text-2xl text-primary tracking-tighter pl-14"
+                    />
+                  </div>
                 </div>
               </div>
-
-              <div className="p-6 rounded-3xl bg-white/5 border border-white/10 space-y-3 text-sm">
-                <p className="font-black uppercase tracking-widest text-[10px] text-muted-foreground mb-4">Resumen de publicación</p>
-                <p><span className="text-muted-foreground">Vehículo:</span> <span className="font-bold">{formData.brand} {formData.model} {formData.version}</span></p>
-                <p><span className="text-muted-foreground">Año:</span> <span className="font-bold">{formData.year}</span> &nbsp;|&nbsp; <span className="text-muted-foreground">KM:</span> <span className="font-bold">{Number(formData.km).toLocaleString()}</span></p>
-                <p><span className="text-muted-foreground">Fotos:</span> <span className="font-bold">{photos.length} imagen{photos.length !== 1 ? 'es' : ''}</span></p>
-              </div>
-
-              <div className="p-8 rounded-3xl bg-primary/5 border border-primary/20 space-y-4">
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-primary" />
-                  <p className="text-sm font-bold uppercase tracking-widest">Publicación verificada</p>
-                </div>
-                <p className="text-xs text-muted-foreground font-medium">Al publicar, aceptás que la información es verídica y que sos el responsable legal de la unidad o tenés poder para comercializarla.</p>
-              </div>
-
               <div className="flex justify-between pt-4">
+                <Button variant="ghost" onClick={prevStep} className="h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-white/5">
+                  <ArrowLeft className="h-5 w-5 stroke-[3]" /> Anterior
+                </Button>
+                <Button onClick={nextStep} className="h-14 px-10 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 shadow-lg shadow-primary/20">
+                  Siguiente <ArrowRight className="h-5 w-5 stroke-[3]" />
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
+          {step === 6 && (
+            <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-8">
+              <StepPreview formData={formData} inspection={inspection} photoPreviews={photoPreviews} photosCount={photos.length} />
+
+              {/* Upload progress bar */}
+              {photoUpload.isUploading && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-xs font-bold uppercase tracking-widest">
+                    <span>Subiendo fotos...</span>
+                    <span>{photoUpload.completedFiles}/{photoUpload.totalFiles}</span>
+                  </div>
+                  <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary rounded-full transition-all duration-300"
+                      style={{ width: `${photoUpload.overallProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center pt-4 gap-4">
                 <Button variant="ghost" onClick={prevStep} disabled={submitting} className="h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-white/5">
                   <ArrowLeft className="h-5 w-5 stroke-[3]" /> Anterior
                 </Button>
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   onClick={handleSubmit}
-                  disabled={submitting}
-                  className="w-full h-16 rounded-full font-bold uppercase tracking-[0.2em] text-lg shadow-xl shadow-primary/20 group relative overflow-hidden active:scale-[0.98] transition-transform"
+                  disabled={submitting || photoUpload.isUploading}
+                  className="h-14 px-10 rounded-full font-bold uppercase tracking-[0.15em] text-base shadow-xl shadow-primary/20 active:scale-[0.98] transition-transform gap-2"
                 >
                   {submitting ? (
                     <><Loader2 className="h-5 w-5 animate-spin" /> Publicando...</>
                   ) : (
-                    <><CheckCircle2 className="h-5 w-5 stroke-[3]" /> Finalizar Publicación</>
+                    <><CheckCircle2 className="h-5 w-5 stroke-[3]" /> Publicar</>
                   )}
                 </Button>
               </div>

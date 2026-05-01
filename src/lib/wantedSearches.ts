@@ -1,7 +1,7 @@
-import { db } from './firebase';
+import { db, convertTimestamp } from './firebase';
 import {
   collection, addDoc, deleteDoc, doc,
-  query, orderBy, limit, onSnapshot, serverTimestamp, Timestamp,
+  query, orderBy, limit, onSnapshot, serverTimestamp,
 } from 'firebase/firestore';
 import type { WantedSearch } from '../types';
 
@@ -34,9 +34,7 @@ export function subscribeToWantedSearches(
       return {
         ...data,
         id: docSnap.id,
-        createdAt: data.createdAt instanceof Timestamp
-          ? data.createdAt.toDate().toISOString()
-          : (data.createdAt ?? new Date().toISOString()),
+        createdAt: convertTimestamp(data.createdAt),
       } as WantedSearch;
     });
     onUpdate(searches);

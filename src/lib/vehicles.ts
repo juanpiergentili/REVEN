@@ -1,12 +1,12 @@
-import { db, storage } from './firebase';
+import { db, storage, convertTimestamp } from './firebase';
 import {
   collection, addDoc, updateDoc, doc,
-  query, orderBy, limit, onSnapshot, serverTimestamp, Timestamp,
+  query, orderBy, limit, onSnapshot, serverTimestamp,
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import type { Vehicle } from '../types';
 
-type NewVehicle = Omit<Vehicle, 'id' | 'createdAt'>;
+type NewVehicle = Omit<Vehicle, 'id' | 'createdAt' | 'updatedAt' | 'publishedAt' | 'soldAt' | 'viewCount' | 'contactCount'>;
 
 export async function createVehicle(data: NewVehicle): Promise<string> {
   const docRef = await addDoc(collection(db, 'vehicles'), {
@@ -18,9 +18,9 @@ export async function createVehicle(data: NewVehicle): Promise<string> {
   return docRef.id;
 }
 
-export async function uploadVehiclePhotos(files: File[], vehicleId: string): Promise<string[]> {
+export async function uploadVehiclePhotos(files: File[], vehicleId: string, userId: string): Promise<string[]> {
   const uploads = files.map(async (file) => {
-    const storageRef = ref(storage, `vehicles/${vehicleId}/${Date.now()}_${file.name}`);
+    const storageRef = ref(storage, `vehicles/${userId}/${vehicleId}/${Date.now()}_${file.name}`);
     await uploadBytes(storageRef, file);
     return getDownloadURL(storageRef);
   });
@@ -47,9 +47,7 @@ export function subscribeToVehicles(
         return {
           ...data,
           id: docSnap.id,
-          createdAt: data.createdAt instanceof Timestamp
-            ? data.createdAt.toDate().toISOString()
-            : (data.createdAt ?? new Date().toISOString()),
+          createdAt: convertTimestamp(data.createdAt),
         } as Vehicle;
       })
       .filter(v => v.status === 'ACTIVE');

@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
-import { getFirestore, getDocFromServer, doc } from 'firebase/firestore';
+import { getFirestore, getDocFromServer, doc, Timestamp } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { useState, useEffect } from 'react';
 import firebaseConfig from '../../firebase-applet-config.json';
@@ -76,6 +76,12 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   }
   console.error('Firestore Error: ', JSON.stringify(errInfo));
   throw new Error(JSON.stringify(errInfo));
+}
+
+export function convertTimestamp(ts: Timestamp | string | null | undefined): string {
+  if (ts instanceof Timestamp) return ts.toDate().toISOString();
+  if (typeof ts === 'string') return ts;
+  return new Date().toISOString();
 }
 
 // Test connection

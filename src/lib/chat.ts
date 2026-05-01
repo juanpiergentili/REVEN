@@ -1,8 +1,8 @@
 import {
   collection, doc, addDoc, query, where, orderBy, onSnapshot,
-  updateDoc, serverTimestamp, getDocs, limit, Timestamp, getDoc, setDoc, increment
+  updateDoc, serverTimestamp, getDocs, limit, getDoc, setDoc, increment, Timestamp
 } from 'firebase/firestore';
-import { db } from './firebase';
+import { db, convertTimestamp } from './firebase';
 
 // ---- Conversations ----
 

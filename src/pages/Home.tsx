@@ -3,7 +3,7 @@ import { Shield, Zap, Star, Users, Check, ArrowRight, Quote, Star as StarIcon, X
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link, useNavigate } from 'react-router-dom';
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Logo } from '../components/layout/Logo';
 import { Footer } from '../components/layout/Footer';
 import { Input } from '@/components/ui/input';
@@ -28,6 +28,9 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { subscribeToVehicles } from '@/src/lib/vehicles';
+import { Vehicle } from '@/src/types';
+import { VehicleCard } from '@/src/components/marketplace/VehicleCard';
 
 const REVIEWS = [
   { name: "Carlos Benítez", role: "Dueño de Automotores del Sur", comment: "Excelente plataforma. He cerrado más negocios en un mes que en todo el semestre pasado. La atención es cálida y profesional.", photo: "https://picsum.photos/seed/user1/100/100" },
@@ -65,12 +68,7 @@ const REVIEWS = [
 const REVIEWS_ROW_1 = REVIEWS.slice(0, 15);
 const REVIEWS_ROW_2 = REVIEWS.slice(15, 30);
 
-const LATEST_UNITS = [
-  { brand: "Toyota", model: "Hilux", version: "SRX 4x4 AT", year: 2023, price: "45.900", oldPrice: "48.500", photo: "https://images.unsplash.com/photo-1559416523-140ddc3d238c?auto=format&fit=crop&q=80&w=800", specs: { fuel: "Diesel", trans: "Automática", seats: 5 } },
-  { brand: "Volkswagen", model: "Amarok", version: "V6 Extreme", year: 2024, price: "52.000", oldPrice: "55.000", photo: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=800", specs: { fuel: "Diesel", trans: "Automática", seats: 5 } },
-  { brand: "Ford", model: "Ranger", version: "Limited Plus", year: 2024, price: "49.500", oldPrice: "52.000", photo: "https://images.unsplash.com/photo-1544636331-e26879cd4d9b?auto=format&fit=crop&q=80&w=800", specs: { fuel: "Diesel", trans: "Automática", seats: 5 } },
-  { brand: "Jeep", model: "Compass", version: "Limited 1.3T", year: 2023, price: "38.500", oldPrice: "41.000", photo: "https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&q=80&w=800", specs: { fuel: "Nafta", trans: "Automática", seats: 5 } },
-];
+
 
 const STEPS = [
   { number: "01", title: "Solicitá Admisión", desc: "Completá el formulario con tus datos profesionales y de tu concesionaria." },
@@ -139,6 +137,15 @@ export function Home() {
   const [showTerms, setShowTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [latestVehicles, setLatestVehicles] = useState<Vehicle[]>([]);
+
+  useEffect(() => {
+    const unsub = subscribeToVehicles(
+      (data) => setLatestVehicles(data.slice(0, 4)),
+      (err) => console.error("Error fetching latest vehicles:", err)
+    );
+    return unsub;
+  }, []);
 
   // Form States
   const [name, setName] = useState('');
@@ -196,7 +203,7 @@ export function Home() {
           plan: plan,
           billingCycle: billingCycle,
           discountCode: isDiscountApplied ? discountCode : null,
-          role: 'user',
+          role: 'USER',
           status: 'pending',
           createdAt: serverTimestamp()
         });
@@ -254,7 +261,7 @@ export function Home() {
               <Badge className="bg-primary/20 text-primary border-primary/20 font-semibold tracking-tighter px-6 py-2 rounded-full text-sm inline-flex">
                 COMUNIDAD EXCLUSIVA B2B
               </Badge>
-              <h1 className="text-5xl sm:text-6xl md:text-8xl font-bold tracking-tighter uppercase leading-[0.9] text-foreground">
+              <h1 className="text-4xl sm:text-6xl md:text-8xl font-bold tracking-tighter uppercase leading-[0.9] text-foreground">
                 EL FUTURO DEL <br />
                 NEGOCIO <br />
                 AUTOMOTOR
@@ -265,7 +272,7 @@ export function Home() {
               <div className="flex flex-col sm:flex-row gap-4 pt-4 justify-center lg:justify-start">
                 <Button
                   size="lg"
-                  className="h-14 md:h-16 px-8 md:px-10 rounded-2xl font-bold text-base md:text-lg shadow-xl shadow-primary/20 group uppercase tracking-tighter w-full sm:w-auto"
+                  className="h-12 md:h-16 px-6 md:px-10 rounded-xl font-bold text-base md:text-lg shadow-xl shadow-primary/20 group uppercase tracking-tighter w-full sm:w-auto"
                   onClick={() => setIsAdmissionOpen(true)}
                 >
                   SOLICITAR ADMISIÓN
@@ -274,7 +281,7 @@ export function Home() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="h-14 md:h-16 px-8 md:px-10 rounded-2xl font-bold text-base md:text-lg border-border hover:bg-primary/5 uppercase tracking-tighter w-full sm:w-auto"
+                  className="h-12 md:h-16 px-6 md:px-10 rounded-xl font-bold text-base md:text-lg border-border hover:bg-primary/5 uppercase tracking-tighter w-full sm:w-auto"
                   onClick={() => {
                     const pricingSection = document.getElementById('pricing');
                     pricingSection?.scrollIntoView({ behavior: 'smooth' });
@@ -402,57 +409,8 @@ export function Home() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {LATEST_UNITS.map((car, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                viewport={{ once: true }}
-                className="group cursor-pointer bg-background dark:bg-card/30 rounded-[2.5rem] border border-border/50 overflow-hidden hover:shadow-2xl hover:shadow-primary/5 transition-all"
-              >
-                <div className="relative aspect-[4/3] overflow-hidden">
-                  <img src={car.photo} alt={car.model} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                  <div className="absolute top-4 right-4">
-                    <Badge className="bg-primary text-primary-foreground font-bold rounded-full px-3 py-1">
-                      OFERTA
-                    </Badge>
-                  </div>
-                </div>
-                <div className="p-6 space-y-4">
-                  <div className="space-y-1">
-                    <h4 className="font-bold text-xl uppercase tracking-tighter leading-none text-foreground dark:text-foreground">{car.brand} {car.model}</h4>
-                    <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">{car.version}</p>
-                  </div>
-
-                  <div className="flex items-center justify-between py-4 border-y border-border/50">
-                    <div className="flex flex-col items-center gap-1">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase">{car.specs.seats} Asientos</span>
-                    </div>
-                    <div className="flex flex-col items-center gap-1">
-                      <Zap className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase">{car.specs.trans}</span>
-                    </div>
-                    <div className="flex flex-col items-center gap-1">
-                      <Star className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase">{car.year}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-2">
-                    <div className="flex flex-col">
-                      <span className="text-primary font-bold text-2xl tracking-tighter">U$D {car.price}</span>
-                      {car.oldPrice && (
-                        <span className="text-muted-foreground text-xs line-through font-bold">U$D {car.oldPrice}</span>
-                      )}
-                    </div>
-                    <Button size="icon" className="rounded-full h-12 w-12 bg-foreground text-background hover:bg-primary hover:text-primary-foreground transition-colors">
-                      <ArrowRight className="h-5 w-5" />
-                    </Button>
-                  </div>
-                </div>
-              </motion.div>
+            {latestVehicles.map((car, i) => (
+              <VehicleCard key={car.id} vehicle={car} />
             ))}
           </div>
         </div>
@@ -569,33 +527,48 @@ export function Home() {
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-secondary/10 blur-[120px] rounded-full -z-0" />
 
         <div className="container mx-auto px-6 md:px-12 mx-auto relative z-10">
-          <div className="text-center mb-20">
+          <div className="text-center mb-12">
             <h2 className="text-5xl md:text-7xl font-bold tracking-tighter uppercase mb-6 text-background dark:text-foreground">Planes de Membresía</h2>
             <p className="text-muted-foreground text-xl max-w-2xl mx-auto font-medium">Elegí el nivel de acceso que mejor se adapte al volumen de tu negocio.</p>
+          </div>
+
+          {/* Billing cycle toggle */}
+          <div className="flex items-center justify-center gap-4 mb-16">
+            <span className={`text-sm font-bold uppercase tracking-widest transition-colors ${billingCycle === 'monthly' ? 'text-background dark:text-foreground' : 'text-muted-foreground'}`}>Mensual</span>
+            <button
+              onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'annual' : 'monthly')}
+              className={`relative w-16 h-8 rounded-full transition-colors duration-300 focus:outline-none ${billingCycle === 'annual' ? 'bg-primary' : 'bg-muted-foreground/40'}`}
+            >
+              <span className={`absolute top-1 left-1 w-6 h-6 rounded-full bg-white shadow-md transition-transform duration-300 ${billingCycle === 'annual' ? 'translate-x-8' : 'translate-x-0'}`} />
+            </button>
+            <span className={`text-sm font-bold uppercase tracking-widest transition-colors ${billingCycle === 'annual' ? 'text-background dark:text-foreground' : 'text-muted-foreground'}`}>
+              Anual
+              <Badge className="ml-2 bg-primary text-primary-foreground text-[10px] font-black tracking-tighter px-2 py-0.5 rounded-full">AHORRÁ HASTA 31%</Badge>
+            </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 max-w-7xl mx-auto items-center">
             {[
               {
                 name: 'Plata',
-                price: '120',
-                annual: '999',
+                monthly: 120,
+                annual: 999,
                 features: ['Hasta 5 autos publicados', 'Acceso al Marketplace B2B', 'Mensajería directa', 'Soporte estándar'],
                 popular: false,
                 color: 'border-border'
               },
               {
                 name: 'Oro',
-                price: '180',
-                annual: '1500',
+                monthly: 180,
+                annual: 1500,
                 features: ['Hasta 25 autos publicados', 'Acceso al Marketplace B2B', 'Mensajería prioritaria', 'Soporte 24/7', 'Badge de Verificado'],
                 popular: true,
                 color: 'border-primary shadow-primary/20'
               },
               {
                 name: 'Platinum',
-                price: '300',
-                annual: '2500',
+                monthly: 300,
+                annual: 2500,
                 features: ['Hasta 150 autos publicados', 'Acceso al Marketplace B2B', 'Gestoría preferencial', 'Destacados ilimitados', 'Account Manager dedicado'],
                 popular: false,
                 color: 'border-secondary shadow-secondary/20'
@@ -617,10 +590,20 @@ export function Home() {
                 <div className="mb-10">
                   <h3 className={`text-4xl font-black tracking-tighter uppercase mb-3 ${plan.popular ? 'text-primary' : 'text-background dark:text-foreground'}`}>{plan.name}</h3>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-7xl font-black tracking-tighter text-background dark:text-foreground">U$D {plan.price}</span>
-                    <span className="text-muted-foreground font-bold uppercase tracking-widest text-sm">/ mes</span>
+                    <span className="text-7xl font-black tracking-tighter text-background dark:text-foreground">
+                      U$D {billingCycle === 'annual' ? plan.annual : plan.monthly}
+                    </span>
+                    <span className="text-muted-foreground font-bold uppercase tracking-widest text-sm">/ {billingCycle === 'annual' ? 'año' : 'mes'}</span>
                   </div>
-                  <p className="text-primary font-black text-base mt-5 tracking-tighter uppercase bg-primary/10 inline-block px-4 py-1 rounded-full">U$D {plan.annual} ANUAL</p>
+                  {billingCycle === 'annual' ? (
+                    <p className="text-primary font-black text-base mt-5 tracking-tighter uppercase bg-primary/10 inline-block px-4 py-1 rounded-full">
+                      AHORRÁS U$D {plan.monthly * 12 - plan.annual}
+                    </p>
+                  ) : (
+                    <p className="text-muted-foreground font-bold text-base mt-5 tracking-tighter uppercase inline-block px-4 py-1">
+                      U$D {plan.annual} / año
+                    </p>
+                  )}
                 </div>
 
                 <ul className="space-y-6 mb-14 flex-1">

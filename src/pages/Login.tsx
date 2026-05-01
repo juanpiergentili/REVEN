@@ -14,6 +14,7 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, OperationType } from '@/src/lib/firebase';
+import { loginDemoUser } from '@/src/lib/auth';
 import {
   Select,
   SelectContent,
@@ -68,58 +69,14 @@ export function Login() {
   const handleDemoMode = async (type: 'demo' | 'vendedor' | 'comprador') => {
     setLoading(true);
     setError(null);
-    
-    let demoEmail = 'DEMO@reven.com.ar';
-    let demoPass = 'DEMO1234';
-    
-    if (type === 'vendedor') {
-      demoEmail = 'vendedor.test@reven.com.ar';
-      demoPass = 'REVEN2026';
-    } else if (type === 'comprador') {
-      demoEmail = 'comprador.test@reven.com.ar';
-      demoPass = 'REVEN2026';
-    }
-    
     try {
-      await signInWithEmailAndPassword(auth, demoEmail, demoPass);
+      await loginDemoUser(type);
       navigate('/marketplace');
     } catch (err: any) {
-      if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/invalid-login-credentials') {
-        try {
-          const userCredential = await createUserWithEmailAndPassword(auth, demoEmail, demoPass);
-          const user = userCredential.user;
-          
-          const displayName = type === 'vendedor' ? 'Vendedor REVEN' : (type === 'comprador' ? 'Comprador REVEN' : 'Usuario Demo');
-          const companyName = type === 'vendedor' ? 'REVEN Motors (Vendedor)' : (type === 'comprador' ? 'AutoSelect B2B (Comprador)' : 'Reven Demo Dealer');
-
-          await updateProfile(user, { displayName });
-
-          await setDoc(doc(db, 'users', user.uid), {
-            uid: user.uid,
-            email: demoEmail,
-            name: displayName.split(' ')[0],
-            lastName: displayName.split(' ')[1] || 'Demo',
-            cuil: type === 'vendedor' ? '20-99999999-9' : '20-88888888-8',
-            phone: type === 'vendedor' ? '+54 9 11 5555-0001' : '+54 9 11 5555-0002',
-            company: companyName,
-            province: type === 'vendedor' ? 'buenosaires' : (type === 'comprador' ? 'caba' : ''),
-            city: type === 'vendedor' ? 'ba-sanisidro' : (type === 'comprador' ? 'caba-palermo' : ''),
-            plan: 'platinum',
-            role: 'user',
-            status: 'approved',
-            createdAt: serverTimestamp()
-          });
-          
-          navigate('/marketplace');
-        } catch (regErr: any) {
-          if (regErr.code === 'auth/email-already-in-use') {
-            setError(`El usuario '${demoEmail}' ya existe con otra contraseña. Por favor usa la correcta.`);
-          } else {
-            setError(`Error al inicializar acceso: ${regErr.message}`);
-          }
-        }
+      if (err.code === 'auth/email-already-in-use') {
+        setError('El usuario demo ya existe con otra contraseña.');
       } else {
-        setError(`Error en el acceso demo: ${err.message}`);
+        setError(`Error al inicializar acceso: ${err.message}`);
       }
     } finally {
       setLoading(false);
@@ -149,7 +106,7 @@ export function Login() {
           phone: regPhone,
           company: regCompany,
           plan: regPlan,
-          role: 'user',
+          role: 'USER',
           status: 'pending',
           createdAt: serverTimestamp()
         });
@@ -224,7 +181,7 @@ export function Login() {
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
                       placeholder="nombre@concesionaria.com" 
-                      className="h-14 pl-12 rounded-2xl bg-background/50 border-border focus:border-primary/50 transition-all font-bold"
+                      className="h-14 pl-12 rounded-xl bg-background/50 border-border focus:border-primary/50 transition-all font-bold"
                     />
                   </div>
                 </div>
@@ -242,14 +199,14 @@ export function Login() {
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
                       placeholder="••••••••" 
-                      className="h-14 pl-12 rounded-2xl bg-background/50 border-border focus:border-primary/50 transition-all font-bold"
+                      className="h-14 pl-12 rounded-xl bg-background/50 border-border focus:border-primary/50 transition-all font-bold"
                     />
                   </div>
                 </div>
                 <Button 
                   type="submit"
                   disabled={loading}
-                  className="w-full h-14 rounded-2xl font-bold text-lg shadow-lg shadow-primary/20 group uppercase tracking-tighter"
+                  className="w-full h-14 rounded-xl font-bold text-lg shadow-lg shadow-primary/20 group uppercase tracking-tighter"
                 >
                   {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : (
                     <>
@@ -265,7 +222,7 @@ export function Login() {
                       <Button 
                         type="button"
                         variant="outline" 
-                        className="rounded-2xl h-11 text-[10px] font-bold uppercase tracking-widest border-primary/20 hover:bg-primary/5 hover:text-primary transition-all"
+                        className="rounded-xl h-11 text-[10px] font-bold uppercase tracking-widest border-primary/20 hover:bg-primary/5 hover:text-primary transition-all"
                         onClick={() => handleDemoMode('vendedor')}
                         disabled={loading}
                       >
@@ -274,7 +231,7 @@ export function Login() {
                       <Button 
                         type="button"
                         variant="outline" 
-                        className="rounded-2xl h-11 text-[10px] font-bold uppercase tracking-widest border-primary/20 hover:bg-primary/5 hover:text-primary transition-all"
+                        className="rounded-xl h-11 text-[10px] font-bold uppercase tracking-widest border-primary/20 hover:bg-primary/5 hover:text-primary transition-all"
                         onClick={() => handleDemoMode('comprador')}
                         disabled={loading}
                       >
@@ -418,7 +375,7 @@ export function Login() {
                 <Button 
                   type="submit"
                   disabled={loading}
-                  className="w-full h-14 rounded-2xl font-bold text-lg shadow-lg shadow-primary/20 mt-4 uppercase tracking-tighter"
+                  className="w-full h-14 rounded-xl font-bold text-lg shadow-lg shadow-primary/20 mt-4 uppercase tracking-tighter"
                 >
                   {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : 'ENVIAR SOLICITUD'}
                 </Button>

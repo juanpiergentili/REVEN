@@ -2,7 +2,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
   ChevronLeft, Share2, MapPin, Calendar, Gauge, Fuel,
-  CheckCircle2, MessageSquare, Eye, ShieldCheck, Users, ArrowRight, Car, Loader2
+  CheckCircle2, MessageSquare, Eye, ShieldCheck, Users, ArrowRight, Car, Loader2,
+  AlertCircle, Wrench, PaintBucket, Settings
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -222,6 +223,122 @@ export function VehicleDetail() {
                 </div>
               )}
             </div>
+
+            {/* Estado Técnico / Peritaje */}
+            {vehicle.inspectionData && (
+              <div className="p-10 rounded-[3rem] bg-card/30 border border-border/50 space-y-6">
+                <h2 className="text-2xl font-bold tracking-tighter uppercase">Estado Técnico</h2>
+
+                {/* Sin Gastos */}
+                {vehicle.inspectionData.sinGastos && (
+                  <div className="flex items-center gap-3 p-6 rounded-2xl bg-green-500/5 border border-green-500/20">
+                    <CheckCircle2 className="h-6 w-6 text-green-500" />
+                    <div>
+                      <p className="font-black text-sm uppercase tracking-widest text-green-500">Sin gastos</p>
+                      <p className="text-xs text-muted-foreground font-medium">El vehículo no tiene ningún detalle ni gasto pendiente</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Observaciones Internas */}
+                {vehicle.inspectionData.observacionesInternas?.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4 text-amber-500" />
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Observaciones Internas</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {vehicle.inspectionData.observacionesInternas.map((obs: string) => (
+                        <Badge key={obs} variant="outline" className="rounded-full border-amber-500/30 text-amber-400 font-bold text-[10px] uppercase tracking-widest px-3 py-1">
+                          {obs}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Cubiertas */}
+                {(vehicle.inspectionData.cubiertas?.cambiar > 0 || vehicle.inspectionData.cubiertas?.sinAuxilio) && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Settings className="h-4 w-4 text-blue-500" />
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Cubiertas</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {vehicle.inspectionData.cubiertas.cambiar > 0 && (
+                        <Badge variant="outline" className="rounded-full border-blue-500/30 text-blue-400 font-bold text-[10px] uppercase tracking-widest px-3 py-1">
+                          Cambiar {vehicle.inspectionData.cubiertas.cambiar} cubierta{vehicle.inspectionData.cubiertas.cambiar > 1 ? 's' : ''}
+                        </Badge>
+                      )}
+                      {vehicle.inspectionData.cubiertas.sinAuxilio && (
+                        <Badge variant="outline" className="rounded-full border-amber-500/30 text-amber-400 font-bold text-[10px] uppercase tracking-widest px-3 py-1">
+                          Sin rueda de auxilio
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Chapa y Pintura */}
+                {vehicle.inspectionData.chapaPintura?.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <PaintBucket className="h-4 w-4 text-purple-500" />
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Chapa y Pintura</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {vehicle.inspectionData.chapaPintura.map((c: any) => (
+                        <Badge key={`${c.panel}-${c.tipo}`} variant="outline" className="rounded-full border-purple-500/30 text-purple-400 font-bold text-[10px] uppercase tracking-widest px-3 py-1">
+                          {c.panel}: {c.tipo}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Ópticas */}
+                {vehicle.inspectionData.opticasDanadas?.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Eye className="h-4 w-4 text-cyan-500" />
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Ópticas Dañadas</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {vehicle.inspectionData.opticasDanadas.map((o: string) => (
+                        <Badge key={o} variant="outline" className="rounded-full border-cyan-500/30 text-cyan-400 font-bold text-[10px] uppercase tracking-widest px-3 py-1">
+                          {o}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Estado Mecánico */}
+                {vehicle.inspectionData.fallasMecanicas?.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Wrench className="h-4 w-4 text-red-500" />
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Fallas Mecánicas</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {vehicle.inspectionData.fallasMecanicas.map((f: string) => (
+                        <Badge key={f} variant="outline" className="rounded-full border-red-500/30 text-red-400 font-bold text-[10px] uppercase tracking-widest px-3 py-1">
+                          {f}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Notas */}
+                {vehicle.inspectionData.observacionesNotas && (
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Notas adicionales</p>
+                    <p className="text-sm text-muted-foreground font-medium">{vehicle.inspectionData.observacionesNotas}</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Right Column: Info & Contact */}
