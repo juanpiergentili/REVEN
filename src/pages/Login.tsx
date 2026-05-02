@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { Mail, Lock, ArrowRight, ShieldCheck, Building2, User, Phone, Fingerprint, CreditCard, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -155,19 +155,14 @@ export function Login() {
           </p>
         </div>
 
-        <div className="bg-card/50 backdrop-blur-xl border border-border p-6 sm:p-8 rounded-[2.5rem] shadow-2xl overflow-hidden">
+        <div className="bg-card/50 backdrop-blur-xl border border-border p-6 sm:p-8 rounded-[2.5rem] shadow-2xl">
           {error && (
             <div className={`mb-6 p-4 rounded-xl text-xs font-bold uppercase tracking-widest text-center ${error.includes('éxito') ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'}`}>
               {error}
             </div>
           )}
-          <AnimatePresence mode="wait">
             {isLogin ? (
-              <motion.form 
-                key="login"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
+              <form
                 className="space-y-6"
                 onSubmit={handleLogin}
               >
@@ -240,13 +235,9 @@ export function Login() {
                       </Button>
                     </div>
                   </div>
-              </motion.form>
+              </form>
             ) : (
-              <motion.form 
-                key="register"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
+              <form
                 className="space-y-4"
                 onSubmit={handleRegister}
               >
@@ -380,9 +371,8 @@ export function Login() {
                 >
                   {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : 'ENVIAR SOLICITUD'}
                 </Button>
-              </motion.form>
+              </form>
             )}
-          </AnimatePresence>
         </div>
 
         <div className="mt-8 text-center space-y-4">
