@@ -182,11 +182,14 @@ export interface WantedSearch {
   // Búsqueda
   brand: string;
   model?: string;
+  version?: string;
   yearRange: { min: number; max: number };
+  kmApprox?: number;
   budgetRange: { min: number; max: number };
   currency: Currency;
   conditions: VehicleCondition[];
-  description: string;
+  color?: string;
+  description?: string;
 
   // Estado
   status: 'active' | 'fulfilled' | 'expired';

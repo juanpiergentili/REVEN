@@ -642,19 +642,19 @@ export function Home() {
 
       {/* Footer CTA */}
       <section className="py-24 bg-primary text-primary-foreground">
-        <div className="container mx-auto px-4 md:px-8 text-center">
-          <h2 className="text-5xl md:text-7xl font-bold tracking-tighter uppercase mb-8 leading-none text-primary-foreground">
+        <div className="container mx-auto px-6 md:px-8 text-center">
+          <h2 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tighter uppercase mb-8 leading-none text-primary-foreground">
             UNITE A LA RED MÁS <br />
             GRANDE DE ARGENTINA
           </h2>
           <Button
             size="lg"
             variant="secondary"
-            className="h-20 px-16 rounded-3xl font-bold text-2xl shadow-2xl group uppercase tracking-tighter"
+            className="h-14 sm:h-20 px-8 sm:px-16 rounded-3xl font-bold text-lg sm:text-2xl shadow-2xl group uppercase tracking-tighter w-full sm:w-auto"
             onClick={() => setIsAdmissionOpen(true)}
           >
             SOLICITAR ACCESO AHORA
-            <ArrowRight className="ml-3 h-8 w-8 group-hover:translate-x-2 transition-transform" />
+            <ArrowRight className="ml-2 sm:ml-3 h-5 sm:h-8 w-5 sm:w-8 group-hover:translate-x-2 transition-transform" />
           </Button>
         </div>
       </section>

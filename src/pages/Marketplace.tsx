@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { VehicleCard } from '@/src/components/marketplace/VehicleCard';
 import { FilterSidebar } from '@/src/components/marketplace/FilterSidebar';
 import { FilterChips } from '@/src/components/marketplace/FilterChips';
+import { PublishWantedSearch } from '@/src/components/marketplace/PublishWantedSearch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -170,7 +171,16 @@ function WantedCard({ wanted, onContact }: { wanted: WantedSearch; onContact: ()
       </div>
 
       <div className="space-y-4 flex-1">
-        <h3 className="text-2xl font-bold tracking-tighter uppercase">{wanted.brand} {wanted.model}</h3>
+        <div>
+          <h3 className="text-2xl font-bold tracking-tighter uppercase">
+            {wanted.brand} {wanted.model}
+          </h3>
+          {wanted.version && (
+            <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest mt-1">
+              {wanted.version}
+            </p>
+          )}
+        </div>
         <div className="flex flex-wrap gap-2">
           <Badge variant="outline" className="rounded-full border-white/10 font-bold text-[10px] uppercase tracking-widest px-3 py-1">
             {wanted.yearRange.min}–{wanted.yearRange.max}
@@ -178,15 +188,27 @@ function WantedCard({ wanted, onContact }: { wanted: WantedSearch; onContact: ()
           <Badge variant="outline" className="rounded-full border-white/10 font-bold text-[10px] uppercase tracking-widest px-3 py-1">
             {wanted.currency} {wanted.budgetRange.min.toLocaleString()} – {wanted.budgetRange.max.toLocaleString()}
           </Badge>
+          {wanted.kmApprox && (
+            <Badge variant="outline" className="rounded-full border-white/10 font-bold text-[10px] uppercase tracking-widest px-3 py-1">
+              ~{wanted.kmApprox.toLocaleString()} km
+            </Badge>
+          )}
+          {wanted.color && (
+            <Badge variant="outline" className="rounded-full border-white/10 font-bold text-[10px] uppercase tracking-widest px-3 py-1">
+              {wanted.color}
+            </Badge>
+          )}
           {wanted.conditions.map(c => (
             <Badge key={c} variant="outline" className="rounded-full border-white/10 font-bold text-[10px] uppercase tracking-widest px-3 py-1">
               {c}
             </Badge>
           ))}
         </div>
-        <p className="text-sm text-muted-foreground font-medium leading-relaxed italic">
-          "{wanted.description}"
-        </p>
+        {wanted.description && (
+          <p className="text-sm text-muted-foreground font-medium leading-relaxed italic">
+            "{wanted.description}"
+          </p>
+        )}
       </div>
 
       <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-between">
@@ -210,6 +232,7 @@ export function Marketplace() {
   const [wantedSearches, setWantedSearches] = useState<WantedSearch[]>(MOCK_WANTED);
   const [loadingVehicles, setLoadingVehicles] = useState(true);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [showPublishWanted, setShowPublishWanted] = useState(false);
   const [activeTab, setActiveTab] = useState('stock');
   const navigate = useNavigate();
 
@@ -422,7 +445,10 @@ export function Marketplace() {
                     <p className="text-xs text-muted-foreground font-medium leading-relaxed">
                       Publicá tu búsqueda y recibí ofertas directas de colegas con stock disponible.
                     </p>
-                    <Button className="w-full rounded-xl font-bold uppercase tracking-widest text-[10px] h-10 shadow-lg shadow-primary/20">
+                    <Button
+                      className="w-full rounded-xl font-bold uppercase tracking-widest text-[10px] h-10 shadow-lg shadow-primary/20"
+                      onClick={() => setShowPublishWanted(true)}
+                    >
                       <Plus className="mr-2 h-3 w-3" /> PUBLICAR BÚSQUEDA
                     </Button>
                   </div>
@@ -442,7 +468,11 @@ export function Marketplace() {
                     <span className="text-primary">{wantedSearches.length}</span>
                   </h2>
                   {/* Mobile CTA */}
-                  <Button size="sm" className="lg:hidden rounded-xl font-bold uppercase tracking-widest text-[10px] h-9">
+                  <Button
+                    size="sm"
+                    className="lg:hidden rounded-xl font-bold uppercase tracking-widest text-[10px] h-9"
+                    onClick={() => setShowPublishWanted(true)}
+                  >
                     <Plus className="mr-1.5 h-3 w-3" /> Publicar
                   </Button>
                 </div>
@@ -464,6 +494,12 @@ export function Marketplace() {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* ── Publish Wanted Search Drawer ── */}
+      <PublishWantedSearch
+        open={showPublishWanted}
+        onClose={() => setShowPublishWanted(false)}
+      />
 
       {/* ── Mobile Filters Drawer ── */}
       <AnimatePresence>

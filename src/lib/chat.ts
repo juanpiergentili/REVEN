@@ -1,8 +1,8 @@
 import {
-  collection, doc, addDoc, query, where, orderBy, onSnapshot,
-  updateDoc, serverTimestamp, getDocs, limit, getDoc, setDoc, increment, Timestamp
+  collection, doc, addDoc, query, where, onSnapshot,
+  updateDoc, getDocs, limit, Timestamp
 } from 'firebase/firestore';
-import { db, convertTimestamp } from './firebase';
+import { db } from './firebase';
 
 // ---- Conversations ----
 
@@ -127,22 +127,31 @@ export function subscribeToConversations(
 
 /**
  * Subscribe to messages in a conversation.
+ * Sorting is done client-side to avoid composite index requirements.
  */
 export function subscribeToMessages(
   conversationId: string,
-  callback: (messages: (MessageData & { id: string })[]) => void
+  callback: (messages: (MessageData & { id: string })[]) => void,
+  onError?: (error: Error) => void,
 ) {
   const messagesRef = collection(db, 'conversations', conversationId, 'messages');
-  const q = query(messagesRef, orderBy('createdAt', 'asc'));
+  const q = query(messagesRef, limit(200));
 
   return onSnapshot(q, (snapshot) => {
     const messages = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data() as MessageData,
     }));
+    messages.sort((a, b) => {
+      const tA = a.createdAt?.toMillis?.() ?? 0;
+      const tB = b.createdAt?.toMillis?.() ?? 0;
+      return tA - tB;
+    });
     callback(messages);
   }, (error) => {
-    console.error("Error subscribing to messages:", error);
+    console.error('Error subscribing to messages:', error);
+    if (onError) onError(error);
+    else callback([]);
   });
 }
 

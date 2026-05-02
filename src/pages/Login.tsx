@@ -125,15 +125,16 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
-      {/* Background Glows */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 blur-[120px] rounded-full" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/5 blur-[120px] rounded-full" />
+    <div className="min-h-screen bg-background relative overflow-x-hidden">
+      {/* Background Glows — fixed so they don't affect vertical scroll */}
+      <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 blur-[120px] rounded-full pointer-events-none" />
+      <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/5 blur-[120px] rounded-full pointer-events-none" />
 
-      <motion.div 
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 py-10">
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md z-10"
+        className="w-full max-w-md relative z-10"
       >
         <div className="text-center mb-10">
           <motion.div 
@@ -397,6 +398,7 @@ export function Login() {
           </div>
         </div>
       </motion.div>
+      </div>
     </div>
   );
 }

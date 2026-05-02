@@ -8,8 +8,12 @@ import type { WantedSearch } from '../types';
 type NewWantedSearch = Omit<WantedSearch, 'id' | 'createdAt'>;
 
 export async function createWantedSearch(data: NewWantedSearch): Promise<string> {
+  // Firestore rejects explicit undefined values — strip them before writing
+  const clean = Object.fromEntries(
+    Object.entries(data).filter(([, v]) => v !== undefined),
+  );
   const docRef = await addDoc(collection(db, 'wanted_searches'), {
-    ...data,
+    ...clean,
     createdAt: serverTimestamp(),
   });
   return docRef.id;

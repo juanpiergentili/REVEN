@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Send, Search, ChevronLeft, Clock, Check, CheckCheck, ArrowLeft, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -12,7 +11,7 @@ import {
   sendMessage, findOrCreateConversation, markMessagesAsRead,
   ConversationData, MessageData,
 } from '@/src/lib/chat';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp, collection, getDocs } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'motion/react';
 
 function formatTime(ts: Timestamp | undefined): string {
@@ -37,7 +36,7 @@ export function Messages() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [initError, setInitError] = useState<string | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const currentUserId = user?.uid;
   const currentUserName = user?.displayName || 'Usuario';
@@ -73,10 +72,8 @@ export function Messages() {
 
           // Pre-fill first message when coming from "Contactar Vendedor"
           if (vehicleId) {
-            const { docs } = await import('firebase/firestore').then(m =>
-              m.getDocs(m.collection(db, 'conversations', id, 'messages'))
-            );
-            if (docs.length === 0) {
+            const snapshot = await getDocs(collection(db, 'conversations', id, 'messages'));
+            if (snapshot.docs.length === 0) {
               setNewMessage('Me interesa este vehículo');
             }
           }
@@ -108,7 +105,10 @@ export function Messages() {
     if (!selectedConvoId) return;
     const unsub = subscribeToMessages(selectedConvoId, (msgs) => {
       setMessages(msgs);
-      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+      setTimeout(() => {
+        const el = messagesContainerRef.current;
+        if (el) el.scrollTop = el.scrollHeight;
+      }, 100);
     });
     markMessagesAsRead(selectedConvoId, currentUserId);
     return unsub;
@@ -146,7 +146,7 @@ export function Messages() {
   });
 
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="h-dvh flex flex-col bg-background">
       {/* Header */}
       <div className="border-b border-white/5 bg-background/80 backdrop-blur-xl px-6 py-4 flex items-center gap-4">
         <Button variant="ghost" size="icon" className="rounded-full" onClick={() => navigate(-1)}>
@@ -158,10 +158,10 @@ export function Messages() {
         </Badge>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Conversation List */}
-        <aside className={`w-full md:w-96 border-r border-white/5 flex flex-col ${selectedConvoId ? 'hidden md:flex' : 'flex'}`}>
-          <div className="p-4">
+        <aside className={`w-full md:w-96 border-r border-white/5 flex flex-col min-h-0 ${selectedConvoId ? 'hidden md:flex' : 'flex'}`}>
+          <div className="p-4 shrink-0">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -172,7 +172,7 @@ export function Messages() {
               />
             </div>
           </div>
-          <ScrollArea className="flex-1">
+          <div className="flex-1 overflow-y-auto">
             {loading ? (
               <div className="flex items-center justify-center py-20 text-muted-foreground">
                 <Clock className="h-5 w-5 animate-spin mr-2" /> Cargando...
@@ -218,11 +218,11 @@ export function Messages() {
                 </button>
               ))
             )}
-          </ScrollArea>
+          </div>
         </aside>
 
         {/* Chat Area */}
-        <div className={`flex-1 flex flex-col ${selectedConvoId || initError ? 'flex' : 'hidden md:flex'}`}>
+        <div className={`flex-1 flex flex-col min-h-0 ${selectedConvoId || initError ? 'flex' : 'hidden md:flex'}`}>
           {initError ? (
             <div className="flex-1 flex items-center justify-center p-8">
               <div className="text-center space-y-4 max-w-md">
@@ -260,7 +260,7 @@ export function Messages() {
               </div>
 
               {/* Messages */}
-              <ScrollArea className="flex-1 p-6">
+              <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-6 min-h-0">
                 <div className="max-w-3xl mx-auto space-y-4">
                   <AnimatePresence>
                     {messages.map((msg) => {
@@ -283,9 +283,8 @@ export function Messages() {
                       );
                     })}
                   </AnimatePresence>
-                  <div ref={messagesEndRef} />
                 </div>
-              </ScrollArea>
+              </div>
 
               {/* Input */}
               <div className="p-4 border-t border-white/5 bg-background/50 backdrop-blur-xl">
