@@ -148,7 +148,7 @@ export function Messages() {
   return (
     <div className="h-dvh flex flex-col bg-background">
       {/* Header */}
-      <div className="border-b border-white/5 bg-background/80 backdrop-blur-xl px-6 py-4 flex items-center gap-4">
+      <div className="border-b border-border bg-background/80 backdrop-blur-xl px-6 py-4 flex items-center gap-4">
         <Button variant="ghost" size="icon" className="rounded-full" onClick={() => navigate(-1)}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
@@ -160,13 +160,13 @@ export function Messages() {
 
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Conversation List */}
-        <aside className={`w-full md:w-96 border-r border-white/5 flex flex-col min-h-0 ${selectedConvoId ? 'hidden md:flex' : 'flex'}`}>
+        <aside className={`w-full md:w-96 border-r border-border flex flex-col min-h-0 ${selectedConvoId ? 'hidden md:flex' : 'flex'}`}>
           <div className="p-4 shrink-0">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar conversación..."
-                className="pl-10 h-11 rounded-2xl bg-white/5 border-white/10"
+                className="pl-10 h-11 rounded-2xl bg-muted border-border"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
               />
@@ -179,7 +179,7 @@ export function Messages() {
               </div>
             ) : filteredConversations.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 px-6 text-center space-y-4">
-                <div className="bg-white/5 p-6 rounded-full">
+                <div className="bg-muted p-6 rounded-full">
                   <MessageCircle className="h-10 w-10 text-muted-foreground opacity-30" />
                 </div>
                 <div className="space-y-1">
@@ -195,7 +195,7 @@ export function Messages() {
                 <button
                   key={convo.id}
                   onClick={() => setSelectedConvoId(convo.id)}
-                  className={`w-full flex items-center gap-4 p-4 text-left border-b border-white/5 transition-all hover:bg-white/5 ${selectedConvoId === convo.id ? 'bg-primary/5 border-l-2 border-l-primary' : ''}`}
+                  className={`w-full flex items-center gap-4 p-4 text-left border-b border-border transition-all hover:bg-muted ${selectedConvoId === convo.id ? 'bg-primary/5 border-l-2 border-l-primary' : ''}`}
                 >
                   <Avatar className="h-12 w-12 shrink-0 border-2 border-primary/20">
                     <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
@@ -239,7 +239,7 @@ export function Messages() {
           ) : selectedConvo ? (
             <>
               {/* Chat Header */}
-              <div className="p-4 border-b border-white/5 bg-background/50 backdrop-blur-xl flex items-center gap-4">
+              <div className="p-4 border-b border-border bg-background/50 backdrop-blur-xl flex items-center gap-4">
                 <Button variant="ghost" size="icon" className="rounded-full md:hidden" onClick={() => setSelectedConvoId(null)}>
                   <ChevronLeft className="h-5 w-5" />
                 </Button>
@@ -253,7 +253,7 @@ export function Messages() {
                   <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{getDisplayCompany(selectedConvo)}</p>
                 </div>
                 {selectedConvo.vehicleInfo && (
-                  <Badge className="bg-white/5 border-white/10 text-xs font-bold rounded-full px-3 py-1 hidden sm:flex">
+                  <Badge className="bg-muted border-border text-xs font-bold rounded-full px-3 py-1 hidden sm:flex">
                     {selectedConvo.vehicleInfo.brand} {selectedConvo.vehicleInfo.model}
                   </Badge>
                 )}
@@ -272,7 +272,7 @@ export function Messages() {
                           animate={{ opacity: 1, y: 0 }}
                           className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}
                         >
-                          <div className={`max-w-[75%] px-5 py-3 rounded-3xl ${isMine ? 'bg-primary text-primary-foreground rounded-br-lg' : 'bg-white/5 rounded-bl-lg'}`}>
+                          <div className={`max-w-[75%] px-5 py-3 rounded-3xl ${isMine ? 'bg-primary text-primary-foreground rounded-br-lg' : 'bg-muted rounded-bl-lg'}`}>
                             <p className="text-sm font-medium leading-relaxed break-words">{msg.text}</p>
                             <div className={`flex items-center gap-1 mt-1 ${isMine ? 'justify-end' : ''}`}>
                               <span className="text-[10px] opacity-60">{formatTime(msg.createdAt)}</span>
@@ -287,14 +287,14 @@ export function Messages() {
               </div>
 
               {/* Input */}
-              <div className="p-4 border-t border-white/5 bg-background/50 backdrop-blur-xl">
+              <div className="p-4 border-t border-border bg-background/50 backdrop-blur-xl">
                 <div className="max-w-3xl mx-auto flex items-center gap-3">
                   <Input
                     value={newMessage}
                     onChange={e => setNewMessage(e.target.value)}
                     onKeyDown={handleKeyPress}
                     placeholder="Escribí tu mensaje..."
-                    className="flex-1 h-12 rounded-2xl bg-white/5 border-white/10 text-base"
+                    className="flex-1 h-12 rounded-2xl bg-muted border-border text-base"
                   />
                   <Button
                     onClick={handleSend}
@@ -310,7 +310,7 @@ export function Messages() {
           ) : (
             <div className="flex-1 flex items-center justify-center p-8">
               <div className="text-center space-y-4">
-                <div className="bg-white/5 p-8 rounded-full inline-block">
+                <div className="bg-muted p-8 rounded-full inline-block">
                   <MessageCircle className="h-12 w-12 text-muted-foreground opacity-20" />
                 </div>
                 <h3 className="text-lg font-bold tracking-tighter uppercase">Seleccioná una conversación</h3>

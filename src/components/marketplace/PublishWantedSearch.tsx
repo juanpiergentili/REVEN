@@ -134,10 +134,10 @@ export function PublishWantedSearch({ open, onClose }: Props) {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 26, stiffness: 220 }}
-            className="fixed right-0 top-0 bottom-0 w-full max-w-lg bg-background border-l border-white/10 z-50 flex flex-col"
+            className="fixed right-0 top-0 bottom-0 w-full max-w-lg bg-background border-l border-border z-50 flex flex-col"
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-white/10 shrink-0">
+            <div className="flex items-center justify-between p-6 border-b border-border shrink-0">
               <div>
                 <h2 className="text-xl font-bold tracking-tighter uppercase">Publicar Búsqueda</h2>
                 <p className="text-xs text-muted-foreground font-medium mt-0.5">
@@ -164,7 +164,7 @@ export function PublishWantedSearch({ open, onClose }: Props) {
                     Marca <span className="text-primary">*</span>
                   </Label>
                   <Select value={brand} onValueChange={handleBrandChange}>
-                    <SelectTrigger className="h-12 rounded-xl bg-white/5 border-white/10 font-bold">
+                    <SelectTrigger className="h-12 rounded-xl bg-muted border-border font-bold">
                       <SelectValue placeholder="Seleccionar marca" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl max-h-60">
@@ -179,7 +179,7 @@ export function PublishWantedSearch({ open, onClose }: Props) {
                 <div className="space-y-2">
                   <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Modelo</Label>
                   <Select value={model} onValueChange={handleModelChange} disabled={!brand}>
-                    <SelectTrigger className="h-12 rounded-xl bg-white/5 border-white/10 font-bold">
+                    <SelectTrigger className="h-12 rounded-xl bg-muted border-border font-bold">
                       <SelectValue placeholder={brand ? 'Seleccionar modelo' : 'Primero elegí una marca'} />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl max-h-60">
@@ -196,7 +196,7 @@ export function PublishWantedSearch({ open, onClose }: Props) {
                     Versión <span className="text-muted-foreground">(opcional)</span>
                   </Label>
                   <Select value={version} onValueChange={setVersion} disabled={!model}>
-                    <SelectTrigger className="h-12 rounded-xl bg-white/5 border-white/10 font-bold">
+                    <SelectTrigger className="h-12 rounded-xl bg-muted border-border font-bold">
                       <SelectValue placeholder={model ? 'Cualquier versión' : 'Primero elegí un modelo'} />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl max-h-60">
@@ -237,7 +237,7 @@ export function PublishWantedSearch({ open, onClose }: Props) {
                       onChange={e => setYearFrom(e.target.value)}
                       min={1990}
                       max={currentYear + 1}
-                      className="h-12 rounded-xl bg-white/5 border-white/10 font-bold"
+                      className="h-12 rounded-xl bg-muted border-border font-bold"
                     />
                     <Input
                       type="number"
@@ -246,7 +246,7 @@ export function PublishWantedSearch({ open, onClose }: Props) {
                       onChange={e => setYearTo(e.target.value)}
                       min={1990}
                       max={currentYear + 1}
-                      className="h-12 rounded-xl bg-white/5 border-white/10 font-bold"
+                      className="h-12 rounded-xl bg-muted border-border font-bold"
                     />
                   </div>
                 </div>
@@ -262,7 +262,7 @@ export function PublishWantedSearch({ open, onClose }: Props) {
                     value={kmApprox}
                     onChange={e => setKmApprox(e.target.value)}
                     min={0}
-                    className="h-12 rounded-xl bg-white/5 border-white/10 font-bold"
+                    className="h-12 rounded-xl bg-muted border-border font-bold"
                   />
                 </div>
 
@@ -281,7 +281,7 @@ export function PublishWantedSearch({ open, onClose }: Props) {
                           className={`text-[10px] font-bold px-3 py-1 rounded-full transition-all ${
                             currency === cur
                               ? 'bg-primary text-primary-foreground'
-                              : 'bg-white/5 text-muted-foreground hover:bg-white/10'
+                              : 'bg-muted border-border text-muted-foreground hover:bg-muted/80'
                           }`}
                         >
                           {cur}
@@ -296,7 +296,7 @@ export function PublishWantedSearch({ open, onClose }: Props) {
                       value={priceMin}
                       onChange={e => setPriceMin(e.target.value)}
                       min={0}
-                      className="h-12 rounded-xl bg-white/5 border-white/10 font-bold"
+                      className="h-12 rounded-xl bg-muted border-border font-bold"
                     />
                     <Input
                       type="number"
@@ -304,7 +304,7 @@ export function PublishWantedSearch({ open, onClose }: Props) {
                       value={priceMax}
                       onChange={e => setPriceMax(e.target.value)}
                       min={0}
-                      className="h-12 rounded-xl bg-white/5 border-white/10 font-bold"
+                      className="h-12 rounded-xl bg-muted border-border font-bold"
                     />
                   </div>
                 </div>
@@ -315,7 +315,7 @@ export function PublishWantedSearch({ open, onClose }: Props) {
                     Color <span className="text-muted-foreground">(opcional)</span>
                   </Label>
                   <Select value={color} onValueChange={setColor}>
-                    <SelectTrigger className="h-12 rounded-xl bg-white/5 border-white/10 font-bold">
+                    <SelectTrigger className="h-12 rounded-xl bg-muted border-border font-bold">
                       <SelectValue placeholder="Cualquier color" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl max-h-60">
@@ -323,7 +323,7 @@ export function PublishWantedSearch({ open, onClose }: Props) {
                         <SelectItem key={c.value} value={c.value}>
                           <div className="flex items-center gap-2">
                             <div
-                              className="h-3 w-3 rounded-full border border-white/20 shrink-0"
+                              className="h-3 w-3 rounded-full border border-border shrink-0"
                               style={{ backgroundColor: c.hex }}
                             />
                             {c.label}
@@ -336,7 +336,7 @@ export function PublishWantedSearch({ open, onClose }: Props) {
               </div>
 
               {/* Footer fijo */}
-              <div className="p-6 border-t border-white/10 shrink-0">
+              <div className="p-6 border-t border-border shrink-0">
                 <Button
                   type="submit"
                   disabled={loading}

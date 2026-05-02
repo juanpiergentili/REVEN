@@ -54,7 +54,7 @@ function EmptyFiltered({ onClear }: { onClear: () => void }) {
     >
       <div className="relative">
         <div className="absolute inset-0 rounded-full bg-primary/10 blur-2xl scale-150" />
-        <div className="relative bg-card/60 border border-white/10 p-8 rounded-[2rem]">
+        <div className="relative bg-card/60 border border-border p-8 rounded-[2rem]">
           <PackageSearch className="h-14 w-14 text-primary mx-auto" strokeWidth={1.5} />
         </div>
       </div>
@@ -84,7 +84,7 @@ function EmptyNoData() {
     >
       <div className="relative">
         <div className="absolute inset-0 rounded-full bg-primary/5 blur-2xl scale-150" />
-        <div className="relative bg-card/60 border border-white/10 p-8 rounded-[2rem]">
+        <div className="relative bg-card/60 border border-border p-8 rounded-[2rem]">
           <Sparkles className="h-14 w-14 text-primary mx-auto" strokeWidth={1.5} />
         </div>
       </div>
@@ -113,7 +113,7 @@ function SortDropdown({ value, onChange }: { value: SortOption; onChange: (v: So
         <Button
           variant="ghost"
           size="sm"
-          className="h-10 gap-2 font-bold tracking-tighter uppercase text-xs rounded-full hover:bg-white/5 border border-white/10"
+          className="h-10 gap-2 font-bold tracking-tighter uppercase text-xs rounded-full hover:bg-muted border border-border"
         >
           {current.label}
           <ChevronDown className="h-3.5 w-3.5 text-primary" />
@@ -150,7 +150,7 @@ function WantedCard({ wanted, onContact }: { wanted: WantedSearch; onContact: ()
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="p-8 rounded-2xl bg-card/50 border border-white/5 hover:border-primary/30 transition-all group flex flex-col h-full"
+      className="p-8 rounded-2xl bg-card/50 border border-border hover:border-primary/30 transition-all group flex flex-col h-full"
     >
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -182,24 +182,24 @@ function WantedCard({ wanted, onContact }: { wanted: WantedSearch; onContact: ()
           )}
         </div>
         <div className="flex flex-wrap gap-2">
-          <Badge variant="outline" className="rounded-full border-white/10 font-bold text-[10px] uppercase tracking-widest px-3 py-1">
+          <Badge variant="outline" className="rounded-full border-border font-bold text-[10px] uppercase tracking-widest px-3 py-1">
             {wanted.yearRange.min}–{wanted.yearRange.max}
           </Badge>
-          <Badge variant="outline" className="rounded-full border-white/10 font-bold text-[10px] uppercase tracking-widest px-3 py-1">
+          <Badge variant="outline" className="rounded-full border-border font-bold text-[10px] uppercase tracking-widest px-3 py-1">
             {wanted.currency} {wanted.budgetRange.min.toLocaleString()} – {wanted.budgetRange.max.toLocaleString()}
           </Badge>
           {wanted.kmApprox && (
-            <Badge variant="outline" className="rounded-full border-white/10 font-bold text-[10px] uppercase tracking-widest px-3 py-1">
+            <Badge variant="outline" className="rounded-full border-border font-bold text-[10px] uppercase tracking-widest px-3 py-1">
               ~{wanted.kmApprox.toLocaleString()} km
             </Badge>
           )}
           {wanted.color && (
-            <Badge variant="outline" className="rounded-full border-white/10 font-bold text-[10px] uppercase tracking-widest px-3 py-1">
+            <Badge variant="outline" className="rounded-full border-border font-bold text-[10px] uppercase tracking-widest px-3 py-1">
               {wanted.color}
             </Badge>
           )}
           {wanted.conditions.map(c => (
-            <Badge key={c} variant="outline" className="rounded-full border-white/10 font-bold text-[10px] uppercase tracking-widest px-3 py-1">
+            <Badge key={c} variant="outline" className="rounded-full border-border font-bold text-[10px] uppercase tracking-widest px-3 py-1">
               {c}
             </Badge>
           ))}
@@ -211,7 +211,7 @@ function WantedCard({ wanted, onContact }: { wanted: WantedSearch; onContact: ()
         )}
       </div>
 
-      <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-between">
+      <div className="mt-8 pt-6 border-t border-border flex items-center justify-between">
         <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">{timeAgo}</span>
         <Button
           variant="ghost"
@@ -278,13 +278,13 @@ export function Marketplace() {
     <div className="flex flex-col min-h-screen bg-background">
 
       {/* ── Hero ── */}
-      <div className="relative py-12 flex items-center overflow-hidden border-b border-white/5 bg-black/40">
+      <div className="relative py-12 flex items-center overflow-hidden border-b border-border bg-black/40">
         <div className="container mx-auto relative z-10 px-4 md:px-8">
           <div className="mb-6">
             <Button
               variant="ghost" size="sm"
               onClick={() => navigate('/')}
-              className="rounded-full font-bold uppercase tracking-widest text-[10px] gap-2 hover:bg-white/10"
+              className="rounded-full font-bold uppercase tracking-widest text-[10px] gap-2 hover:bg-muted"
             >
               <ChevronLeft className="h-4 w-4" /> Volver al Inicio
             </Button>
@@ -309,7 +309,7 @@ export function Marketplace() {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar marca, modelo, versión..."
-                  className="h-12 pl-10 rounded-xl bg-white/5 border-white/10 focus:border-primary/50 transition-all text-base"
+                  className="h-12 pl-10 rounded-xl bg-muted border-border focus:border-primary/50 transition-all text-base"
                   value={filters.searchQuery}
                   onChange={e => setFilters({ ...filters, searchQuery: e.target.value })}
                 />
@@ -319,7 +319,7 @@ export function Marketplace() {
               <Button
                 size="lg"
                 variant={activeFilterCount > 0 ? 'default' : 'outline'}
-                className="relative h-12 w-12 rounded-xl shrink-0 lg:hidden border-white/10"
+                className="relative h-12 w-12 rounded-xl shrink-0 lg:hidden border-border"
                 onClick={() => setShowMobileFilters(true)}
               >
                 <SlidersHorizontal className="h-5 w-5" />
@@ -334,7 +334,7 @@ export function Marketplace() {
 
           <div className="mt-10">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="bg-white/5 border border-white/10 p-1 rounded-xl h-14">
+              <TabsList className="bg-muted border border-border p-1 rounded-xl h-14">
                 <TabsTrigger value="stock" className="rounded-xl px-8 font-bold uppercase tracking-widest text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                   Stock Disponible
                   {!loadingVehicles && (
@@ -452,7 +452,7 @@ export function Marketplace() {
                       <Plus className="mr-2 h-3 w-3" /> PUBLICAR BÚSQUEDA
                     </Button>
                   </div>
-                  <div className="p-5 rounded-2xl bg-card/50 border border-white/5 space-y-3">
+                  <div className="p-5 rounded-2xl bg-card/50 border border-border space-y-3">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Red activa</p>
                     <p className="text-3xl font-black tracking-tighter">{wantedSearches.length}</p>
                     <p className="text-xs text-muted-foreground font-medium">búsquedas de colegas hoy</p>
@@ -517,10 +517,10 @@ export function Marketplace() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 26, stiffness: 220 }}
-              className="fixed right-0 top-0 bottom-0 w-[90vw] max-w-sm bg-background border-l border-white/10 z-50 flex flex-col"
+              className="fixed right-0 top-0 bottom-0 w-[90vw] max-w-sm bg-background border-l border-border z-50 flex flex-col"
             >
               {/* Drawer header */}
-              <div className="flex items-center justify-between p-6 border-b border-white/10">
+              <div className="flex items-center justify-between p-6 border-b border-border">
                 <div className="flex items-center gap-3">
                   <h2 className="text-xl font-bold tracking-tighter uppercase">Filtros</h2>
                   {activeFilterCount > 0 && (
@@ -535,7 +535,7 @@ export function Marketplace() {
               </div>
 
               {/* Sort inside drawer on mobile */}
-              <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between">
+              <div className="px-6 py-4 border-b border-border flex items-center justify-between">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Ordenar por</span>
                 <SortDropdown value={sortBy} onChange={setSortBy} />
               </div>
@@ -550,7 +550,7 @@ export function Marketplace() {
               </div>
 
               {/* Drawer footer */}
-              <div className="p-6 border-t border-white/10 space-y-3">
+              <div className="p-6 border-t border-border space-y-3">
                 {activeFilterCount > 0 && (
                   <Button
                     variant="ghost"

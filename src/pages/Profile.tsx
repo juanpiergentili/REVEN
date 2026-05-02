@@ -44,7 +44,7 @@ function StatCard({ icon: Icon, label, value, accent = false }: { icon: any; lab
 const STATUS_CONFIG = {
   ACTIVE:   { label: 'Activo',   color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' },
   PAUSED:   { label: 'Pausado',  color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' },
-  SOLD:     { label: 'Vendido',  color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
+  SOLD:     { label: 'Vendido',  color: 'bg-primary/20 text-primary border-primary/30' },
   RESERVED: { label: 'Reservado',color: 'bg-purple-500/20 text-purple-400 border-purple-500/30' },
   DRAFT:    { label: 'Borrador', color: 'bg-white/5 text-muted-foreground border-white/10' },
 } as const;
@@ -522,7 +522,7 @@ function VehicleGrid({
                     variant="outline"
                     disabled={isToggling || isMarkingSold}
                     onClick={() => onMarkSold(listing)}
-                    className="rounded-full font-bold uppercase tracking-widest text-[9px] h-8 px-4 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 gap-1.5"
+                    className="rounded-full font-bold uppercase tracking-widest text-[9px] h-8 px-4 border-primary/40 text-primary hover:bg-primary/10 gap-1.5"
                   >
                     {isMarkingSold ? (
                       <Loader2 className="h-3 w-3 animate-spin" />

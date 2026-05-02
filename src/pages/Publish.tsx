@@ -213,12 +213,12 @@ export function Publish() {
 
       {/* Step indicators */}
       <div className="flex justify-between mb-12 relative max-w-lg mx-auto">
-        <div className="absolute top-1/2 left-0 w-full h-1 bg-white/5 -translate-y-1/2 z-0 rounded-full" />
+        <div className="absolute top-1/2 left-0 w-full h-1 bg-border -translate-y-1/2 z-0 rounded-full" />
         {Array.from({ length: TOTAL_STEPS }, (_, i) => i + 1).map((s) => (
           <div
             key={s}
             className={`relative z-10 flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full border-4 transition-all duration-500 ${
-              step >= s ? 'bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/20' : 'bg-background border-white/5 text-muted-foreground'
+              step >= s ? 'bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/20' : 'bg-background border-border text-muted-foreground'
             }`}
           >
             {step > s ? <CheckCircle2 className="h-5 w-5 md:h-6 md:w-6 stroke-[3]" /> : <span className="font-bold text-sm">{s}</span>}
@@ -229,7 +229,7 @@ export function Publish() {
         ))}
       </div>
 
-      <Card className="border-white/5 bg-white/5 backdrop-blur-xl shadow-2xl rounded-[3.5rem] overflow-hidden">
+      <Card className="border-border bg-card backdrop-blur-xl shadow-2xl rounded-[3.5rem] overflow-hidden">
         <CardContent className="p-10">
 
           {error && (
@@ -246,7 +246,7 @@ export function Publish() {
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Marca</Label>
                   <Select value={formData.brand} onValueChange={handleBrandSelect}>
-                    <SelectTrigger className="h-14 rounded-xl bg-white/5 border-white/10 font-bold">
+                    <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
                       <SelectValue placeholder="Seleccionar marca" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl max-h-72">
@@ -261,7 +261,7 @@ export function Publish() {
                   <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Modelo</Label>
                   {selectedBrand ? (
                     <Select value={formData.model} onValueChange={handleModelSelect}>
-                      <SelectTrigger className="h-14 rounded-xl bg-white/5 border-white/10 font-bold">
+                      <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
                         <SelectValue placeholder="Seleccionar modelo" />
                       </SelectTrigger>
                       <SelectContent className="rounded-xl max-h-72">
@@ -275,7 +275,7 @@ export function Publish() {
                       value={formData.model}
                       onChange={e => update('model', e.target.value)}
                       placeholder="Ej: Hilux, Vento..."
-                      className="h-14 rounded-xl bg-white/5 border-white/10 font-bold"
+                      className="h-14 rounded-xl bg-muted border-border font-bold"
                     />
                   )}
                 </div>
@@ -284,7 +284,7 @@ export function Publish() {
                   <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Versión</Label>
                   {selectedModel ? (
                     <Select value={formData.version} onValueChange={handleVersionSelect}>
-                      <SelectTrigger className="h-14 rounded-xl bg-white/5 border-white/10 font-bold">
+                      <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
                         <SelectValue placeholder="Seleccionar versión" />
                       </SelectTrigger>
                       <SelectContent className="rounded-xl max-h-72">
@@ -298,7 +298,7 @@ export function Publish() {
                       value={formData.version}
                       onChange={e => update('version', e.target.value)}
                       placeholder="Ej: 2.8 SRX 4X4 AT"
-                      className="h-14 rounded-xl bg-white/5 border-white/10 font-bold"
+                      className="h-14 rounded-xl bg-muted border-border font-bold"
                     />
                   )}
                 </div>
@@ -306,7 +306,7 @@ export function Publish() {
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Año</Label>
                   <Select value={formData.year} onValueChange={v => update('year', v)}>
-                    <SelectTrigger className="h-14 rounded-xl bg-white/5 border-white/10 font-bold">
+                    <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
                       <SelectValue placeholder="Seleccionar año" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl max-h-72">
@@ -325,7 +325,7 @@ export function Publish() {
                     value={formatArgentineNumber(formData.km)}
                     onChange={e => update('km', parseArgentineNumber(e.target.value))}
                     placeholder="0"
-                    className="h-14 rounded-xl bg-white/5 border-white/10 font-bold"
+                    className="h-14 rounded-xl bg-muted border-border font-bold"
                   />
                 </div>
 
@@ -336,7 +336,7 @@ export function Publish() {
                       variant="outline"
                       type="button"
                       onClick={() => update('condition', 'USADO')}
-                      className={`h-14 rounded-xl border-white/10 font-bold uppercase tracking-widest ${formData.condition === 'USADO' ? 'bg-primary text-primary-foreground border-primary' : 'bg-white/5 text-muted-foreground hover:bg-white/10'}`}
+                      className={`h-14 rounded-xl border-white/10 font-bold uppercase tracking-widest ${formData.condition === 'USADO' ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted border-border text-muted-foreground hover:bg-muted/80'}`}
                     >
                       Usado
                     </Button>
@@ -344,7 +344,7 @@ export function Publish() {
                       variant="outline"
                       type="button"
                       onClick={() => update('condition', '0KM')}
-                      className={`h-14 rounded-xl border-white/10 font-bold uppercase tracking-widest ${formData.condition === '0KM' ? 'bg-primary text-primary-foreground border-primary' : 'bg-white/5 text-muted-foreground hover:bg-white/10'}`}
+                      className={`h-14 rounded-xl border-white/10 font-bold uppercase tracking-widest ${formData.condition === '0KM' ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted border-border text-muted-foreground hover:bg-muted/80'}`}
                     >
                       0 KM
                     </Button>
@@ -354,7 +354,7 @@ export function Publish() {
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Combustible</Label>
                   <Select value={formData.fuelType} onValueChange={v => update('fuelType', v)}>
-                    <SelectTrigger className="h-14 rounded-xl bg-white/5 border-white/10 font-bold">
+                    <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
                       <SelectValue placeholder="Seleccionar" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
@@ -374,7 +374,7 @@ export function Publish() {
                         variant="outline"
                         type="button"
                         onClick={() => update('transmission', t.value)}
-                        className={`h-14 rounded-xl border-white/10 font-bold uppercase tracking-widest ${formData.transmission === t.value ? 'bg-primary text-primary-foreground border-primary' : 'bg-white/5 text-muted-foreground hover:bg-white/10'}`}
+                        className={`h-14 rounded-xl border-white/10 font-bold uppercase tracking-widest ${formData.transmission === t.value ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted border-border text-muted-foreground hover:bg-muted/80'}`}
                       >
                         {t.label}
                       </Button>
@@ -385,7 +385,7 @@ export function Publish() {
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Carrocería</Label>
                   <Select value={formData.bodyType} onValueChange={v => update('bodyType', v)}>
-                    <SelectTrigger className="h-14 rounded-xl bg-white/5 border-white/10 font-bold">
+                    <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
                       <SelectValue placeholder="Seleccionar" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
@@ -399,14 +399,14 @@ export function Publish() {
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Color</Label>
                   <Select value={formData.color} onValueChange={v => update('color', v)}>
-                    <SelectTrigger className="h-14 rounded-xl bg-white/5 border-white/10 font-bold">
+                    <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
                       <SelectValue placeholder="Seleccionar" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
                       {COLORS.map(c => (
                         <SelectItem key={c.value} value={c.value}>
                           <span className="flex items-center gap-2">
-                            <span className="w-3 h-3 rounded-full border border-white/20" style={{ background: c.hex }} />
+                            <span className="w-3 h-3 rounded-full border border-border" style={{ background: c.hex }} />
                             {c.label}
                           </span>
                         </SelectItem>
@@ -427,7 +427,7 @@ export function Publish() {
                     onValueChange={v => { update('province', v); update('city', ''); }}
                     disabled={!!userProfile?.province}
                   >
-                    <SelectTrigger className={`h-14 rounded-xl bg-white/5 border-white/10 font-bold ${userProfile?.province ? 'opacity-70' : ''}`}>
+                    <SelectTrigger className={`h-14 rounded-xl bg-muted border-border font-bold ${userProfile?.province ? 'opacity-70' : ''}`}>
                       <SelectValue>
                         {PROVINCIAS_ARGENTINA.find(p => p.id === formData.province)?.nombre || 'Seleccionar provincia'}
                       </SelectValue>
@@ -452,7 +452,7 @@ export function Publish() {
                     onValueChange={v => update('city', v)}
                     disabled={!selectedProvince || !!userProfile?.city}
                   >
-                    <SelectTrigger className={`h-14 rounded-xl bg-white/5 border-white/10 font-bold ${userProfile?.city ? 'opacity-70' : ''}`}>
+                    <SelectTrigger className={`h-14 rounded-xl bg-muted border-border font-bold ${userProfile?.city ? 'opacity-70' : ''}`}>
                       <SelectValue>
                         {selectedProvince?.localidades.find(l => l.id === formData.city)?.nombre || (selectedProvince ? 'Seleccionar localidad' : 'Primero elegí provincia')}
                       </SelectValue>
@@ -487,7 +487,7 @@ export function Publish() {
 
               <div
                 className={`border-4 border-dashed rounded-[2rem] p-12 text-center space-y-6 cursor-pointer transition-all group ${
-                  isDragging ? 'border-primary/60 bg-primary/5' : 'border-white/5 bg-white/5 hover:border-primary/30'
+                  isDragging ? 'border-primary/60 bg-primary/5' : 'border-border bg-muted hover:border-primary/30'
                 }`}
                 onClick={() => fileInputRef.current?.click()}
                 onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
@@ -506,7 +506,7 @@ export function Publish() {
                   </p>
                 </div>
                 {photos.length < 15 && (
-                  <Button variant="outline" className="rounded-full px-8 border-white/10 font-bold uppercase tracking-widest text-xs" onClick={e => { e.stopPropagation(); fileInputRef.current?.click(); }}>
+                  <Button variant="outline" className="rounded-full px-8 border-border font-bold uppercase tracking-widest text-xs" onClick={e => { e.stopPropagation(); fileInputRef.current?.click(); }}>
                     Seleccionar archivos
                   </Button>
                 )}
@@ -542,7 +542,7 @@ export function Publish() {
                   </div>
                   <p className="text-xs text-muted-foreground font-medium">Las publicaciones sin fotos tienen mucha menos visibilidad. ¿Estás seguro?</p>
                   <div className="flex gap-3">
-                    <Button variant="outline" onClick={() => setShowNoPhotosDialog(false)} className="rounded-full px-6 border-white/10 font-bold uppercase tracking-widest text-xs">
+                    <Button variant="outline" onClick={() => setShowNoPhotosDialog(false)} className="rounded-full px-6 border-border font-bold uppercase tracking-widest text-xs">
                       Volver
                     </Button>
                     <Button onClick={confirmNoPhotos} className="rounded-full px-6 font-bold uppercase tracking-widest text-xs bg-amber-500 hover:bg-amber-600">
@@ -553,7 +553,7 @@ export function Publish() {
               )}
 
               <div className="flex flex-col-reverse sm:flex-row justify-between pt-4 gap-4">
-                <Button variant="ghost" onClick={prevStep} className="w-full sm:w-auto h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-white/5">
+                <Button variant="ghost" onClick={prevStep} className="w-full sm:w-auto h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-muted">
                   <ArrowLeft className="h-5 w-5 stroke-[3]" /> Anterior
                 </Button>
                 <Button onClick={nextStep} className="w-full sm:w-auto h-14 px-10 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 shadow-lg shadow-primary/20">
@@ -601,7 +601,7 @@ export function Publish() {
               </div>
 
               <div className="flex flex-col-reverse sm:flex-row justify-between pt-4 gap-4">
-                <Button variant="ghost" onClick={prevStep} className="w-full sm:w-auto h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-white/5">
+                <Button variant="ghost" onClick={prevStep} className="w-full sm:w-auto h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-muted">
                   <ArrowLeft className="h-5 w-5 stroke-[3]" /> Anterior
                 </Button>
                 <Button onClick={nextStep} className="w-full sm:w-auto h-14 px-10 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 shadow-lg shadow-primary/20">
@@ -615,7 +615,7 @@ export function Publish() {
             <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-8">
               <StepEstadoTecnico inspection={inspection} onChange={setInspection} />
               <div className="flex flex-col-reverse sm:flex-row justify-between pt-4 gap-4">
-                <Button variant="ghost" onClick={prevStep} className="w-full sm:w-auto h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-white/5">
+                <Button variant="ghost" onClick={prevStep} className="w-full sm:w-auto h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-muted">
                   <ArrowLeft className="h-5 w-5 stroke-[3]" /> Anterior
                 </Button>
                 <Button onClick={nextStep} className="w-full sm:w-auto h-14 px-10 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 shadow-lg shadow-primary/20">
@@ -632,7 +632,7 @@ export function Publish() {
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Moneda</Label>
                   <Select value={formData.currency} onValueChange={v => update('currency', v as 'USD' | 'ARS')}>
-                    <SelectTrigger className="h-14 rounded-xl bg-white/5 border-white/10 font-bold">
+                    <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
@@ -653,13 +653,13 @@ export function Publish() {
                       value={formatArgentineNumber(formData.price)}
                       onChange={e => update('price', parseArgentineNumber(e.target.value))}
                       placeholder="0"
-                      className="h-14 rounded-xl bg-white/5 border-white/10 font-bold text-2xl text-primary tracking-tighter pl-14"
+                      className="h-14 rounded-xl bg-muted border-border font-bold text-2xl text-primary tracking-tighter pl-14"
                     />
                   </div>
                 </div>
               </div>
               <div className="flex flex-col-reverse sm:flex-row justify-between pt-4 gap-4">
-                <Button variant="ghost" onClick={prevStep} className="w-full sm:w-auto h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-white/5">
+                <Button variant="ghost" onClick={prevStep} className="w-full sm:w-auto h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-muted">
                   <ArrowLeft className="h-5 w-5 stroke-[3]" /> Anterior
                 </Button>
                 <Button onClick={nextStep} className="w-full sm:w-auto h-14 px-10 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 shadow-lg shadow-primary/20">
@@ -690,7 +690,7 @@ export function Publish() {
               )}
 
               <div className="flex flex-col-reverse sm:flex-row justify-between pt-4 gap-4">
-                <Button variant="ghost" onClick={prevStep} disabled={submitting} className="w-full sm:w-auto h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-white/5">
+                <Button variant="ghost" onClick={prevStep} disabled={submitting} className="w-full sm:w-auto h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-muted">
                   <ArrowLeft className="h-5 w-5 stroke-[3]" /> Anterior
                 </Button>
                 <Button

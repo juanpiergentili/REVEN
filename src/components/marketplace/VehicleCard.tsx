@@ -23,8 +23,8 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
     >
       <Link to={`/vehicle/${vehicle.id}`}>
-        <Card className="overflow-hidden group bg-card/50 border-white/5 hover:border-primary/50 transition-colors duration-500 rounded-2xl">
-          <div className="relative aspect-[16/11] overflow-hidden bg-white/5">
+        <Card className="overflow-hidden group bg-card/50 border-border hover:border-primary/50 transition-colors duration-500 rounded-2xl">
+          <div className="relative aspect-[16/11] overflow-hidden bg-muted">
             {hasPhoto ? (
               <img
                 src={vehicle.photos[0]}
@@ -90,7 +90,7 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
                   <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1">Miembro REVEN</p>
                 </div>
               </div>
-              <div className="flex items-center gap-1.5 text-muted-foreground bg-white/5 px-3 py-1.5 rounded-full">
+              <div className="flex items-center gap-1.5 text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
                 <MapPin className="h-3.5 w-3.5 text-primary" />
                 <span className="text-[10px] font-bold uppercase tracking-wider truncate max-w-[100px]">{vehicle.location}</span>
               </div>
@@ -101,15 +101,15 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
             </p>
 
             <div className="grid grid-cols-3 gap-4">
-              <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-white/5 border border-white/5 group-hover:bg-primary/5 group-hover:border-primary/10 transition-colors">
+              <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-muted border border-border group-hover:bg-primary/5 group-hover:border-primary/10 transition-colors">
                 <Calendar className="h-4 w-4 text-primary" />
                 <span className="text-[10px] font-bold uppercase tracking-tighter">{vehicle.year}</span>
               </div>
-              <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-white/5 border border-white/5 group-hover:bg-primary/5 group-hover:border-primary/10 transition-colors">
+              <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-muted border border-border group-hover:bg-primary/5 group-hover:border-primary/10 transition-colors">
                 <Gauge className="h-4 w-4 text-primary" />
                 <span className="text-[10px] font-bold uppercase tracking-tighter">{vehicle.km?.toLocaleString('es-AR')} KM</span>
               </div>
-              <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-white/5 border border-white/5 group-hover:bg-primary/5 group-hover:border-primary/10 transition-colors">
+              <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-muted border border-border group-hover:bg-primary/5 group-hover:border-primary/10 transition-colors">
                 <Fuel className="h-4 w-4 text-primary" />
                 <span className="text-[10px] font-bold uppercase tracking-tighter truncate w-full text-center">{vehicle.fuelType}</span>
               </div>
