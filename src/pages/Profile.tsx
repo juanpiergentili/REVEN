@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Eye, MessageSquare, Clock, BarChart3, Calendar, TrendingUp, Award, MapPin, Building2, Phone, Mail, Loader2, ShoppingBag, Plus, Settings, Save } from 'lucide-react';
+import {
+  ChevronLeft, Eye, MessageSquare, Clock, BarChart3, TrendingUp, Award,
+  MapPin, Building2, Phone, Mail, Loader2, ShoppingBag, Plus, Settings,
+  Save, Pause, Play, CheckCircle2, Package,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -10,11 +14,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { formatLastOnline, getAverageResponseTime, getResponseBadge } from '@/src/lib/analytics';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { getResponseBadge } from '@/src/lib/analytics';
 import { useAuth, db } from '@/src/lib/firebase';
-import { doc, getDoc, collection, query, where, getDocs, orderBy, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { getVehiclesBySeller, updateVehicleStatus } from '@/src/lib/vehicles';
 import { PROVINCIAS_ARGENTINA } from '@/src/data/argentina-geo';
-import { MOCK_VEHICLES_FALLBACK } from '@/src/data/mock-vehicles';
 import type { Vehicle } from '../types';
 
 function StatCard({ icon: Icon, label, value, accent = false }: { icon: any; label: string; value: string | number; accent?: boolean }) {
@@ -36,38 +41,35 @@ function StatCard({ icon: Icon, label, value, accent = false }: { icon: any; lab
   );
 }
 
-function daysSince(dateStr: any): number {
-  if (!dateStr) return 0;
-  const date = typeof dateStr === 'string' ? new Date(dateStr) : (dateStr.toDate ? dateStr.toDate() : new Date(dateStr));
-  return Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));
-}
+const STATUS_CONFIG = {
+  ACTIVE:   { label: 'Activo',   color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' },
+  PAUSED:   { label: 'Pausado',  color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' },
+  SOLD:     { label: 'Vendido',  color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
+  RESERVED: { label: 'Reservado',color: 'bg-purple-500/20 text-purple-400 border-purple-500/30' },
+  DRAFT:    { label: 'Borrador', color: 'bg-white/5 text-muted-foreground border-white/10' },
+} as const;
 
 export function Profile() {
   const { uid } = useParams<{ uid: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  
+
   const [loading, setLoading] = useState(true);
   const [profileData, setProfileData] = useState<any>(null);
-  const [userListings, setUserListings] = useState<Vehicle[]>([]);
+  const [allListings, setAllListings] = useState<Vehicle[]>([]);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
   const [editForm, setEditForm] = useState({
-    company: '',
-    province: '',
-    city: '',
-    phone: '',
-    name: '',
-    lastName: ''
+    company: '', province: '', city: '', phone: '', name: '', lastName: '',
   });
-  
+
   const targetUid = uid || user?.uid;
   const isOwnProfile = !uid || uid === user?.uid;
 
   useEffect(() => {
     async function fetchProfile() {
       if (!targetUid) return;
-      
       setLoading(true);
       try {
         const userDoc = await getDoc(doc(db, 'users', targetUid));
@@ -80,31 +82,17 @@ export function Profile() {
             city: data.city || '',
             phone: data.phone || '',
             name: data.name || '',
-            lastName: data.lastName || ''
+            lastName: data.lastName || '',
           });
-          
-          const listingsQuery = query(
-            collection(db, 'vehicles'),
-            where('sellerId', '==', targetUid),
-            orderBy('createdAt', 'desc')
-          );
-          const listingsSnap = await getDocs(listingsQuery);
-          const realVehicles = listingsSnap.docs.map(d => ({ ...d.data(), id: d.id } as Vehicle));
-          
-          let mockListings: Vehicle[] = [];
-          if (data.email === 'vendedor.test@reven.com.ar') {
-            mockListings = MOCK_VEHICLES_FALLBACK.filter(v => ['1', '2', '3'].includes(v.id));
-          }
-          
-          setUserListings([...realVehicles, ...mockListings]);
         }
+        const vehicles = await getVehiclesBySeller(targetUid);
+        setAllListings(vehicles);
       } catch (err) {
         console.error('Error fetching profile:', err);
       } finally {
         setLoading(false);
       }
     }
-    
     fetchProfile();
   }, [targetUid]);
 
@@ -112,16 +100,24 @@ export function Profile() {
     if (!user) return;
     setEditLoading(true);
     try {
-      await updateDoc(doc(db, 'users', user.uid), {
-        ...editForm,
-        updatedAt: new Date()
-      });
+      await updateDoc(doc(db, 'users', user.uid), { ...editForm, updatedAt: new Date() });
       setProfileData((prev: any) => ({ ...prev, ...editForm }));
       setIsEditDialogOpen(false);
     } catch (err) {
       console.error('Error updating profile:', err);
     } finally {
       setEditLoading(false);
+    }
+  };
+
+  const handleToggleStatus = async (vehicle: Vehicle) => {
+    const next = vehicle.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
+    setTogglingId(vehicle.id);
+    try {
+      await updateVehicleStatus(vehicle.id, next);
+      setAllListings(prev => prev.map(v => v.id === vehicle.id ? { ...v, status: next } : v));
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -143,11 +139,19 @@ export function Profile() {
     );
   }
 
-  const responseTimestamps = profileData.responseTimestamps || [12, 15, 8, 20];
-  const responseBadge = getResponseBadge(responseTimestamps);
-  
+  const responseBadge = getResponseBadge(profileData.responseTimestamps || [12, 15, 8, 20]);
   const provinceName = PROVINCIAS_ARGENTINA.find(p => p.id === profileData.province)?.nombre || profileData.province || 'No especificada';
   const cityName = PROVINCIAS_ARGENTINA.find(p => p.id === profileData.province)?.localidades.find(l => l.id === profileData.city)?.nombre || profileData.city || '';
+
+  // Real metrics computed from actual vehicle data
+  const activeListings  = allListings.filter(v => v.status === 'ACTIVE');
+  const pausedListings  = allListings.filter(v => v.status === 'PAUSED');
+  const soldListings    = allListings.filter(v => v.status === 'SOLD');
+  const totalViews      = allListings.reduce((s, v) => s + (v.viewCount || 0), 0);
+  const totalContacts   = allListings.reduce((s, v) => s + (v.contactCount || 0), 0);
+
+  // For public profiles only show active listings
+  const visibleListings = isOwnProfile ? allListings : activeListings;
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -165,6 +169,7 @@ export function Profile() {
       </div>
 
       <main className="container mx-auto px-4 md:px-8 py-12 max-w-6xl">
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -181,7 +186,7 @@ export function Profile() {
               <Award className="h-5 w-5 text-primary" />
             </div>
           </div>
-          
+
           <div className="flex-1 space-y-4">
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="text-4xl md:text-5xl font-bold tracking-tighter uppercase">{profileData.name} {profileData.lastName}</h1>
@@ -192,7 +197,7 @@ export function Profile() {
                 {responseBadge.label}
               </Badge>
             </div>
-            
+
             <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
               <span className="flex items-center gap-2 font-bold text-white/80">
                 <Building2 className="h-4 w-4 text-primary" /> {profileData.company || 'Agencia Independiente'}
@@ -207,22 +212,21 @@ export function Profile() {
 
             <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground pt-2">
               <span className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" /> {profileData.email}</span>
-              <span className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" /> {profileData.phone}</span>
+              <span className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" /> {profileData.phone || 'No especificado'}</span>
             </div>
-            
+
             {isOwnProfile && (
               <div className="pt-4 flex gap-4">
-                <Button 
+                <Button
                   onClick={() => setIsEditDialogOpen(true)}
-                  variant="outline" 
+                  variant="outline"
                   size="sm"
                   className="rounded-full font-bold uppercase tracking-widest text-[10px] gap-2 border-primary/20 hover:bg-primary/5 h-10 px-6"
                 >
-                  <Settings className="h-3.5 w-3.5" /> Configurar Mi Concesionaria
+                  <Settings className="h-3.5 w-3.5" /> Configurar Concesionaria
                 </Button>
-                <Button 
+                <Button
                   onClick={() => navigate('/publish')}
-                  variant="default" 
                   size="sm"
                   className="rounded-full font-bold uppercase tracking-widest text-[10px] gap-2 shadow-lg shadow-primary/20 h-10 px-6"
                 >
@@ -235,7 +239,7 @@ export function Profile() {
           {!isOwnProfile && (
             <Button
               size="lg"
-              className="rounded-2xl font-bold uppercase tracking-tighter h-16 px-10 text-lg shadow-lg shadow-primary/20 italic"
+              className="rounded-2xl font-bold uppercase tracking-tighter h-16 px-10 text-lg shadow-lg shadow-primary/20"
               onClick={() => navigate(`/messages?userId=${targetUid}&userName=${encodeURIComponent(profileData.name)}&company=${encodeURIComponent(profileData.company)}`)}
             >
               <MessageSquare className="mr-2 h-5 w-5" /> Contactar
@@ -243,28 +247,25 @@ export function Profile() {
           )}
         </motion.div>
 
+        {/* Metrics */}
         <div className="mb-16">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-2xl font-bold tracking-tighter uppercase flex items-center gap-3">
               <BarChart3 className="h-6 w-6 text-primary" />
               {isOwnProfile ? 'Métricas de tu Concesionaria' : 'Estadísticas del Vendedor'}
             </h2>
-            {isOwnProfile && (
-              <Button variant="outline" className="rounded-full border-primary/20 text-[10px] font-bold uppercase tracking-widest h-9">
-                Ver reporte completo
-              </Button>
-            )}
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <StatCard icon={Eye} label="Vistas al perfil" value={profileData.totalProfileViews || 0} accent />
-            <StatCard icon={TrendingUp} label="Vistas publicaciones" value={profileData.totalListingViews || 0} />
-            <StatCard icon={MessageSquare} label="Conversaciones" value={profileData.totalContactClicks || 0} accent />
-            <StatCard icon={Award} label="Stock Activo" value={userListings.length} />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+            <StatCard icon={Eye}          label="Vistas totales"     value={totalViews}             accent />
+            <StatCard icon={MessageSquare} label="Consultas recibidas" value={totalContacts}          />
+            <StatCard icon={Package}      label="Stock activo"        value={activeListings.length}  accent />
+            <StatCard icon={CheckCircle2} label="Unidades vendidas"   value={soldListings.length}    />
           </div>
         </div>
 
         <Separator className="bg-white/5 mb-16" />
 
+        {/* Listings */}
         <div>
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-2xl font-bold tracking-tighter uppercase flex items-center gap-3">
@@ -278,59 +279,60 @@ export function Profile() {
             )}
           </div>
 
-          {userListings.length === 0 ? (
+          {visibleListings.length === 0 ? (
             <div className="p-20 text-center border-2 border-dashed border-white/5 rounded-[3rem] space-y-4">
               <div className="bg-white/5 w-16 h-16 rounded-full flex items-center justify-center mx-auto">
                 <TrendingUp className="h-8 w-8 text-muted-foreground/30" />
               </div>
               <p className="text-muted-foreground font-medium">No hay publicaciones activas en este momento.</p>
+              {isOwnProfile && (
+                <Button onClick={() => navigate('/publish')} className="rounded-full gap-2">
+                  <Plus className="h-4 w-4" /> Publicar primera unidad
+                </Button>
+              )}
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {userListings.map((listing, i) => (
-                <motion.div
-                  key={listing.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="group relative bg-white/5 border border-white/5 hover:border-primary/30 rounded-[2.5rem] overflow-hidden transition-all duration-500 cursor-pointer"
-                  onClick={() => navigate(`/vehicle/${listing.id}`)}
-                >
-                  <div className="flex aspect-video overflow-hidden">
-                    <img
-                      src={listing.photos?.[0] || 'https://images.unsplash.com/photo-1542362567-b05503f3f7f4?q=80&w=800'}
-                      alt={`${listing.brand} ${listing.model}`}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+          ) : isOwnProfile ? (
+            <Tabs defaultValue="all">
+              <TabsList className="mb-8 bg-white/5 rounded-2xl p-1 h-auto gap-1">
+                <TabsTrigger value="all"    className="rounded-xl font-bold text-[10px] uppercase tracking-widest px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  Todo ({allListings.length})
+                </TabsTrigger>
+                <TabsTrigger value="active" className="rounded-xl font-bold text-[10px] uppercase tracking-widest px-4 py-2 data-[state=active]:bg-emerald-500 data-[state=active]:text-white">
+                  Activos ({activeListings.length})
+                </TabsTrigger>
+                <TabsTrigger value="paused" className="rounded-xl font-bold text-[10px] uppercase tracking-widest px-4 py-2 data-[state=active]:bg-yellow-500 data-[state=active]:text-black">
+                  Pausados ({pausedListings.length})
+                </TabsTrigger>
+                <TabsTrigger value="sold"   className="rounded-xl font-bold text-[10px] uppercase tracking-widest px-4 py-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white">
+                  Vendidos ({soldListings.length})
+                </TabsTrigger>
+              </TabsList>
+
+              {(['all', 'active', 'paused', 'sold'] as const).map(tab => {
+                const list = tab === 'all' ? allListings
+                  : tab === 'active' ? activeListings
+                  : tab === 'paused' ? pausedListings
+                  : soldListings;
+                return (
+                  <TabsContent key={tab} value={tab}>
+                    <VehicleGrid
+                      listings={list}
+                      isOwnProfile={isOwnProfile}
+                      togglingId={togglingId}
+                      onToggle={handleToggleStatus}
+                      onNavigate={(id) => navigate(`/vehicle/${id}`)}
                     />
-                    <div className="absolute top-4 right-4 flex flex-col gap-2">
-                      <Badge className="bg-black/60 backdrop-blur-md border-white/10 text-white font-black text-[10px] px-3 py-1.5 rounded-full uppercase tracking-tighter">
-                        {listing.year}
-                      </Badge>
-                      <Badge className="bg-primary text-primary-foreground font-black text-[10px] px-3 py-1.5 rounded-full uppercase tracking-tighter shadow-xl">
-                        {listing.currency} {listing.price?.toLocaleString()}
-                      </Badge>
-                    </div>
-                  </div>
-                  
-                  <div className="p-6 space-y-4">
-                    <div>
-                      <h3 className="text-xl font-bold tracking-tighter uppercase">{listing.brand} {listing.model}</h3>
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{listing.version}</p>
-                    </div>
-                    
-                    <div className="flex items-center gap-4 pt-2 border-t border-white/5 text-[9px] font-black uppercase tracking-widest text-muted-foreground">
-                      <span className="flex items-center gap-1.5"><Eye className="h-3.5 w-3.5 text-primary" /> {listing.viewCount || 0} Vistas</span>
-                      <span className="flex items-center gap-1.5"><MessageSquare className="h-3.5 w-3.5 text-primary" /> {listing.contactCount || 0} Consultas</span>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+                  </TabsContent>
+                );
+              })}
+            </Tabs>
+          ) : (
+            <VehicleGrid listings={visibleListings} isOwnProfile={false} togglingId={null} onToggle={() => {}} onNavigate={(id) => navigate(`/vehicle/${id}`)} />
           )}
         </div>
       </main>
 
+      {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-2xl rounded-[3rem] border-border bg-card/95 backdrop-blur-2xl p-10">
           <DialogHeader>
@@ -341,24 +343,19 @@ export function Profile() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6">
             <div className="space-y-3 col-span-1 md:col-span-2">
               <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-primary">Nombre de la Agencia / Concesionaria</Label>
-              <Input 
+              <Input
                 value={editForm.company}
                 onChange={e => setEditForm(prev => ({ ...prev, company: e.target.value }))}
-                placeholder="Automotores Reven S.A." 
+                placeholder="Automotores Reven S.A."
                 className="h-14 rounded-[2.5rem] bg-white/5 border-white/10 font-bold px-6"
               />
             </div>
 
             <div className="space-y-3">
               <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-primary">Provincia</Label>
-              <Select 
-                value={editForm.province} 
-                onValueChange={v => setEditForm(prev => ({ ...prev, province: v, city: '' }))}
-              >
+              <Select value={editForm.province} onValueChange={v => setEditForm(prev => ({ ...prev, province: v, city: '' }))}>
                 <SelectTrigger className="h-14 rounded-[2.5rem] bg-white/5 border-white/10 font-bold px-6">
-                  <SelectValue>
-                    {PROVINCIAS_ARGENTINA.find(p => p.id === editForm.province)?.nombre || 'Seleccionar'}
-                  </SelectValue>
+                  <SelectValue>{PROVINCIAS_ARGENTINA.find(p => p.id === editForm.province)?.nombre || 'Seleccionar'}</SelectValue>
                 </SelectTrigger>
                 <SelectContent className="rounded-[2.5rem]">
                   {PROVINCIAS_ARGENTINA.map(p => (
@@ -370,15 +367,9 @@ export function Profile() {
 
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Localidad</Label>
-              <Select 
-                value={editForm.city} 
-                onValueChange={v => setEditForm(prev => ({ ...prev, city: v }))}
-                disabled={!editForm.province}
-              >
+              <Select value={editForm.city} onValueChange={v => setEditForm(prev => ({ ...prev, city: v }))} disabled={!editForm.province}>
                 <SelectTrigger className="h-14 rounded-[2.5rem] bg-white/5 border-white/10 font-bold px-6">
-                  <SelectValue>
-                    {PROVINCIAS_ARGENTINA.find(p => p.id === editForm.province)?.localidades.find(l => l.id === editForm.city)?.nombre || 'Seleccionar'}
-                  </SelectValue>
+                  <SelectValue>{PROVINCIAS_ARGENTINA.find(p => p.id === editForm.province)?.localidades.find(l => l.id === editForm.city)?.nombre || 'Seleccionar'}</SelectValue>
                 </SelectTrigger>
                 <SelectContent className="rounded-[2.5rem]">
                   {PROVINCIAS_ARGENTINA.find(p => p.id === editForm.province)?.localidades.map(l => (
@@ -390,20 +381,20 @@ export function Profile() {
 
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Teléfono Público</Label>
-              <Input 
+              <Input
                 value={editForm.phone}
                 onChange={e => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
-                placeholder="+54 9 11 ..." 
+                placeholder="+54 9 11 ..."
                 className="h-12 rounded-xl bg-white/5 border-white/10 font-bold"
               />
             </div>
 
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Tu Nombre de Contacto</Label>
-              <Input 
+              <Input
                 value={editForm.name}
                 onChange={e => setEditForm(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Nombre" 
+                placeholder="Nombre"
                 className="h-12 rounded-xl bg-white/5 border-white/10 font-bold"
               />
             </div>
@@ -413,17 +404,109 @@ export function Profile() {
             <Button variant="ghost" onClick={() => setIsEditDialogOpen(false)} className="rounded-xl font-bold uppercase tracking-widest text-xs">
               Cancelar
             </Button>
-            <Button 
-              onClick={handleUpdateProfile} 
-              disabled={editLoading}
-              className="rounded-xl font-bold uppercase tracking-widest text-xs gap-2 min-w-[140px]"
-            >
+            <Button onClick={handleUpdateProfile} disabled={editLoading} className="rounded-xl font-bold uppercase tracking-widest text-xs gap-2 min-w-[140px]">
               {editLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Guardar Cambios
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function VehicleGrid({
+  listings, isOwnProfile, togglingId, onToggle, onNavigate,
+}: {
+  listings: Vehicle[];
+  isOwnProfile: boolean;
+  togglingId: string | null;
+  onToggle: (v: Vehicle) => void;
+  onNavigate: (id: string) => void;
+}) {
+  if (listings.length === 0) {
+    return (
+      <div className="py-16 text-center border-2 border-dashed border-white/5 rounded-[3rem]">
+        <p className="text-muted-foreground font-medium text-sm">Sin unidades en esta categoría.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {listings.map((listing, i) => {
+        const statusCfg = STATUS_CONFIG[listing.status as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.DRAFT;
+        const isToggling = togglingId === listing.id;
+
+        return (
+          <motion.div
+            key={listing.id}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: i * 0.05 }}
+            className="group relative bg-white/5 border border-white/5 hover:border-primary/30 rounded-[2.5rem] overflow-hidden transition-all duration-500"
+          >
+            {/* Photo */}
+            <div
+              className="relative aspect-video overflow-hidden cursor-pointer"
+              onClick={() => onNavigate(listing.id)}
+            >
+              <img
+                src={listing.photos?.[0] || 'https://images.unsplash.com/photo-1542362567-b05503f3f7f4?q=80&w=800'}
+                alt={`${listing.brand} ${listing.model}`}
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+              />
+              <div className="absolute top-4 left-4">
+                <Badge className={`border font-bold text-[9px] px-2.5 py-1 rounded-full uppercase tracking-wider ${statusCfg.color}`}>
+                  {statusCfg.label}
+                </Badge>
+              </div>
+              <div className="absolute top-4 right-4 flex flex-col gap-2">
+                <Badge className="bg-black/60 backdrop-blur-md border-white/10 text-white font-black text-[10px] px-3 py-1.5 rounded-full uppercase">
+                  {listing.year}
+                </Badge>
+                <Badge className="bg-primary text-primary-foreground font-black text-[10px] px-3 py-1.5 rounded-full uppercase shadow-xl">
+                  {listing.currency} {listing.price?.toLocaleString()}
+                </Badge>
+              </div>
+            </div>
+
+            {/* Info */}
+            <div className="p-6 space-y-4">
+              <div className="cursor-pointer" onClick={() => onNavigate(listing.id)}>
+                <h3 className="text-xl font-bold tracking-tighter uppercase">{listing.brand} {listing.model}</h3>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{listing.version}</p>
+              </div>
+
+              <div className="flex items-center gap-4 text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+                <span className="flex items-center gap-1.5"><Eye className="h-3.5 w-3.5 text-primary" /> {listing.viewCount || 0} Vistas</span>
+                <span className="flex items-center gap-1.5"><MessageSquare className="h-3.5 w-3.5 text-primary" /> {listing.contactCount || 0} Consultas</span>
+              </div>
+
+              {isOwnProfile && listing.status !== 'SOLD' && (
+                <div className="pt-2 border-t border-white/5">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={isToggling}
+                    onClick={() => onToggle(listing)}
+                    className="rounded-full font-bold uppercase tracking-widest text-[9px] h-8 px-4 border-white/10 hover:border-primary/30 gap-1.5"
+                  >
+                    {isToggling ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : listing.status === 'ACTIVE' ? (
+                      <><Pause className="h-3 w-3" /> Pausar</>
+                    ) : (
+                      <><Play className="h-3 w-3" /> Activar</>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        );
+      })}
     </div>
   );
 }

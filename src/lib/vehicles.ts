@@ -1,7 +1,7 @@
 import { db, storage, convertTimestamp } from './firebase';
 import {
   collection, addDoc, updateDoc, doc,
-  query, orderBy, limit, onSnapshot, serverTimestamp,
+  query, where, orderBy, limit, onSnapshot, serverTimestamp, getDocs,
 } from 'firebase/firestore';
 import { ref, uploadBytes, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import type { Vehicle } from '../types';
@@ -29,6 +29,29 @@ export async function uploadVehiclePhotos(files: File[], vehicleId: string, user
 
 export async function updateVehiclePhotos(vehicleId: string, photoUrls: string[]): Promise<void> {
   await updateDoc(doc(db, 'vehicles', vehicleId), { photos: photoUrls });
+}
+
+export async function getVehiclesBySeller(sellerId: string): Promise<Vehicle[]> {
+  const snap = await getDocs(
+    query(collection(db, 'vehicles'), where('sellerId', '==', sellerId))
+  );
+  const vehicles = snap.docs.map(docSnap => {
+    const data = docSnap.data();
+    return { ...data, id: docSnap.id, createdAt: convertTimestamp(data.createdAt) } as Vehicle;
+  });
+  vehicles.sort((a, b) => {
+    const tA = a.createdAt ? new Date(a.createdAt as string).getTime() : 0;
+    const tB = b.createdAt ? new Date(b.createdAt as string).getTime() : 0;
+    return tB - tA;
+  });
+  return vehicles;
+}
+
+export async function updateVehicleStatus(
+  vehicleId: string,
+  status: Vehicle['status'],
+): Promise<void> {
+  await updateDoc(doc(db, 'vehicles', vehicleId), { status });
 }
 
 export function subscribeToVehicles(
