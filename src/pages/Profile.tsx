@@ -58,6 +58,7 @@ export function Profile() {
   const [profileData, setProfileData] = useState<any>(null);
   const [allListings, setAllListings] = useState<Vehicle[]>([]);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [markingSoldId, setMarkingSoldId] = useState<string | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -118,6 +119,16 @@ export function Profile() {
       setAllListings(prev => prev.map(v => v.id === vehicle.id ? { ...v, status: next } : v));
     } finally {
       setTogglingId(null);
+    }
+  };
+
+  const handleMarkSold = async (vehicle: Vehicle) => {
+    setMarkingSoldId(vehicle.id);
+    try {
+      await updateVehicleStatus(vehicle.id, 'SOLD');
+      setAllListings(prev => prev.map(v => v.id === vehicle.id ? { ...v, status: 'SOLD' } : v));
+    } finally {
+      setMarkingSoldId(null);
     }
   };
 
@@ -319,7 +330,9 @@ export function Profile() {
                       listings={list}
                       isOwnProfile={isOwnProfile}
                       togglingId={togglingId}
+                      markingSoldId={markingSoldId}
                       onToggle={handleToggleStatus}
+                      onMarkSold={handleMarkSold}
                       onNavigate={(id) => navigate(`/vehicle/${id}`)}
                     />
                   </TabsContent>
@@ -327,7 +340,7 @@ export function Profile() {
               })}
             </Tabs>
           ) : (
-            <VehicleGrid listings={visibleListings} isOwnProfile={false} togglingId={null} onToggle={() => {}} onNavigate={(id) => navigate(`/vehicle/${id}`)} />
+            <VehicleGrid listings={visibleListings} isOwnProfile={false} togglingId={null} markingSoldId={null} onToggle={() => {}} onMarkSold={() => {}} onNavigate={(id) => navigate(`/vehicle/${id}`)} />
           )}
         </div>
       </main>
@@ -416,12 +429,14 @@ export function Profile() {
 }
 
 function VehicleGrid({
-  listings, isOwnProfile, togglingId, onToggle, onNavigate,
+  listings, isOwnProfile, togglingId, markingSoldId, onToggle, onMarkSold, onNavigate,
 }: {
   listings: Vehicle[];
   isOwnProfile: boolean;
   togglingId: string | null;
+  markingSoldId: string | null;
   onToggle: (v: Vehicle) => void;
+  onMarkSold: (v: Vehicle) => void;
   onNavigate: (id: string) => void;
 }) {
   if (listings.length === 0) {
@@ -437,6 +452,7 @@ function VehicleGrid({
       {listings.map((listing, i) => {
         const statusCfg = STATUS_CONFIG[listing.status as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.DRAFT;
         const isToggling = togglingId === listing.id;
+        const isMarkingSold = markingSoldId === listing.id;
 
         return (
           <motion.div
@@ -485,11 +501,11 @@ function VehicleGrid({
               </div>
 
               {isOwnProfile && listing.status !== 'SOLD' && (
-                <div className="pt-2 border-t border-white/5">
+                <div className="pt-2 border-t border-white/5 flex gap-2">
                   <Button
                     size="sm"
                     variant="outline"
-                    disabled={isToggling}
+                    disabled={isToggling || isMarkingSold}
                     onClick={() => onToggle(listing)}
                     className="rounded-full font-bold uppercase tracking-widest text-[9px] h-8 px-4 border-white/10 hover:border-primary/30 gap-1.5"
                   >
@@ -499,6 +515,19 @@ function VehicleGrid({
                       <><Pause className="h-3 w-3" /> Pausar</>
                     ) : (
                       <><Play className="h-3 w-3" /> Activar</>
+                    )}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={isToggling || isMarkingSold}
+                    onClick={() => onMarkSold(listing)}
+                    className="rounded-full font-bold uppercase tracking-widest text-[9px] h-8 px-4 border-blue-500/30 text-blue-400 hover:bg-blue-500/10 gap-1.5"
+                  >
+                    {isMarkingSold ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <><CheckCircle2 className="h-3 w-3" /> Vendido</>
                     )}
                   </Button>
                 </div>
