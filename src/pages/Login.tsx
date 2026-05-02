@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
 import { Mail, Lock, ArrowRight, ShieldCheck, Building2, User, Phone, Fingerprint, CreditCard, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,8 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { AlertCircle, CheckCircle2 } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export function Login() {
   const [isLogin, setIsLogin] = useState(true);
@@ -131,20 +128,11 @@ export function Login() {
       <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/5 blur-[120px] rounded-full pointer-events-none z-0" />
 
       <div className="flex flex-col items-center px-4 py-12">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md relative z-10"
-      >
+      <div className="w-full max-w-md relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="text-center mb-10">
-          <motion.div 
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.5 }}
-            className="flex justify-center mb-6"
-          >
+          <div className="flex justify-center mb-6 animate-in zoom-in duration-500">
             <Logo className="text-5xl" variant="auto" />
-          </motion.div>
+          </div>
           <h2 className="text-3xl font-bold tracking-tighter uppercase">
             {isLogin ? 'Bienvenido a la Comunidad' : 'Solicitud de Admisión'}
           </h2>
@@ -387,7 +375,7 @@ export function Login() {
             PLATAFORMA EXCLUSIVA B2B
           </div>
         </div>
-      </motion.div>
+      </div>
       </div>
     </div>
   );
