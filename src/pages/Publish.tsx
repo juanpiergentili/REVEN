@@ -552,11 +552,11 @@ export function Publish() {
                 </div>
               )}
 
-              <div className="flex justify-between pt-4">
-                <Button variant="ghost" onClick={prevStep} className="h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-white/5">
+              <div className="flex flex-col-reverse sm:flex-row justify-between pt-4 gap-4">
+                <Button variant="ghost" onClick={prevStep} className="w-full sm:w-auto h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-white/5">
                   <ArrowLeft className="h-5 w-5 stroke-[3]" /> Anterior
                 </Button>
-                <Button onClick={nextStep} className="h-14 px-10 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 shadow-lg shadow-primary/20">
+                <Button onClick={nextStep} className="w-full sm:w-auto h-14 px-10 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 shadow-lg shadow-primary/20">
                   Siguiente <ArrowRight className="h-5 w-5 stroke-[3]" />
                 </Button>
               </div>
@@ -600,11 +600,11 @@ export function Publish() {
                 />
               </div>
 
-              <div className="flex justify-between pt-4">
-                <Button variant="ghost" onClick={prevStep} className="h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-white/5">
+              <div className="flex flex-col-reverse sm:flex-row justify-between pt-4 gap-4">
+                <Button variant="ghost" onClick={prevStep} className="w-full sm:w-auto h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-white/5">
                   <ArrowLeft className="h-5 w-5 stroke-[3]" /> Anterior
                 </Button>
-                <Button onClick={nextStep} className="h-14 px-10 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 shadow-lg shadow-primary/20">
+                <Button onClick={nextStep} className="w-full sm:w-auto h-14 px-10 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 shadow-lg shadow-primary/20">
                   Siguiente <ArrowRight className="h-5 w-5 stroke-[3]" />
                 </Button>
               </div>
@@ -614,11 +614,11 @@ export function Publish() {
           {step === 4 && (
             <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-8">
               <StepEstadoTecnico inspection={inspection} onChange={setInspection} />
-              <div className="flex justify-between pt-4">
-                <Button variant="ghost" onClick={prevStep} className="h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-white/5">
+              <div className="flex flex-col-reverse sm:flex-row justify-between pt-4 gap-4">
+                <Button variant="ghost" onClick={prevStep} className="w-full sm:w-auto h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-white/5">
                   <ArrowLeft className="h-5 w-5 stroke-[3]" /> Anterior
                 </Button>
-                <Button onClick={nextStep} className="h-14 px-10 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 shadow-lg shadow-primary/20">
+                <Button onClick={nextStep} className="w-full sm:w-auto h-14 px-10 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 shadow-lg shadow-primary/20">
                   Siguiente <ArrowRight className="h-5 w-5 stroke-[3]" />
                 </Button>
               </div>
@@ -658,11 +658,11 @@ export function Publish() {
                   </div>
                 </div>
               </div>
-              <div className="flex justify-between pt-4">
-                <Button variant="ghost" onClick={prevStep} className="h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-white/5">
+              <div className="flex flex-col-reverse sm:flex-row justify-between pt-4 gap-4">
+                <Button variant="ghost" onClick={prevStep} className="w-full sm:w-auto h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-white/5">
                   <ArrowLeft className="h-5 w-5 stroke-[3]" /> Anterior
                 </Button>
-                <Button onClick={nextStep} className="h-14 px-10 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 shadow-lg shadow-primary/20">
+                <Button onClick={nextStep} className="w-full sm:w-auto h-14 px-10 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 shadow-lg shadow-primary/20">
                   Siguiente <ArrowRight className="h-5 w-5 stroke-[3]" />
                 </Button>
               </div>
@@ -689,15 +689,15 @@ export function Publish() {
                 </div>
               )}
 
-              <div className="flex justify-between items-center pt-4 gap-4">
-                <Button variant="ghost" onClick={prevStep} disabled={submitting} className="h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-white/5">
+              <div className="flex flex-col-reverse sm:flex-row justify-between pt-4 gap-4">
+                <Button variant="ghost" onClick={prevStep} disabled={submitting} className="w-full sm:w-auto h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-white/5">
                   <ArrowLeft className="h-5 w-5 stroke-[3]" /> Anterior
                 </Button>
                 <Button
                   type="submit"
                   onClick={handleSubmit}
                   disabled={submitting || photoUpload.isUploading}
-                  className="h-14 px-10 rounded-full font-bold uppercase tracking-[0.15em] text-base shadow-xl shadow-primary/20 active:scale-[0.98] transition-transform gap-2"
+                  className="w-full sm:w-auto h-14 px-10 rounded-full font-bold uppercase tracking-[0.15em] text-base shadow-xl shadow-primary/20 active:scale-[0.98] transition-transform gap-2"
                 >
                   {submitting ? (
                     <><Loader2 className="h-5 w-5 animate-spin" /> Publicando...</>
