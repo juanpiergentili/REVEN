@@ -68,7 +68,8 @@ export function Admin() {
 
   const handleApprove = async (uid: string) => {
     setActionId(uid);
-    await approveUser(uid);
+    const u = users.find(x => x.uid === uid);
+    await approveUser(uid, u);
     await loadUsers();
     setActionId(null);
   };
@@ -178,6 +179,11 @@ export function Admin() {
                       <Badge variant="outline" className="text-[9px] font-bold tracking-wider rounded-full px-2 border-border bg-muted">
                         {PLAN_LABEL[u.plan] ?? u.plan}
                       </Badge>
+                      {u.discountCode === 'REVENFREE60' && (
+                        <Badge className="text-[9px] font-bold tracking-wider rounded-full px-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                          60 DÍAS GRATIS
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground font-medium">
                       <span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{u.company}</span>

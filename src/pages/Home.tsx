@@ -165,11 +165,17 @@ export function Home() {
   };
 
   const [discountCode, setDiscountCode] = useState('');
-  const [isDiscountApplied, setIsDiscountApplied] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState<null | 'REVEN20' | 'REVENFREE60'>(null);
+
+  const isFreeTrial = appliedCoupon === 'REVENFREE60';
 
   const handleApplyDiscount = () => {
-    if (discountCode.toUpperCase() === 'REVEN20') {
-      setIsDiscountApplied(true);
+    const code = discountCode.toUpperCase().trim();
+    if (code === 'REVEN20') {
+      setAppliedCoupon('REVEN20');
+      setError(null);
+    } else if (code === 'REVENFREE60') {
+      setAppliedCoupon('REVENFREE60');
       setError(null);
     } else {
       setError('Código de descuento inválido');
@@ -202,7 +208,8 @@ export function Home() {
           company: company,
           plan: plan,
           billingCycle: billingCycle,
-          discountCode: isDiscountApplied ? discountCode : null,
+          discountCode: appliedCoupon ?? null,
+          trialDays: isFreeTrial ? 60 : null,
           role: 'USER',
           status: 'pending',
           createdAt: serverTimestamp()
@@ -811,15 +818,29 @@ export function Home() {
                   </div>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 flex items-center justify-between">
+                <div className={`p-4 rounded-2xl border flex items-center justify-between transition-colors ${isFreeTrial ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-primary/5 border-primary/10'}`}>
                   <div className="space-y-0.5">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Total a pagar</p>
-                    <p className="text-xl font-bold tracking-tighter text-primary">
-                      U$D {billingCycle === 'monthly' ? PLAN_PRICES[plan as keyof typeof PLAN_PRICES].monthly : PLAN_PRICES[plan as keyof typeof PLAN_PRICES].annual}
-                      <span className="text-xs text-muted-foreground ml-1">/ {billingCycle === 'monthly' ? 'mes' : 'año'}</span>
-                    </p>
+                    {isFreeTrial ? (
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-sm text-muted-foreground line-through">
+                          U$D {billingCycle === 'monthly' ? PLAN_PRICES[plan as keyof typeof PLAN_PRICES].monthly : PLAN_PRICES[plan as keyof typeof PLAN_PRICES].annual}
+                        </span>
+                        <span className="text-2xl font-black tracking-tighter text-emerald-400">U$D 0</span>
+                        <span className="text-xs text-muted-foreground">/ 60 días</span>
+                      </div>
+                    ) : (
+                      <p className="text-xl font-bold tracking-tighter text-primary">
+                        U$D {billingCycle === 'monthly' ? PLAN_PRICES[plan as keyof typeof PLAN_PRICES].monthly : PLAN_PRICES[plan as keyof typeof PLAN_PRICES].annual}
+                        <span className="text-xs text-muted-foreground ml-1">/ {billingCycle === 'monthly' ? 'mes' : 'año'}</span>
+                      </p>
+                    )}
                   </div>
-                  {billingCycle === 'annual' && (
+                  {isFreeTrial ? (
+                    <Badge className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold tracking-tighter px-3 py-1 rounded-full text-[10px]">
+                      60 DÍAS GRATIS
+                    </Badge>
+                  ) : billingCycle === 'annual' && (
                     <Badge className="bg-primary text-primary-foreground font-bold tracking-tighter px-3 py-1 rounded-full text-[10px]">
                       AHORRÁ U$D {PLAN_PRICES[plan as keyof typeof PLAN_PRICES].monthly * 12 - PLAN_PRICES[plan as keyof typeof PLAN_PRICES].annual}
                     </Badge>
@@ -845,7 +866,10 @@ export function Home() {
                       APLICAR
                     </Button>
                   </div>
-                  {isDiscountApplied && (
+                  {appliedCoupon === 'REVENFREE60' && (
+                    <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest ml-1">🎉 60 días gratis aplicados — comenzá al ser aprobado</p>
+                  )}
+                  {appliedCoupon === 'REVEN20' && (
                     <p className="text-[10px] font-bold text-primary uppercase tracking-widest ml-1">¡Descuento aplicado con éxito!</p>
                   )}
                 </div>
