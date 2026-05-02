@@ -8,15 +8,17 @@ import { Publish } from '@/src/pages/Publish';
 import { Login } from '@/src/pages/Login';
 import { Messages } from '@/src/pages/Messages';
 import { Profile } from '@/src/pages/Profile';
+import { Admin } from '@/src/pages/Admin';
 
 function AppContent() {
   const location = useLocation();
   const isLoginPage = location.pathname === '/login';
   const isHomePage = location.pathname === '/';
+  const isAdminPage = location.pathname === '/admin';
 
   return (
     <div className="min-h-screen flex flex-col font-sans antialiased">
-      {!isLoginPage && <Header />}
+      {!isLoginPage && !isAdminPage && <Header />}
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<Home />} />
@@ -27,12 +29,13 @@ function AppContent() {
           <Route path="/messages" element={<Messages />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/profile/:uid" element={<Profile />} />
+          <Route path="/admin" element={<Admin />} />
           {/* Fallback to home */}
           <Route path="*" element={<Home />} />
         </Routes>
       </main>
-      
-      {!isLoginPage && !isHomePage && (
+
+      {!isLoginPage && !isHomePage && !isAdminPage && (
         <footer className="border-t py-6 md:py-0 bg-background">
           <div className="container mx-auto flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row px-4 md:px-8">
             <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
