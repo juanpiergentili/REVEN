@@ -137,7 +137,7 @@ export function Home() {
 
   useEffect(() => {
     if (searchParams.get('register') === 'true') setIsAdmissionOpen(true);
-  }, []);
+  }, [searchParams]);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [loading, setLoading] = useState(false);
