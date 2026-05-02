@@ -237,7 +237,7 @@ export function Home() {
   const socioY = useTransform(socioScroll, [0, 1], ["-10%", "10%"]);
 
   return (
-    <div className="flex flex-col min-h-screen bg-background transition-colors duration-300">
+    <div className="flex flex-col min-h-screen bg-background transition-colors duration-300 overflow-x-hidden">
       {/* Hero Section */}
       <section className="relative min-h-[90vh] flex items-center overflow-hidden py-20 lg:py-0">
         <div className="absolute inset-0 z-0">
@@ -661,9 +661,9 @@ export function Home() {
 
       {/* Admission Dialog */}
       <Dialog open={isAdmissionOpen} onOpenChange={setIsAdmissionOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-4xl p-0 overflow-hidden rounded-[2.5rem] border-border bg-card/95 backdrop-blur-2xl shadow-2xl">
-          <div className="grid grid-cols-1 md:grid-cols-12 h-full min-h-[600px]">
-            <div className="md:col-span-4 lg:col-span-3 bg-primary p-10 flex flex-col justify-between text-primary-foreground relative overflow-hidden">
+        <DialogContent className="max-w-[95vw] sm:max-w-4xl p-0 rounded-[2.5rem] border-border bg-card/95 backdrop-blur-2xl shadow-2xl overflow-y-auto max-h-[90dvh]">
+          <div className="grid grid-cols-1 md:grid-cols-12 md:min-h-[600px]">
+            <div className="hidden md:flex md:col-span-4 lg:col-span-3 bg-primary p-10 flex-col justify-between text-primary-foreground relative overflow-hidden">
               <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-white/10 blur-3xl rounded-full" />
               <div className="z-10">
                 <Logo variant="dark" className="text-4xl mb-6" />
