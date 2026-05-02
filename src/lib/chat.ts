@@ -69,7 +69,7 @@ export async function findOrCreateConversation(params: {
   }
 
   // Create new conversation
-  const newConvo: ConversationData = {
+  const newConvo: Partial<ConversationData> = {
     participants: [params.buyerId, params.sellerId],
     buyerId: params.buyerId,
     sellerId: params.sellerId,
@@ -77,12 +77,13 @@ export async function findOrCreateConversation(params: {
     sellerName: params.sellerName,
     buyerCompany: params.buyerCompany,
     sellerCompany: params.sellerCompany,
-    vehicleId: params.vehicleId,
-    vehicleInfo: params.vehicleInfo,
     lastMessage: '',
     lastMessageAt: Timestamp.now(),
     createdAt: Timestamp.now(),
   };
+
+  if (params.vehicleId) newConvo.vehicleId = params.vehicleId;
+  if (params.vehicleInfo) newConvo.vehicleInfo = params.vehicleInfo;
 
   const docRef = await addDoc(conversationsRef, newConvo);
   return docRef.id;
@@ -93,13 +94,14 @@ export async function findOrCreateConversation(params: {
  */
 export function subscribeToConversations(
   userId: string,
-  callback: (conversations: (ConversationData & { id: string })[]) => void
+  callback: (conversations: (ConversationData & { id: string })[]) => void,
+  onError?: (error: any) => void
 ) {
   const conversationsRef = collection(db, 'conversations');
   const q = query(
     conversationsRef,
-    where('participants', 'array-contains', userId),
-    orderBy('lastMessageAt', 'desc')
+    where('participants', 'array-contains', userId)
+    // Removed orderBy('lastMessageAt', 'desc') to avoid requiring a composite index in Firestore
   );
 
   return onSnapshot(q, (snapshot) => {
@@ -107,7 +109,19 @@ export function subscribeToConversations(
       id: doc.id,
       ...doc.data() as ConversationData,
     }));
+    
+    // Sort on client side to avoid composite index requirement
+    conversations.sort((a, b) => {
+      const timeA = a.lastMessageAt?.toMillis() || 0;
+      const timeB = b.lastMessageAt?.toMillis() || 0;
+      return timeB - timeA; // Descending
+    });
+    
     callback(conversations);
+  }, (error) => {
+    console.error("Error subscribing to conversations:", error);
+    if (onError) onError(error);
+    else callback([]);
   });
 }
 
@@ -127,6 +141,8 @@ export function subscribeToMessages(
       ...doc.data() as MessageData,
     }));
     callback(messages);
+  }, (error) => {
+    console.error("Error subscribing to messages:", error);
   });
 }
 

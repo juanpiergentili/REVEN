@@ -6,7 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '@/src/lib/firebase';
+import { useAuth, db } from '@/src/lib/firebase';
 import {
   subscribeToConversations, subscribeToMessages,
   sendMessage, findOrCreateConversation, markMessagesAsRead,
@@ -27,7 +27,7 @@ function formatTime(ts: Timestamp | undefined): string {
 }
 
 export function Messages() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [conversations, setConversations] = useState<(ConversationData & { id: string })[]>([]);
@@ -36,10 +36,11 @@ export function Messages() {
   const [newMessage, setNewMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [initError, setInitError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const currentUserId = user?.uid || 'demo-user';
-  const currentUserName = user?.displayName || 'Mi Concesionaria';
+  const currentUserId = user?.uid;
+  const currentUserName = user?.displayName || 'Usuario';
 
   const convoId = searchParams.get('conversation');
   const targetUserId = searchParams.get('userId');
@@ -49,32 +50,54 @@ export function Messages() {
 
   // Handle deep link from vehicle detail or colleague contact
   useEffect(() => {
+    if (authLoading) return; // Wait for auth to initialize
+
     if (convoId) {
       setSelectedConvoId(convoId);
       return;
     }
 
-    if (targetUserId && targetUserName) {
+    if (targetUserId && targetUserName && currentUserId) {
       const initConvo = async () => {
-        const id = await findOrCreateConversation({
-          buyerId: currentUserId,
-          sellerId: targetUserId,
-          buyerName: currentUserName,
-          sellerName: targetUserName,
-          buyerCompany: currentUserName,
-          sellerCompany: targetCompany || targetUserName,
-          vehicleId: vehicleId || undefined,
-        });
-        setSelectedConvoId(id);
+        try {
+          const id = await findOrCreateConversation({
+            buyerId: currentUserId,
+            sellerId: targetUserId,
+            buyerName: currentUserName,
+            sellerName: targetUserName,
+            buyerCompany: currentUserName,
+            sellerCompany: targetCompany || targetUserName,
+            vehicleId: vehicleId || undefined,
+          });
+          setSelectedConvoId(id);
+
+          // Pre-fill first message when coming from "Contactar Vendedor"
+          if (vehicleId) {
+            const { docs } = await import('firebase/firestore').then(m =>
+              m.getDocs(m.collection(db, 'conversations', id, 'messages'))
+            );
+            if (docs.length === 0) {
+              setNewMessage('Me interesa este vehículo');
+            }
+          }
+        } catch (error: any) {
+          console.error("Error creating conversation:", error);
+          setInitError(error.message || "Error desconocido");
+        }
       };
       initConvo();
     }
-  }, [convoId, targetUserId, targetUserName, targetCompany, vehicleId, currentUserId, currentUserName]);
+  }, [convoId, targetUserId, targetUserName, targetCompany, vehicleId, currentUserId, currentUserName, authLoading]);
 
   // Subscribe to conversations
   useEffect(() => {
+    if (!currentUserId) return;
     const unsub = subscribeToConversations(currentUserId, (convos) => {
       setConversations(convos);
+      setLoading(false);
+      setInitError(null); // Clear errors on success
+    }, (err: any) => {
+      setInitError("Error cargando chats: " + (err.message || err.toString()));
       setLoading(false);
     });
     return unsub;
@@ -199,8 +222,21 @@ export function Messages() {
         </aside>
 
         {/* Chat Area */}
-        <div className={`flex-1 flex flex-col ${selectedConvoId ? 'flex' : 'hidden md:flex'}`}>
-          {selectedConvo ? (
+        <div className={`flex-1 flex flex-col ${selectedConvoId || initError ? 'flex' : 'hidden md:flex'}`}>
+          {initError ? (
+            <div className="flex-1 flex items-center justify-center p-8">
+              <div className="text-center space-y-4 max-w-md">
+                <div className="bg-red-500/10 p-8 rounded-full inline-block">
+                  <MessageCircle className="h-12 w-12 text-red-500 opacity-80" />
+                </div>
+                <h3 className="text-lg font-bold tracking-tighter uppercase text-red-500">Error en el Chat</h3>
+                <p className="text-sm text-red-400 font-medium break-words">{initError}</p>
+                <Button onClick={() => window.location.reload()} variant="outline" className="mt-4 border-red-500/50 text-red-500 hover:bg-red-500/10">
+                  REINTENTAR
+                </Button>
+              </div>
+            </div>
+          ) : selectedConvo ? (
             <>
               {/* Chat Header */}
               <div className="p-4 border-b border-white/5 bg-background/50 backdrop-blur-xl flex items-center gap-4">
