@@ -631,7 +631,7 @@ export function Home() {
             <h3 className="text-3xl font-bold tracking-tighter uppercase mb-4 text-background dark:text-foreground">¿Necesitás más volumen?</h3>
             <p className="text-muted-foreground font-medium mb-8">Para redes de concesionarias o grandes flotas, tenemos soluciones Enterprise a medida.</p>
             <Button
-              className="h-14 px-10 rounded-2xl font-bold text-lg bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-tighter shadow-xl shadow-primary/20"
+              className="w-full sm:w-auto h-14 px-10 rounded-2xl font-bold text-lg bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-tighter shadow-xl shadow-primary/20"
               onClick={() => setIsAdmissionOpen(true)}
             >
               CONSULTAR POR ENTERPRISE
