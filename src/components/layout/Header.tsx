@@ -287,11 +287,11 @@ export function Header() {
                   <User className="mr-2 h-4 w-4" />
                   INGRESAR
                 </Button>
-                <Button 
+                <Button
                   className="rounded-full px-6 font-bold uppercase tracking-widest text-xs h-11 shadow-lg shadow-primary/20 group"
-                  onClick={() => setIsLoginOpen(true)}
+                  onClick={() => navigate('/?register=true')}
                 >
-                  PUBLICAR
+                  REGISTRARSE
                   <Plus className="ml-2 h-4 w-4 group-hover:rotate-90 transition-transform" />
                 </Button>
               </>
@@ -337,8 +337,8 @@ export function Header() {
                 <Button variant="outline" className="w-full rounded-2xl h-12 font-bold uppercase tracking-widest text-xs" onClick={() => { setIsLoginOpen(true); setIsMenuOpen(false); }}>
                   INGRESAR
                 </Button>
-                <Button className="w-full rounded-2xl h-12 font-bold uppercase tracking-widest text-xs" onClick={() => { isLanding ? setIsLoginOpen(true) : navigate('/publish'); setIsMenuOpen(false); }}>
-                  PUBLICAR +
+                <Button className="w-full rounded-2xl h-12 font-bold uppercase tracking-widest text-xs" onClick={() => { navigate('/?register=true'); setIsMenuOpen(false); }}>
+                  REGISTRARSE
                 </Button>
               </div>
             </div>

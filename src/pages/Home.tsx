@@ -2,7 +2,7 @@ import { motion, useScroll, useTransform } from 'motion/react';
 import { Shield, Zap, Star, Users, Check, ArrowRight, Quote, Star as StarIcon, X, Mail, Lock, Building2, User, Phone, Fingerprint, CreditCard, ShieldCheck, FileText, Loader2, MapPin, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import React, { useRef, useState, useEffect } from 'react';
 import { Logo } from '../components/layout/Logo';
 import { Footer } from '../components/layout/Footer';
@@ -132,7 +132,12 @@ export function Home() {
   const parallaxRef = useRef(null);
   const socioRef = useRef(null);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [isAdmissionOpen, setIsAdmissionOpen] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('register') === 'true') setIsAdmissionOpen(true);
+  }, []);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [loading, setLoading] = useState(false);
