@@ -522,7 +522,7 @@ function VehicleGrid({
                     variant="outline"
                     disabled={isToggling || isMarkingSold}
                     onClick={() => onMarkSold(listing)}
-                    className="rounded-full font-bold uppercase tracking-widest text-[9px] h-8 px-4 border-blue-500/30 text-blue-400 hover:bg-blue-500/10 gap-1.5"
+                    className="rounded-full font-bold uppercase tracking-widest text-[9px] h-8 px-4 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 gap-1.5"
                   >
                     {isMarkingSold ? (
                       <Loader2 className="h-3 w-3 animate-spin" />

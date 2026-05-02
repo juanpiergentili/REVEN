@@ -130,11 +130,11 @@ export function Login() {
       <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 blur-[120px] rounded-full pointer-events-none" />
       <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/5 blur-[120px] rounded-full pointer-events-none" />
 
-      <div className="flex flex-col items-center justify-center min-h-screen p-4 py-10">
+      <div className="flex flex-col items-center min-h-screen px-4 py-12">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md relative z-10"
+        className="w-full max-w-md relative z-10 my-auto"
       >
         <div className="text-center mb-10">
           <motion.div 
@@ -155,7 +155,7 @@ export function Login() {
           </p>
         </div>
 
-        <div className="bg-card/50 backdrop-blur-xl border border-border p-8 rounded-[2.5rem] shadow-2xl">
+        <div className="bg-card/50 backdrop-blur-xl border border-border p-6 sm:p-8 rounded-[2.5rem] shadow-2xl overflow-hidden">
           {error && (
             <div className={`mb-6 p-4 rounded-xl text-xs font-bold uppercase tracking-widest text-center ${error.includes('éxito') ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'}`}>
               {error}
@@ -250,7 +250,7 @@ export function Login() {
                 className="space-y-4"
                 onSubmit={handleRegister}
               >
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name" className="text-[10px] font-bold uppercase tracking-widest ml-1">Nombre</Label>
                     <div className="relative">
@@ -278,7 +278,7 @@ export function Login() {
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="cuil" className="text-[10px] font-bold uppercase tracking-widest ml-1">CUIL / CUIT</Label>
                     <div className="relative">
