@@ -505,7 +505,7 @@ export function Header() {
               </div>
             </div>
           </div>
-        </div>
+        </DialogContent>
       </Dialog>
     </header>
   );

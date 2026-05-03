@@ -1,7 +1,7 @@
 import { X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { FilterState, INITIAL_FILTERS } from './FilterSidebar';
-import { getProvinciaById } from '@/src/data/argentina-geo';
+import { useGeoRef } from '@/src/hooks/useGeoRef';
 
 interface FilterChipsProps {
   filters: FilterState;
@@ -28,6 +28,7 @@ const LABELS: Partial<Record<keyof FilterState, string>> = {
 };
 
 export function FilterChips({ filters, onRemove, onClearAll }: FilterChipsProps) {
+  const { provincias } = useGeoRef();
   const chips: { key: keyof FilterState; label: string; value: string; resetValue: string | null }[] = [];
 
   const add = (key: keyof FilterState, value: string, resetValue: string | null = 'todos') => {
@@ -50,7 +51,7 @@ export function FilterChips({ filters, onRemove, onClearAll }: FilterChipsProps)
   if (filters.maxPrice) add('maxPrice', `${filters.currency} ${Number(filters.maxPrice).toLocaleString()}`, '');
   let provinceLabel = filters.province;
   if (filters.province && filters.province !== 'todos') {
-    const p = getProvinciaById(filters.province);
+    const p = provincias.find(pr => pr.id === filters.province);
     if (p) provinceLabel = p.nombre;
   }
   add('province', provinceLabel);

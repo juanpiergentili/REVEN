@@ -4,24 +4,20 @@ import { CheckCircle2, AlertTriangle, Camera, MapPin, Fuel, Calendar } from 'luc
 import { formatArgentineNumber, hasInspectionData } from '@/src/lib/publish-helpers';
 import type { PublishFormData, InspectionFormData } from '@/src/lib/publish-helpers';
 import { FUEL_TYPES, TRANSMISSIONS, BODY_TYPES, COLORS } from '@/src/data/vehicle-catalog';
-import { PROVINCIAS_ARGENTINA } from '@/src/data/argentina-geo';
 
 interface Props {
   formData: PublishFormData;
   inspection: InspectionFormData;
   photoPreviews: string[];
   photosCount: number;
+  locationStr: string;
 }
 
-export function StepPreview({ formData, inspection, photoPreviews, photosCount }: Props) {
+export function StepPreview({ formData, inspection, photoPreviews, photosCount, locationStr }: Props) {
   const fuelLabel = FUEL_TYPES.find(f => f.value === formData.fuelType)?.label || formData.fuelType;
   const transLabel = TRANSMISSIONS.find(t => t.value === formData.transmission)?.label || formData.transmission;
   const bodyLabel = BODY_TYPES.find(b => b.value === formData.bodyType)?.label || formData.bodyType;
   const colorObj = COLORS.find(c => c.value === formData.color);
-  const provinceName = PROVINCIAS_ARGENTINA.find(p => p.id === formData.province)?.nombre || formData.province;
-  const prov = PROVINCIAS_ARGENTINA.find(p => p.id === formData.province);
-  const cityName = prov?.localidades.find(l => l.id === formData.city)?.nombre || formData.city;
-  const locationStr = cityName ? `${cityName}, ${provinceName}` : provinceName;
   const hasInspection = hasInspectionData(inspection);
 
   return (

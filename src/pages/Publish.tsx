@@ -14,8 +14,9 @@ import { useAuth, db } from '@/src/lib/firebase';
 import { getDoc, doc, getDocs, collection, query, where } from 'firebase/firestore';
 import { isTrialUser, isTrialExpired, getTrialDaysRemaining, getTrialEndDate, TRIAL_MAX_LISTINGS } from '@/src/lib/trial';
 import { createVehicle, updateVehiclePhotos } from '@/src/lib/vehicles';
-import { VEHICLE_CATALOG, BODY_TYPES, FUEL_TYPES, TRANSMISSIONS, COLORS } from '@/src/data/vehicle-catalog';
-import { PROVINCIAS_ARGENTINA } from '@/src/data/argentina-geo';
+import { BODY_TYPES, FUEL_TYPES, TRANSMISSIONS, COLORS } from '@/src/data/vehicle-catalog';
+import { useGeoRef } from '@/src/hooks/useGeoRef';
+import { useArgAutos } from '@/src/hooks/useArgAutos';
 import type { FuelType, BodyType, Transmission, VehicleCondition } from '@/src/types';
 import { usePhotoUpload } from '@/src/hooks/usePhotoUpload';
 import { StepEstadoTecnico } from '@/src/components/publish/StepEstadoTecnico';
@@ -48,6 +49,8 @@ export function Publish() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const photoUpload = usePhotoUpload();
+  const { provincias, localidades, loadingProvincias, loadingLocalidades } = useGeoRef(formData.province);
+  const { brands, models, versions, valuations, loadingBrands, loadingModels, loadingVersions } = useArgAutos(formData.brand, formData.model, formData.version);
 
   useEffect(() => {
     if (!user) return;
@@ -77,33 +80,24 @@ export function Publish() {
     setError(null);
   }, []);
 
-  const selectedBrand = VEHICLE_CATALOG.find(b => b.nombre === formData.brand);
-  const selectedModel = selectedBrand?.modelos.find(m => m.nombre === formData.model);
-  const selectedProvince = PROVINCIAS_ARGENTINA.find(p => p.id === formData.province);
-
   const handleBrandSelect = (brandName: string) => {
     setFormData(prev => ({ ...prev, brand: brandName, model: '', version: '', bodyType: '' }));
     setError(null);
   };
 
   const handleModelSelect = (modelName: string) => {
-    const modelo = selectedBrand?.modelos.find(m => m.nombre === modelName);
     setFormData(prev => ({
       ...prev,
       model: modelName,
-      version: '',
-      bodyType: modelo?.segmento || prev.bodyType,
+      version: ''
     }));
     setError(null);
   };
 
   const handleVersionSelect = (versionName: string) => {
-    const version = selectedModel?.versiones.find(v => v.nombre === versionName);
     setFormData(prev => ({
       ...prev,
-      version: versionName,
-      fuelType: version?.combustible || prev.fuelType,
-      transmission: version?.transmision || prev.transmission,
+      version: versionName
     }));
     setError(null);
   };
@@ -148,8 +142,8 @@ export function Publish() {
     setSubmitting(true);
     setError(null);
     try {
-      const cityName = selectedProvince?.localidades.find(l => l.id === formData.city)?.nombre || formData.city || '';
-      const provinceName = selectedProvince?.nombre || formData.province || '';
+      const cityName = localidades.find(l => l.id === formData.city)?.nombre || formData.city || '';
+      const provinceName = provincias.find(p => p.id === formData.province)?.nombre || formData.province || '';
       const location = cityName ? `${cityName}, ${provinceName}` : provinceName;
       const kmRaw = parseArgentineNumber(formData.km);
       const priceRaw = parseArgentineNumber(formData.price);
@@ -324,13 +318,13 @@ export function Publish() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-3">
                       <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Marca</Label>
-                      <Select value={formData.brand} onValueChange={handleBrandSelect}>
+                      <Select value={formData.brand} onValueChange={handleBrandSelect} disabled={loadingBrands}>
                         <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
-                          <SelectValue placeholder="Seleccionar marca" />
+                          <SelectValue placeholder={loadingBrands ? "Cargando..." : "Seleccionar marca"} />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl max-h-72">
-                          {VEHICLE_CATALOG.map(b => (
-                            <SelectItem key={b.nombre} value={b.nombre}>{b.nombre}</SelectItem>
+                          {brands.map(b => (
+                            <SelectItem key={b.name} value={b.name}>{b.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -338,48 +332,30 @@ export function Publish() {
 
                     <div className="space-y-3">
                       <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Modelo</Label>
-                      {selectedBrand ? (
-                        <Select value={formData.model} onValueChange={handleModelSelect}>
-                          <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
-                            <SelectValue placeholder="Seleccionar modelo" />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl max-h-72">
-                            {selectedBrand.modelos.map(m => (
-                              <SelectItem key={m.nombre} value={m.nombre}>{m.nombre}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <Input
-                          value={formData.model}
-                          onChange={e => update('model', e.target.value)}
-                          placeholder="Ej: Hilux, Vento..."
-                          className="h-14 rounded-xl bg-muted border-border font-bold"
-                        />
-                      )}
+                      <Select value={formData.model} onValueChange={handleModelSelect} disabled={!formData.brand || loadingModels}>
+                        <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
+                          <SelectValue placeholder={loadingModels ? "Cargando..." : "Seleccionar modelo"} />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl max-h-72">
+                          {models.map(m => (
+                            <SelectItem key={m.name} value={m.name}>{m.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     <div className="space-y-3">
                       <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Versión</Label>
-                      {selectedModel ? (
-                        <Select value={formData.version} onValueChange={handleVersionSelect}>
-                          <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
-                            <SelectValue placeholder="Seleccionar versión" />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl max-h-72">
-                            {selectedModel.versiones.map(v => (
-                              <SelectItem key={v.nombre} value={v.nombre}>{v.nombre}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <Input
-                          value={formData.version}
-                          onChange={e => update('version', e.target.value)}
-                          placeholder="Ej: 2.8 SRX 4X4 AT"
-                          className="h-14 rounded-xl bg-muted border-border font-bold"
-                        />
-                      )}
+                      <Select value={formData.version} onValueChange={handleVersionSelect} disabled={!formData.model || loadingVersions}>
+                        <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
+                          <SelectValue placeholder={loadingVersions ? "Cargando..." : "Seleccionar versión"} />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl max-h-72">
+                          {versions.map(v => (
+                            <SelectItem key={v.name} value={v.name}>{v.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     <div className="space-y-3">
@@ -504,15 +480,15 @@ export function Publish() {
                       <Select 
                         value={formData.province} 
                         onValueChange={v => { update('province', v); update('city', ''); }}
-                        disabled={!!userProfile?.province}
+                        disabled={!!userProfile?.province || loadingProvincias}
                       >
                         <SelectTrigger className={`h-14 rounded-xl bg-muted border-border font-bold ${userProfile?.province ? 'opacity-70' : ''}`}>
                           <SelectValue>
-                            {PROVINCIAS_ARGENTINA.find(p => p.id === formData.province)?.nombre || 'Seleccionar provincia'}
+                            {loadingProvincias ? 'Cargando provincias...' : (provincias.find(p => p.id === formData.province)?.nombre || 'Seleccionar provincia')}
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent className="rounded-xl max-h-72">
-                          {PROVINCIAS_ARGENTINA.map(p => (
+                          {provincias.map(p => (
                             <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
                           ))}
                         </SelectContent>
@@ -529,15 +505,15 @@ export function Publish() {
                       <Select
                         value={formData.city}
                         onValueChange={v => update('city', v)}
-                        disabled={!selectedProvince || !!userProfile?.city}
+                        disabled={!formData.province || !!userProfile?.city || loadingLocalidades}
                       >
                         <SelectTrigger className={`h-14 rounded-xl bg-muted border-border font-bold ${userProfile?.city ? 'opacity-70' : ''}`}>
                           <SelectValue>
-                            {selectedProvince?.localidades.find(l => l.id === formData.city)?.nombre || (selectedProvince ? 'Seleccionar localidad' : 'Primero elegí provincia')}
+                            {loadingLocalidades ? 'Cargando localidades...' : (localidades.find(l => l.id === formData.city)?.nombre || (formData.province ? 'Seleccionar localidad' : 'Primero elegí provincia'))}
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent className="rounded-xl max-h-72">
-                          {selectedProvince?.localidades.map(l => (
+                          {localidades.map(l => (
                             <SelectItem key={l.id} value={l.id}>{l.nombre}</SelectItem>
                           ))}
                         </SelectContent>
@@ -734,6 +710,13 @@ export function Publish() {
                           className="h-14 rounded-xl bg-muted border-border font-bold text-2xl text-primary tracking-tighter pl-14"
                         />
                       </div>
+                      {valuations.find(v => v.year.toString() === formData.year) && (
+                        <p className="text-[10px] font-medium text-muted-foreground ml-2">
+                          Valor estimado: ARS ${formatArgentineNumber(valuations.find(v => v.year.toString() === formData.year)?.price || '')}
+                          <br/>
+                          <span className="text-[8px] opacity-60 uppercase tracking-widest">Cotización en tiempo real según ACARA</span>
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="flex flex-col-reverse sm:flex-row justify-between pt-4 gap-4">
@@ -749,7 +732,13 @@ export function Publish() {
 
               {step === 6 && (
                 <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-8">
-                  <StepPreview formData={formData} inspection={inspection} photoPreviews={photoPreviews} photosCount={photos.length} />
+                  <StepPreview 
+                    formData={formData} 
+                    inspection={inspection} 
+                    photoPreviews={photoPreviews} 
+                    photosCount={photos.length} 
+                    locationStr={localidades.find(l => l.id === formData.city)?.nombre ? `${localidades.find(l => l.id === formData.city)?.nombre}, ${provincias.find(p => p.id === formData.province)?.nombre || formData.province}` : (provincias.find(p => p.id === formData.province)?.nombre || formData.province || '')}
+                  />
 
                   {photoUpload.isUploading && (
                     <div className="space-y-3">

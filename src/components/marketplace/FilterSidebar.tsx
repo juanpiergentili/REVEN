@@ -10,8 +10,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { BODY_TYPES, FUEL_TYPES, TRANSMISSIONS, KM_RANGES, COLORS, getBrandNames, getModelsByBrand, getVersionsByBrandAndModel, getYearRange } from '@/src/data/vehicle-catalog';
-import { getProvinciasForSelect, getLocalidadesByProvinciaId } from '@/src/data/argentina-geo';
+import { BODY_TYPES, FUEL_TYPES, TRANSMISSIONS, KM_RANGES, COLORS, getYearRange } from '@/src/data/vehicle-catalog';
+import { useArgAutos } from '@/src/hooks/useArgAutos';
+import { useGeoRef } from '@/src/hooks/useGeoRef';
 
 export interface FilterState {
   searchQuery: string;
@@ -81,9 +82,13 @@ function FilterSection({ title, children, defaultOpen = true }: { title: string;
 }
 
 export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }: FilterSidebarProps) {
-  const [models, setModels] = useState<{ nombre: string }[]>([]);
-  const [versions, setVersions] = useState<{ nombre: string }[]>([]);
-  const [localidades, setLocalidades] = useState<{ id: string; nombre: string }[]>([]);
+  const { brands, models, versions } = useArgAutos(
+    filters.brand !== 'todos' ? filters.brand : undefined,
+    filters.model !== 'todos' ? filters.model : undefined
+  );
+  const { provincias, localidades } = useGeoRef(
+    filters.province !== 'todos' ? filters.province : undefined
+  );
 
   const update = (key: keyof FilterState, value: string | null) => {
     const next = { ...filters, [key]: value };
@@ -99,32 +104,6 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
     onFilterChange(next);
   };
 
-  useEffect(() => {
-    if (filters.brand && filters.brand !== 'todos') {
-      setModels(getModelsByBrand(filters.brand));
-    } else {
-      setModels([]);
-    }
-  }, [filters.brand]);
-
-  useEffect(() => {
-    if (filters.brand !== 'todos' && filters.model !== 'todos') {
-      setVersions(getVersionsByBrandAndModel(filters.brand, filters.model));
-    } else {
-      setVersions([]);
-    }
-  }, [filters.brand, filters.model]);
-
-  useEffect(() => {
-    if (filters.province && filters.province !== 'todos') {
-      setLocalidades(getLocalidadesByProvinciaId(filters.province));
-    } else {
-      setLocalidades([]);
-    }
-  }, [filters.province]);
-
-  const brands = getBrandNames();
-  const provincias = getProvinciasForSelect();
   const years = getYearRange();
 
   const hasActiveFilters = Object.entries(filters).some(([key, val]) => {
@@ -197,7 +176,7 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
             <SelectContent className="rounded-xl max-h-60">
               <SelectItem value="todos">Todas</SelectItem>
               {brands.map(b => (
-                <SelectItem key={b} value={b}>{b}</SelectItem>
+                <SelectItem key={b.name} value={b.name}>{b.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -213,7 +192,7 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
               <SelectContent className="rounded-xl max-h-60">
                 <SelectItem value="todos">Todos</SelectItem>
                 {models.map(m => (
-                  <SelectItem key={m.nombre} value={m.nombre}>{m.nombre}</SelectItem>
+                  <SelectItem key={m.name} value={m.name}>{m.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -230,7 +209,7 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
               <SelectContent className="rounded-xl max-h-60">
                 <SelectItem value="todos">Todas</SelectItem>
                 {versions.map(vr => (
-                  <SelectItem key={vr.nombre} value={vr.nombre}>{vr.nombre}</SelectItem>
+                  <SelectItem key={vr.name} value={vr.name}>{vr.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -349,7 +328,7 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
             <SelectContent className="rounded-xl max-h-60">
               <SelectItem value="todos">Toda Argentina</SelectItem>
               {provincias.map(p => (
-                <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
               ))}
             </SelectContent>
           </Select>

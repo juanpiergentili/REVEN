@@ -20,7 +20,7 @@ import { useAuth, db } from '@/src/lib/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { getVehiclesBySeller, updateVehicleStatus, pauseAllSellerListings } from '@/src/lib/vehicles';
 import { isTrialUser, isTrialExpired, getTrialDaysRemaining, getTrialEndDate, TRIAL_MAX_LISTINGS } from '@/src/lib/trial';
-import { PROVINCIAS_ARGENTINA } from '@/src/data/argentina-geo';
+import { useGeoRef } from '@/src/hooks/useGeoRef';
 import type { Vehicle } from '../types';
 
 function StatCard({ icon: Icon, label, value, accent = false }: { icon: any; label: string; value: string | number; accent?: boolean }) {
@@ -68,6 +68,8 @@ export function Profile() {
 
   const targetUid = uid || user?.uid;
   const isOwnProfile = !uid || uid === user?.uid;
+
+  const { provincias, localidades, loadingProvincias, loadingLocalidades } = useGeoRef(isEditDialogOpen ? editForm.province : profileData?.province);
 
   useEffect(() => {
     async function fetchProfile() {
@@ -160,8 +162,8 @@ export function Profile() {
   }
 
   const responseBadge = getResponseBadge(profileData.responseTimestamps || [12, 15, 8, 20]);
-  const provinceName = PROVINCIAS_ARGENTINA.find(p => p.id === profileData.province)?.nombre || profileData.province || 'No especificada';
-  const cityName = PROVINCIAS_ARGENTINA.find(p => p.id === profileData.province)?.localidades.find(l => l.id === profileData.city)?.nombre || profileData.city || '';
+  const provinceName = provincias.find(p => p.id === profileData.province)?.nombre || profileData.province || 'No especificada';
+  const cityName = localidades.find(l => l.id === profileData.city)?.nombre || profileData.city || '';
 
   const trialExpired     = isTrialExpired(profileData);
   const trialUserProfile = isTrialUser(profileData);
@@ -414,12 +416,12 @@ export function Profile() {
 
             <div className="space-y-3">
               <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-primary">Provincia</Label>
-              <Select value={editForm.province} onValueChange={v => setEditForm(prev => ({ ...prev, province: v, city: '' }))}>
+              <Select value={editForm.province} onValueChange={v => setEditForm(prev => ({ ...prev, province: v, city: '' }))} disabled={loadingProvincias}>
                 <SelectTrigger className="h-14 rounded-[2.5rem] bg-white/5 border-white/10 font-bold px-6">
-                  <SelectValue>{PROVINCIAS_ARGENTINA.find(p => p.id === editForm.province)?.nombre || 'Seleccionar'}</SelectValue>
+                  <SelectValue>{loadingProvincias ? 'Cargando...' : (provincias.find(p => p.id === editForm.province)?.nombre || 'Seleccionar')}</SelectValue>
                 </SelectTrigger>
                 <SelectContent className="rounded-[2.5rem]">
-                  {PROVINCIAS_ARGENTINA.map(p => (
+                  {provincias.map(p => (
                     <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
                   ))}
                 </SelectContent>
@@ -428,12 +430,12 @@ export function Profile() {
 
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Localidad</Label>
-              <Select value={editForm.city} onValueChange={v => setEditForm(prev => ({ ...prev, city: v }))} disabled={!editForm.province}>
+              <Select value={editForm.city} onValueChange={v => setEditForm(prev => ({ ...prev, city: v }))} disabled={!editForm.province || loadingLocalidades}>
                 <SelectTrigger className="h-14 rounded-[2.5rem] bg-white/5 border-white/10 font-bold px-6">
-                  <SelectValue>{PROVINCIAS_ARGENTINA.find(p => p.id === editForm.province)?.localidades.find(l => l.id === editForm.city)?.nombre || 'Seleccionar'}</SelectValue>
+                  <SelectValue>{loadingLocalidades ? 'Cargando...' : (localidades.find(l => l.id === editForm.city)?.nombre || 'Seleccionar')}</SelectValue>
                 </SelectTrigger>
                 <SelectContent className="rounded-[2.5rem]">
-                  {PROVINCIAS_ARGENTINA.find(p => p.id === editForm.province)?.localidades.map(l => (
+                  {localidades.map(l => (
                     <SelectItem key={l.id} value={l.id}>{l.nombre}</SelectItem>
                   ))}
                 </SelectContent>
