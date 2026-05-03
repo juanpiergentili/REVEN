@@ -287,7 +287,7 @@ export function Profile() {
                   className="rounded-full font-bold uppercase tracking-widest text-[10px] gap-2 shadow-lg shadow-primary/20 h-10 px-6"
                 >
                   {trialExpired ? <Lock className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
-                  {trialExpired ? 'Prueba vencida' : 'Publicar Unidad'}
+                  {trialExpired ? 'Prueba vencida' : 'Publicar'}
                 </Button>
               </div>
             )}
