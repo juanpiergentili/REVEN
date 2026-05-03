@@ -9,12 +9,17 @@ import { Messages } from '@/src/pages/Messages';
 import { Profile } from '@/src/pages/Profile';
 import { Admin } from '@/src/pages/Admin';
 import { ProtectedRoute } from '@/src/components/auth/ProtectedRoute';
+import { useEffect } from 'react';
 
 function AppContent() {
   const location = useLocation();
   const isLoginPage = location.pathname === '/login';
   const isHomePage = location.pathname === '/';
   const isAdminPage = location.pathname === '/admin';
+
+  useEffect(() => {
+    console.log("🚀 REVEN SYSTEM v1.2.0 - API & ACARA Active");
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col font-sans antialiased">

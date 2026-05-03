@@ -6,14 +6,14 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Camera, ArrowRight, ArrowLeft, CheckCircle2, X, Loader2, AlertCircle, ImageOff, Lock, Clock } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Camera, ArrowRight, ArrowLeft, CheckCircle2, X, Loader2, AlertCircle, ImageOff, Lock, Clock, Save } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'motion/react';
 import { useAuth, db } from '@/src/lib/firebase';
 import { getDoc, doc, getDocs, collection, query, where } from 'firebase/firestore';
 import { isTrialUser, isTrialExpired, getTrialDaysRemaining, getTrialEndDate, TRIAL_MAX_LISTINGS } from '@/src/lib/trial';
-import { createVehicle, updateVehiclePhotos } from '@/src/lib/vehicles';
+import { createVehicle, updateVehiclePhotos, getVehicleById, updateVehicleDetailed } from '@/src/lib/vehicles';
 import { BODY_TYPES, FUEL_TYPES, TRANSMISSIONS, COLORS } from '@/src/data/vehicle-catalog';
 import { useGeoRef } from '@/src/hooks/useGeoRef';
 import { useArgAutos } from '@/src/hooks/useArgAutos';
@@ -34,13 +34,19 @@ const currentYear = new Date().getFullYear();
 const YEARS = Array.from({ length: currentYear - 1989 }, (_, i) => String(currentYear + 1 - i));
 
 export function Publish() {
+  const [searchParams] = useSearchParams();
+  const editId = searchParams.get('edit');
+  const [isEditMode, setIsEditMode] = useState(false);
+  
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<PublishFormData>(INITIAL_FORM);
   const [inspection, setInspection] = useState<InspectionFormData>(INITIAL_INSPECTION);
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
+  const [existingPhotos, setExistingPhotos] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [loadingEdit, setLoadingEdit] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [showNoPhotosDialog, setShowNoPhotosDialog] = useState(false);
@@ -52,28 +58,54 @@ export function Publish() {
   const { provincias, localidades, loadingProvincias, loadingLocalidades } = useGeoRef(formData.province);
   const { brands, models, versions, valuations, loadingBrands, loadingModels, loadingVersions } = useArgAutos(formData.brand, formData.model, formData.version);
 
+  // Load existing vehicle data if editing
   useEffect(() => {
-    if (!user) return;
-    getDoc(doc(db, 'users', user.uid)).then(async snap => {
-      if (snap.exists()) {
-        const data = snap.data();
-        setUserProfile(data);
-        if (data.province || data.city) {
-          setFormData(prev => ({
-            ...prev,
-            province: data.province || prev.province,
-            city: data.city || prev.city
-          }));
+    if (!editId || !user) return;
+    
+    const loadVehicle = async () => {
+      setLoadingEdit(true);
+      try {
+        const vehicle = await getVehicleById(editId);
+        if (vehicle && vehicle.sellerId === user.uid) {
+          setIsEditMode(true);
+          setFormData({
+            brand: vehicle.brand,
+            model: vehicle.model,
+            version: vehicle.version,
+            year: vehicle.year,
+            km: vehicle.km,
+            condition: vehicle.condition,
+            fuelType: vehicle.fuelType,
+            transmission: vehicle.transmission,
+            bodyType: vehicle.bodyType,
+            color: vehicle.color,
+            province: vehicle.province,
+            city: vehicle.city,
+            price: vehicle.price,
+            currency: vehicle.currency,
+            description: vehicle.description || '',
+            hasVTV: vehicle.hasVTV || false,
+            hasPatenteAlDay: vehicle.hasPatenteAlDay || false,
+            uniqueOwner: vehicle.uniqueOwner || false,
+            officialService: vehicle.officialService || false,
+            gncObleaVigente: vehicle.gncObleaVigente || false,
+          });
+          if (vehicle.inspection) {
+            setInspection(vehicle.inspection as InspectionFormData);
+          }
+          if (vehicle.photos) {
+            setExistingPhotos(vehicle.photos);
+            setPhotoPreviews(vehicle.photos);
+          }
         }
-        if (isTrialUser(data)) {
-          const activeSnap = await getDocs(
-            query(collection(db, 'vehicles'), where('sellerId', '==', user.uid), where('status', '==', 'ACTIVE'))
-          );
-          setActiveListingCount(activeSnap.size);
-        }
+      } catch (err) {
+        console.error('Error loading vehicle for edit:', err);
+      } finally {
+        setLoadingEdit(false);
       }
-    });
-  }, [user]);
+    };
+    loadVehicle();
+  }, [editId, user]);
 
   const update = useCallback(<K extends keyof PublishFormData>(field: K, value: PublishFormData[K]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -150,7 +182,7 @@ export function Publish() {
 
       const inspData = hasInspectionData(inspection) ? inspection : undefined;
 
-      const vId = await createVehicle({
+      const vehicleData: any = {
         sellerId: user.uid,
         sellerName: userProfile?.companyName || userProfile?.name || user.displayName || 'Agencia',
         sellerCompany: userProfile?.companyName || 'Agencia',
@@ -173,20 +205,32 @@ export function Publish() {
         status: 'ACTIVE',
         isFeatured: false,
         isInspected: false,
-        photos: [],
         description: formData.description,
         hasVTV: formData.hasVTV,
         hasPatenteAlDay: formData.hasPatenteAlDay,
+        uniqueOwner: formData.uniqueOwner,
+        officialService: formData.officialService,
         gncObleaVigente: formData.gncObleaVigente,
         inspectionData: inspData as any,
-      });
+      };
+
+      let vId = editId || '';
+
+      if (isEditMode && editId) {
+        await updateVehicleDetailed(editId, vehicleData);
+      } else {
+        vId = await createVehicle({
+          ...vehicleData,
+          photos: [],
+        });
+      }
 
       if (photos.length > 0) {
         try {
           const urls = await photoUpload.uploadPhotos(photos, vId, user.uid);
           await updateVehiclePhotos(vId, urls);
         } catch (uploadErr: unknown) {
-          setError(`Vehículo publicado, pero hubo un error al subir las fotos: ${getFirebaseErrorMessage(uploadErr)}`);
+          setError(`Vehículo ${isEditMode ? 'actualizado' : 'publicado'}, pero hubo un error al subir las fotos: ${getFirebaseErrorMessage(uploadErr)}`);
           setSubmitting(false);
           return;
         }
@@ -206,14 +250,27 @@ export function Publish() {
   const trialEndDate   = getTrialEndDate(userProfile);
   const atTrialLimit   = trialUser && !trialExpired && activeListingCount >= TRIAL_MAX_LISTINGS;
 
+  if (loadingEdit) {
+    return (
+      <div className="container mx-auto py-40 flex flex-col items-center justify-center space-y-4">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="font-bold uppercase tracking-widest text-xs">Cargando publicación...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto max-w-4xl py-20 px-4">
       <div className="mb-12 text-center space-y-4">
         <Badge className="bg-primary/20 text-primary border-primary/20 font-bold tracking-tighter px-4 py-1.5 rounded-full text-sm">
-          NUEVA PUBLICACIÓN
+          {isEditMode ? 'EDITAR PUBLICACIÓN' : 'NUEVA PUBLICACIÓN'}
         </Badge>
-        <h1 className="text-3xl md:text-5xl font-bold tracking-tighter uppercase">Sumar Stock</h1>
-        <p className="text-muted-foreground font-medium">Completá los pasos para publicar tu unidad en la comunidad.</p>
+        <h1 className="text-3xl md:text-5xl font-bold tracking-tighter uppercase">
+          {isEditMode ? 'Modificar Unidad' : 'Sumar Stock'}
+        </h1>
+        <p className="text-muted-foreground font-medium">
+          {isEditMode ? 'Actualizá la información de tu vehículo.' : 'Completá los pasos para publicar tu unidad en la comunidad.'}
+        </p>
       </div>
 
       {trialExpired && (

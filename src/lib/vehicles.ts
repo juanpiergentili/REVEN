@@ -12,10 +12,25 @@ export async function createVehicle(data: NewVehicle): Promise<string> {
   const docRef = await addDoc(collection(db, 'vehicles'), {
     ...data,
     createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
     viewCount: 0,
     contactCount: 0,
   });
   return docRef.id;
+}
+
+export async function getVehicleById(id: string): Promise<Vehicle | null> {
+  const snap = await getDocs(query(collection(db, 'vehicles'), where('__name__', '==', id)));
+  if (snap.empty) return null;
+  const data = snap.docs[0].data();
+  return { ...data, id: snap.docs[0].id, createdAt: convertTimestamp(data.createdAt) } as Vehicle;
+}
+
+export async function updateVehicleDetailed(id: string, data: Partial<Vehicle>): Promise<void> {
+  await updateDoc(doc(db, 'vehicles', id), {
+    ...data,
+    updatedAt: serverTimestamp(),
+  });
 }
 
 export async function uploadVehiclePhotos(files: File[], vehicleId: string, userId: string): Promise<string[]> {

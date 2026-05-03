@@ -384,13 +384,14 @@ export function Profile() {
                       onToggle={handleToggleStatus}
                       onMarkSold={handleMarkSold}
                       onNavigate={(id) => navigate(`/vehicle/${id}`)}
+                      onEdit={(id) => navigate(`/publish?edit=${id}`)}
                     />
                   </TabsContent>
                 );
               })}
             </Tabs>
           ) : (
-            <VehicleGrid listings={visibleListings} isOwnProfile={false} togglingId={null} markingSoldId={null} onToggle={() => {}} onMarkSold={() => {}} onNavigate={(id) => navigate(`/vehicle/${id}`)} />
+            <VehicleGrid listings={visibleListings} isOwnProfile={false} togglingId={null} markingSoldId={null} onToggle={() => {}} onMarkSold={() => {}} onNavigate={(id) => navigate(`/vehicle/${id}`)} onEdit={() => {}} />
           )}
         </div>
       </main>
@@ -479,7 +480,7 @@ export function Profile() {
 }
 
 function VehicleGrid({
-  listings, isOwnProfile, trialExpired = false, togglingId, markingSoldId, onToggle, onMarkSold, onNavigate,
+  listings, isOwnProfile, trialExpired = false, togglingId, markingSoldId, onToggle, onMarkSold, onNavigate, onEdit,
 }: {
   listings: Vehicle[];
   isOwnProfile: boolean;
@@ -489,6 +490,7 @@ function VehicleGrid({
   onToggle: (v: Vehicle) => void;
   onMarkSold: (v: Vehicle) => void;
   onNavigate: (id: string) => void;
+  onEdit: (id: string) => void;
 }) {
   if (listings.length === 0) {
     return (
@@ -551,40 +553,48 @@ function VehicleGrid({
                 <span className="flex items-center gap-1.5"><MessageSquare className="h-3.5 w-3.5 text-primary" /> {listing.contactCount || 0} Consultas</span>
               </div>
 
-              {isOwnProfile && listing.status !== 'SOLD' && (
-                <div className="pt-2 border-t border-white/5 flex gap-2">
                   <Button
                     size="sm"
                     variant="outline"
-                    disabled={isToggling || isMarkingSold || (trialExpired && listing.status === 'PAUSED')}
-                    onClick={() => onToggle(listing)}
+                    onClick={() => onEdit(listing.id)}
                     className="rounded-full font-bold uppercase tracking-widest text-[9px] h-8 px-4 border-white/10 hover:border-primary/30 gap-1.5"
                   >
-                    {isToggling ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : trialExpired && listing.status === 'PAUSED' ? (
-                      <><Lock className="h-3 w-3" /> Requiere plan</>
-                    ) : listing.status === 'ACTIVE' ? (
-                      <><Pause className="h-3 w-3" /> Pausar</>
-                    ) : (
-                      <><Play className="h-3 w-3" /> Activar</>
-                    )}
+                    <Settings className="h-3.5 w-3.5" /> Editar
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={isToggling || isMarkingSold}
-                    onClick={() => onMarkSold(listing)}
-                    className="rounded-full font-bold uppercase tracking-widest text-[9px] h-8 px-4 border-primary/40 text-primary hover:bg-primary/10 gap-1.5"
-                  >
-                    {isMarkingSold ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <><CheckCircle2 className="h-3 w-3" /> Vendido</>
-                    )}
-                  </Button>
-                </div>
-              )}
+                  {listing.status !== 'SOLD' && (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={isToggling || isMarkingSold || (trialExpired && listing.status === 'PAUSED')}
+                        onClick={() => onToggle(listing)}
+                        className="rounded-full font-bold uppercase tracking-widest text-[9px] h-8 px-4 border-white/10 hover:border-primary/30 gap-1.5"
+                      >
+                        {isToggling ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : trialExpired && listing.status === 'PAUSED' ? (
+                          <><Lock className="h-3 w-3" /> Requiere plan</>
+                        ) : listing.status === 'ACTIVE' ? (
+                          <><Pause className="h-3 w-3" /> Pausar</>
+                        ) : (
+                          <><Play className="h-3 w-3" /> Activar</>
+                        )}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={isToggling || isMarkingSold}
+                        onClick={() => onMarkSold(listing)}
+                        className="rounded-full font-bold uppercase tracking-widest text-[9px] h-8 px-4 border-primary/40 text-primary hover:bg-primary/10 gap-1.5"
+                      >
+                        {isMarkingSold ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <><CheckCircle2 className="h-3 w-3" /> Vendido</>
+                        )}
+                      </Button>
+                    </>
+                  )}
             </div>
           </motion.div>
         );

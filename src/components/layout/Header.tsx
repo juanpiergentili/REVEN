@@ -22,6 +22,7 @@ import {
   Shield,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Dialog, 
@@ -176,6 +177,9 @@ export function Header() {
         <div className="flex items-center gap-12">
           <Link to="/" className="flex items-center space-x-2 group">
             <Logo className="text-4xl" variant="auto" />
+            <Badge variant="outline" className="hidden lg:flex border-primary/20 bg-primary/5 text-primary font-black text-[8px] px-2 py-0 rounded-full tracking-tighter opacity-60 ml-2">
+              v1.2.5
+            </Badge>
           </Link>
 
           <nav className="hidden md:flex items-center gap-8">
@@ -436,6 +440,20 @@ export function Header() {
       {/* Login Dialog */}
       <Dialog open={isLoginOpen} onOpenChange={setIsLoginOpen}>
         <DialogContent className="max-w-lg p-0 overflow-hidden rounded-[2.5rem] border-border bg-card/95 backdrop-blur-2xl shadow-2xl">
+          <div className="flex items-center gap-0.5 md:gap-4 h-full">
+          <Link to="/" className="flex items-center gap-2 group">
+            <div className="h-10 w-10 bg-primary rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform">
+              <span className="text-white font-black text-xl italic tracking-tighter">R</span>
+            </div>
+            <div className="flex flex-col -gap-1">
+              <span className="text-xl font-black tracking-tighter uppercase leading-none">Reven</span>
+              <span className="text-[7px] font-bold uppercase tracking-[0.3em] opacity-40 leading-none ml-0.5 text-primary">Marketplace</span>
+            </div>
+          </Link>
+          <Badge variant="outline" className="hidden lg:flex border-primary/20 bg-primary/5 text-primary font-black text-[8px] px-2 py-0 rounded-full tracking-tighter opacity-60">
+            v1.2.5
+          </Badge>
+        </div>
           <div className="p-10 md:p-12">
             <div className="text-center mb-10">
               <div className="flex justify-center mb-6">

@@ -89,7 +89,7 @@
     --card-foreground: oklch(0.96 0.01 0);
     --popover: oklch(0.28 0.01 0);
     --popover-foreground: oklch(0.96 0.01 0);
-    --primary: oklch(0.75 0.21 115);
+    --primary: oklch(0.88 0.25 130); /* Electric Fluo Green similar to Upmind */
     --primary-foreground: oklch(0.25 0.01 0);
     --border: oklch(0.35 0.01 0);
     --input: oklch(0.35 0.01 0);

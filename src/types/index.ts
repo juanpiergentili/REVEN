@@ -141,11 +141,14 @@ export interface Vehicle {
   // Documentación
   hasVTV: boolean;
   hasPatenteAlDay: boolean;
+  uniqueOwner?: boolean;
+  officialService?: boolean;
   gncObleaVigente?: boolean;
   isInspected: boolean;
 
   // Inspección técnica (datos de agencia)
   inspectionData?: VehicleInspection;
+  inspection?: VehicleInspection; // Alias for compatibility with form
 
   // Contenido
   photos: string[];

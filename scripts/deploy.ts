@@ -38,6 +38,13 @@ async function deploy() {
     await client.ensureDir(FTP_REMOTE_DIR);
     await client.cd(FTP_REMOTE_DIR);
 
+    console.log('🚀  Limpiando archivos críticos en el servidor para evitar caché...');
+    try {
+      await client.remove('index.html');
+    } catch {
+      // Ignorar si no existe
+    }
+
     console.log('🚀  Subiendo archivos (puede tardar según el peso)...\n');
     client.trackProgress((info) => {
       if (info.name) {
