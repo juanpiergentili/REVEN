@@ -1,7 +1,7 @@
 import { auth } from './firebase';
 
 const BASE_URL = 'https://app.asofix.com/api';
-const API_KEY = 'QIXMu940jbMM1KFjPK2ev5t5Wt+cbO0NX5MqwnM2RzAKgeIFj//WtQ==';
+const API_KEY = import.meta.env.VITE_ASOFIX_API_KEY as string;
 
 const headers = {
   'X-Api-Key': API_KEY,

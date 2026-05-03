@@ -1,6 +1,6 @@
 import {
-  collection, doc, addDoc, query, where, orderBy, onSnapshot,
-  updateDoc, serverTimestamp, getDocs, limit, Timestamp, getDoc, setDoc, increment
+  collection, doc, addDoc, query, where, onSnapshot,
+  updateDoc, getDocs, limit, Timestamp
 } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -69,7 +69,7 @@ export async function findOrCreateConversation(params: {
   }
 
   // Create new conversation
-  const newConvo: ConversationData = {
+  const newConvo: Partial<ConversationData> = {
     participants: [params.buyerId, params.sellerId],
     buyerId: params.buyerId,
     sellerId: params.sellerId,
@@ -77,12 +77,13 @@ export async function findOrCreateConversation(params: {
     sellerName: params.sellerName,
     buyerCompany: params.buyerCompany,
     sellerCompany: params.sellerCompany,
-    vehicleId: params.vehicleId,
-    vehicleInfo: params.vehicleInfo,
     lastMessage: '',
     lastMessageAt: Timestamp.now(),
     createdAt: Timestamp.now(),
   };
+
+  if (params.vehicleId) newConvo.vehicleId = params.vehicleId;
+  if (params.vehicleInfo) newConvo.vehicleInfo = params.vehicleInfo;
 
   const docRef = await addDoc(conversationsRef, newConvo);
   return docRef.id;
@@ -93,13 +94,14 @@ export async function findOrCreateConversation(params: {
  */
 export function subscribeToConversations(
   userId: string,
-  callback: (conversations: (ConversationData & { id: string })[]) => void
+  callback: (conversations: (ConversationData & { id: string })[]) => void,
+  onError?: (error: any) => void
 ) {
   const conversationsRef = collection(db, 'conversations');
   const q = query(
     conversationsRef,
-    where('participants', 'array-contains', userId),
-    orderBy('lastMessageAt', 'desc')
+    where('participants', 'array-contains', userId)
+    // Removed orderBy('lastMessageAt', 'desc') to avoid requiring a composite index in Firestore
   );
 
   return onSnapshot(q, (snapshot) => {
@@ -107,26 +109,49 @@ export function subscribeToConversations(
       id: doc.id,
       ...doc.data() as ConversationData,
     }));
+    
+    // Sort on client side to avoid composite index requirement
+    conversations.sort((a, b) => {
+      const timeA = a.lastMessageAt?.toMillis() || 0;
+      const timeB = b.lastMessageAt?.toMillis() || 0;
+      return timeB - timeA; // Descending
+    });
+    
     callback(conversations);
+  }, (error) => {
+    console.error("Error subscribing to conversations:", error);
+    if (onError) onError(error);
+    else callback([]);
   });
 }
 
 /**
  * Subscribe to messages in a conversation.
+ * Sorting is done client-side to avoid composite index requirements.
  */
 export function subscribeToMessages(
   conversationId: string,
-  callback: (messages: (MessageData & { id: string })[]) => void
+  callback: (messages: (MessageData & { id: string })[]) => void,
+  onError?: (error: Error) => void,
 ) {
   const messagesRef = collection(db, 'conversations', conversationId, 'messages');
-  const q = query(messagesRef, orderBy('createdAt', 'asc'));
+  const q = query(messagesRef, limit(200));
 
   return onSnapshot(q, (snapshot) => {
     const messages = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data() as MessageData,
     }));
+    messages.sort((a, b) => {
+      const tA = a.createdAt?.toMillis?.() ?? 0;
+      const tB = b.createdAt?.toMillis?.() ?? 0;
+      return tA - tB;
+    });
     callback(messages);
+  }, (error) => {
+    console.error('Error subscribing to messages:', error);
+    if (onError) onError(error);
+    else callback([]);
   });
 }
 

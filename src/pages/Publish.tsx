@@ -6,73 +6,55 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Camera, ArrowRight, ArrowLeft, CheckCircle2, X, Loader2, AlertCircle } from 'lucide-react';
+import { Camera, ArrowRight, ArrowLeft, CheckCircle2, X, Loader2, AlertCircle, ImageOff, Lock, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'motion/react';
 import { useAuth, db } from '@/src/lib/firebase';
-import { getDoc, doc } from 'firebase/firestore';
-import { createVehicle, uploadVehiclePhotos, updateVehiclePhotos } from '@/src/lib/vehicles';
+import { getDoc, doc, getDocs, collection, query, where } from 'firebase/firestore';
+import { isTrialUser, isTrialExpired, getTrialDaysRemaining, getTrialEndDate, TRIAL_MAX_LISTINGS } from '@/src/lib/trial';
+import { createVehicle, updateVehiclePhotos } from '@/src/lib/vehicles';
 import { VEHICLE_CATALOG, BODY_TYPES, FUEL_TYPES, TRANSMISSIONS, COLORS } from '@/src/data/vehicle-catalog';
 import { PROVINCIAS_ARGENTINA } from '@/src/data/argentina-geo';
 import type { FuelType, BodyType, Transmission, VehicleCondition } from '@/src/types';
+import { usePhotoUpload } from '@/src/hooks/usePhotoUpload';
+import { StepEstadoTecnico } from '@/src/components/publish/StepEstadoTecnico';
+import { StepPreview } from '@/src/components/publish/StepPreview';
+import {
+  formatArgentineNumber, parseArgentineNumber,
+  validateStep, getFirebaseErrorMessage, hasInspectionData,
+  INITIAL_INSPECTION, INITIAL_FORM,
+  type PublishFormData, type InspectionFormData,
+} from '@/src/lib/publish-helpers';
 
-type FormData = {
-  brand: string;
-  model: string;
-  version: string;
-  year: string;
-  km: string;
-  fuelType: string;
-  bodyType: string;
-  transmission: string;
-  color: string;
-  condition: 'USADO' | '0KM';
-  province: string;
-  city: string;
-  hasVTV: boolean;
-  hasPatenteAlDay: boolean;
-  gncObleaVigente: boolean;
-  uniqueOwner: boolean;
-  officialService: boolean;
-  description: string;
-  currency: 'USD' | 'ARS';
-  price: string;
-};
-
-const INITIAL_FORM: FormData = {
-  brand: '', model: '', version: '', year: '', km: '',
-  fuelType: '', bodyType: '', transmission: '', color: '',
-  condition: 'USADO', province: '', city: '',
-  hasVTV: false, hasPatenteAlDay: false, gncObleaVigente: false,
-  uniqueOwner: false, officialService: false,
-  description: '', currency: 'USD', price: '',
-};
-
+const TOTAL_STEPS = 6;
+const STEP_LABELS = ['Datos', 'Fotos', 'Legal', 'Estado', 'Precio', 'Preview'];
 const currentYear = new Date().getFullYear();
 const YEARS = Array.from({ length: currentYear - 1989 }, (_, i) => String(currentYear + 1 - i));
 
 export function Publish() {
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState<FormData>(INITIAL_FORM);
+  const [formData, setFormData] = useState<PublishFormData>(INITIAL_FORM);
+  const [inspection, setInspection] = useState<InspectionFormData>(INITIAL_INSPECTION);
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [showNoPhotosDialog, setShowNoPhotosDialog] = useState(false);
+  const [activeListingCount, setActiveListingCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const photoUpload = usePhotoUpload();
 
   useEffect(() => {
     if (!user) return;
-    getDoc(doc(db, 'users', user.uid)).then(snap => {
+    getDoc(doc(db, 'users', user.uid)).then(async snap => {
       if (snap.exists()) {
         const data = snap.data();
         setUserProfile(data);
-        
-        // Pre-llenado de ubicación basada en la concesionaria
         if (data.province || data.city) {
           setFormData(prev => ({
             ...prev,
@@ -80,11 +62,17 @@ export function Publish() {
             city: data.city || prev.city
           }));
         }
+        if (isTrialUser(data)) {
+          const activeSnap = await getDocs(
+            query(collection(db, 'vehicles'), where('sellerId', '==', user.uid), where('status', '==', 'ACTIVE'))
+          );
+          setActiveListingCount(activeSnap.size);
+        }
       }
     });
   }, [user]);
 
-  const update = useCallback(<K extends keyof FormData>(field: K, value: FormData[K]) => {
+  const update = useCallback(<K extends keyof PublishFormData>(field: K, value: PublishFormData[K]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setError(null);
   }, []);
@@ -135,26 +123,19 @@ export function Publish() {
     setPhotoPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
-  const validateStep = (s: number): string | null => {
-    if (s === 1) {
-      if (!formData.brand) return 'Por favor, seleccioná la marca del vehículo.';
-      if (!formData.model) return 'Ingresá el modelo para continuar.';
-      if (!formData.year) return 'Debés indicar el año de fabricación.';
-      if (formData.condition === 'USADO' && (formData.km === '' || Number(formData.km) < 0)) {
-        return 'Para vehículos usados, el kilometraje es obligatorio.';
-      }
-      if (!formData.fuelType) return 'Seleccioná el tipo de combustible.';
-      if (!formData.province) return 'Indicá en qué provincia se encuentra la unidad.';
+  const nextStep = () => {
+    if (step === 2 && photos.length === 0) {
+      setShowNoPhotosDialog(true);
+      return;
     }
-    if (s === 4) {
-      if (!formData.price || Number(formData.price) <= 0) return 'El precio debe ser mayor a 0.';
-    }
-    return null;
+    const err = validateStep(step, formData, photos);
+    if (err) { setError(err); return; }
+    setError(null);
+    setStep(s => s + 1);
   };
 
-  const nextStep = () => {
-    const err = validateStep(step);
-    if (err) { setError(err); return; }
+  const confirmNoPhotos = () => {
+    setShowNoPhotosDialog(false);
     setError(null);
     setStep(s => s + 1);
   };
@@ -162,8 +143,6 @@ export function Publish() {
   const prevStep = () => { setError(null); setStep(s => s - 1); };
 
   const handleSubmit = async () => {
-    const err = validateStep(4);
-    if (err) { setError(err); return; }
     if (!user) { setError('Debés iniciar sesión para publicar'); return; }
 
     setSubmitting(true);
@@ -172,15 +151,20 @@ export function Publish() {
       const cityName = selectedProvince?.localidades.find(l => l.id === formData.city)?.nombre || formData.city || '';
       const provinceName = selectedProvince?.nombre || formData.province || '';
       const location = cityName ? `${cityName}, ${provinceName}` : provinceName;
+      const kmRaw = parseArgentineNumber(formData.km);
+      const priceRaw = parseArgentineNumber(formData.price);
+
+      const inspData = hasInspectionData(inspection) ? inspection : undefined;
 
       const vId = await createVehicle({
         sellerId: user.uid,
-        sellerName: userProfile?.company || userProfile?.name || user.displayName || 'Agencia',
+        sellerName: userProfile?.companyName || userProfile?.name || user.displayName || 'Agencia',
+        sellerCompany: userProfile?.companyName || 'Agencia',
         brand: formData.brand,
         model: formData.model,
         version: formData.version,
         year: Number(formData.year),
-        km: formData.condition === '0KM' ? 0 : Number(formData.km),
+        km: formData.condition === '0KM' ? 0 : Number(kmRaw),
         fuelType: formData.fuelType as FuelType,
         bodyType: (formData.bodyType || undefined) as BodyType | undefined,
         transmission: (formData.transmission || undefined) as Transmission | undefined,
@@ -189,37 +173,44 @@ export function Publish() {
         location,
         province: formData.province || undefined,
         city: cityName || undefined,
-        price: formData.price ? Number(formData.price) : undefined,
+        price: priceRaw ? Number(priceRaw) : undefined,
         currency: formData.currency,
+        priceNegotiable: false,
         status: 'ACTIVE',
         isFeatured: false,
+        isInspected: false,
         photos: [],
         description: formData.description,
         hasVTV: formData.hasVTV,
         hasPatenteAlDay: formData.hasPatenteAlDay,
         gncObleaVigente: formData.gncObleaVigente,
+        inspectionData: inspData as any,
       });
 
-      // Wait for photos to upload if any
       if (photos.length > 0) {
         try {
-          const urls = await uploadVehiclePhotos(photos, vId);
+          const urls = await photoUpload.uploadPhotos(photos, vId, user.uid);
           await updateVehiclePhotos(vId, urls);
-        } catch (photoErr) {
-          console.error('Photo upload error:', photoErr);
-          // We don't block the whole publication if photos fail, 
-          // but we should notify or handle it.
+        } catch (uploadErr: unknown) {
+          setError(`Vehículo publicado, pero hubo un error al subir las fotos: ${getFirebaseErrorMessage(uploadErr)}`);
+          setSubmitting(false);
+          return;
         }
       }
 
       navigate('/marketplace');
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('Publish error:', e);
-      setError(`No pudimos publicar: ${e?.message || 'error de conexión'}`);
-    } finally {
+      setError(getFirebaseErrorMessage(e));
       setSubmitting(false);
     }
   };
+
+  const trialExpired   = isTrialExpired(userProfile);
+  const trialUser      = isTrialUser(userProfile);
+  const trialDaysLeft  = getTrialDaysRemaining(userProfile);
+  const trialEndDate   = getTrialEndDate(userProfile);
+  const atTrialLimit   = trialUser && !trialExpired && activeListingCount >= TRIAL_MAX_LISTINGS;
 
   return (
     <div className="container mx-auto max-w-4xl py-20 px-4">
@@ -227,449 +218,572 @@ export function Publish() {
         <Badge className="bg-primary/20 text-primary border-primary/20 font-bold tracking-tighter px-4 py-1.5 rounded-full text-sm">
           NUEVA PUBLICACIÓN
         </Badge>
-        <h1 className="text-5xl font-bold tracking-tighter uppercase">Sumar Stock</h1>
+        <h1 className="text-3xl md:text-5xl font-bold tracking-tighter uppercase">Sumar Stock</h1>
         <p className="text-muted-foreground font-medium">Completá los pasos para publicar tu unidad en la comunidad.</p>
       </div>
 
-      {/* Step indicators */}
-      <div className="flex justify-between mb-12 relative max-w-md mx-auto">
-        <div className="absolute top-1/2 left-0 w-full h-1 bg-white/5 -translate-y-1/2 z-0 rounded-full" />
-        {[1, 2, 3, 4].map((s) => (
-          <div
-            key={s}
-            className={`relative z-10 flex items-center justify-center w-12 h-12 rounded-full border-4 transition-all duration-500 ${
-              step >= s ? 'bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/20' : 'bg-background border-white/5 text-muted-foreground'
-            }`}
-          >
-            {step > s ? <CheckCircle2 className="h-6 w-6 stroke-[3]" /> : <span className="font-bold">{s}</span>}
-            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-max text-[8px] font-black uppercase tracking-widest text-muted-foreground">
-              {s === 1 && 'Datos'}
-              {s === 2 && 'Fotos'}
-              {s === 3 && 'Legal'}
-              {s === 4 && 'Precio'}
+      {trialExpired && (
+        <Card className="border-red-500/20 bg-card backdrop-blur-xl shadow-2xl rounded-[3.5rem] overflow-hidden">
+          <CardContent className="p-10 flex flex-col items-center text-center space-y-6">
+            <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center">
+              <Lock className="h-10 w-10 text-red-400" />
             </div>
-          </div>
-        ))}
-      </div>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold tracking-tighter uppercase">Período de prueba vencido</h2>
+              <p className="text-muted-foreground font-medium max-w-md">
+                Tu prueba gratuita de 60 días finalizó el{' '}
+                <span className="text-foreground font-bold">
+                  {trialEndDate?.toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                </span>.
+              </p>
+              <p className="text-muted-foreground font-medium max-w-md">
+                Tus publicaciones fueron pausadas automáticamente. Activá tu plan para volver a publicar y dar visibilidad a tu stock.
+              </p>
+            </div>
+            <Button
+              onClick={() => navigate('/')}
+              className="rounded-full px-10 h-12 font-black uppercase tracking-widest shadow-lg shadow-primary/20"
+            >
+              Ver planes
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
-      <Card className="border-white/5 bg-white/5 backdrop-blur-xl shadow-2xl rounded-[3.5rem] overflow-hidden">
-        <CardContent className="p-10">
+      {!trialExpired && atTrialLimit && (
+        <Card className="border-yellow-500/20 bg-card backdrop-blur-xl shadow-2xl rounded-[3.5rem] overflow-hidden">
+          <CardContent className="p-10 flex flex-col items-center text-center space-y-6">
+            <div className="w-20 h-20 rounded-full bg-yellow-500/10 flex items-center justify-center">
+              <Clock className="h-10 w-10 text-yellow-400" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold tracking-tighter uppercase">Límite de prueba alcanzado</h2>
+              <p className="text-muted-foreground font-medium max-w-md">
+                Tu período de prueba permite un máximo de <span className="text-foreground font-bold">{TRIAL_MAX_LISTINGS} publicaciones activas</span> simultáneas.
+              </p>
+              <p className="text-muted-foreground font-medium max-w-md">
+                Pausá una publicación existente para liberar un espacio, o activá tu plan para publicar sin límites.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => navigate('/profile')} className="rounded-full px-8 h-12 font-bold uppercase tracking-widest border-border">
+                Gestionar stock
+              </Button>
+              <Button onClick={() => navigate('/')} className="rounded-full px-8 h-12 font-black uppercase tracking-widest shadow-lg shadow-primary/20">
+                Ver planes
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-          {error && (
-            <div className="flex items-center gap-3 mb-6 p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium">
-              <AlertCircle className="h-4 w-4 shrink-0" />
-              {error}
+      {!trialExpired && !atTrialLimit && (
+        <>
+          {trialUser && (
+            <div className="mb-8 flex items-center justify-between gap-4 px-6 py-4 rounded-2xl bg-primary/5 border border-primary/20">
+              <div className="flex items-center gap-3">
+                <Clock className="h-4 w-4 text-primary shrink-0" />
+                <span className="text-sm font-bold">
+                  Período de prueba — {activeListingCount}/{TRIAL_MAX_LISTINGS} publicaciones activas
+                </span>
+              </div>
+              <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground shrink-0">
+                {trialDaysLeft} día{trialDaysLeft !== 1 ? 's' : ''} restante{trialDaysLeft !== 1 ? 's' : ''}
+              </span>
             </div>
           )}
 
-          {step === 1 && (
-            <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Marca</Label>
-                  <Select value={formData.brand} onValueChange={handleBrandSelect}>
-                    <SelectTrigger className="h-14 rounded-2xl bg-white/5 border-white/10 font-bold">
-                      <SelectValue placeholder="Seleccionar marca" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl max-h-72">
-                      {VEHICLE_CATALOG.map(b => (
-                        <SelectItem key={b.nombre} value={b.nombre}>{b.nombre}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Modelo</Label>
-                  {selectedBrand ? (
-                    <Select value={formData.model} onValueChange={handleModelSelect}>
-                      <SelectTrigger className="h-14 rounded-2xl bg-white/5 border-white/10 font-bold">
-                        <SelectValue placeholder="Seleccionar modelo" />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-2xl max-h-72">
-                        {selectedBrand.modelos.map(m => (
-                          <SelectItem key={m.nombre} value={m.nombre}>{m.nombre}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <Input
-                      value={formData.model}
-                      onChange={e => update('model', e.target.value)}
-                      placeholder="Ej: Hilux, Vento..."
-                      className="h-14 rounded-2xl bg-white/5 border-white/10 font-bold"
-                    />
-                  )}
-                </div>
-
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Versión</Label>
-                  {selectedModel ? (
-                    <Select value={formData.version} onValueChange={handleVersionSelect}>
-                      <SelectTrigger className="h-14 rounded-2xl bg-white/5 border-white/10 font-bold">
-                        <SelectValue placeholder="Seleccionar versión" />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-2xl max-h-72">
-                        {selectedModel.versiones.map(v => (
-                          <SelectItem key={v.nombre} value={v.nombre}>{v.nombre}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <Input
-                      value={formData.version}
-                      onChange={e => update('version', e.target.value)}
-                      placeholder="Ej: 2.8 SRX 4X4 AT"
-                      className="h-14 rounded-2xl bg-white/5 border-white/10 font-bold"
-                    />
-                  )}
-                </div>
-
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Año</Label>
-                  <Select value={formData.year} onValueChange={v => update('year', v)}>
-                    <SelectTrigger className="h-14 rounded-2xl bg-white/5 border-white/10 font-bold">
-                      <SelectValue placeholder="Seleccionar año" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl max-h-72">
-                      {YEARS.map(y => (
-                        <SelectItem key={y} value={y}>{y}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Kilometraje</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={formData.km}
-                    onChange={e => update('km', e.target.value)}
-                    placeholder="0"
-                    className="h-14 rounded-2xl bg-white/5 border-white/10 font-bold"
-                  />
-                </div>
-
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Condición</Label>
-                  <Select value={formData.condition} onValueChange={v => update('condition', v as 'USADO' | '0KM')}>
-                    <SelectTrigger className="h-14 rounded-2xl bg-white/5 border-white/10 font-bold">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl">
-                      <SelectItem value="USADO">Usado</SelectItem>
-                      <SelectItem value="0KM">0 KM</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Combustible</Label>
-                  <Select value={formData.fuelType} onValueChange={v => update('fuelType', v)}>
-                    <SelectTrigger className="h-14 rounded-2xl bg-white/5 border-white/10 font-bold">
-                      <SelectValue placeholder="Seleccionar" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl">
-                      {FUEL_TYPES.map(f => (
-                        <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Transmisión</Label>
-                  <Select value={formData.transmission} onValueChange={v => update('transmission', v)}>
-                    <SelectTrigger className="h-14 rounded-2xl bg-white/5 border-white/10 font-bold">
-                      <SelectValue placeholder="Seleccionar" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl">
-                      {TRANSMISSIONS.map(t => (
-                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Carrocería</Label>
-                  <Select value={formData.bodyType} onValueChange={v => update('bodyType', v)}>
-                    <SelectTrigger className="h-14 rounded-2xl bg-white/5 border-white/10 font-bold">
-                      <SelectValue placeholder="Seleccionar" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl">
-                      {BODY_TYPES.map(b => (
-                        <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Color</Label>
-                  <Select value={formData.color} onValueChange={v => update('color', v)}>
-                    <SelectTrigger className="h-14 rounded-2xl bg-white/5 border-white/10 font-bold">
-                      <SelectValue placeholder="Seleccionar" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl">
-                      {COLORS.map(c => (
-                        <SelectItem key={c.value} value={c.value}>
-                          <span className="flex items-center gap-2">
-                            <span className="w-3 h-3 rounded-full border border-white/20" style={{ background: c.hex }} />
-                            {c.label}
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Provincia</Label>
-                    {userProfile?.province && (
-                      <span className="text-[8px] font-bold text-primary uppercase">Vinculado a tu Agencia</span>
-                    )}
-                  </div>
-                  <Select 
-                    value={formData.province} 
-                    onValueChange={v => { update('province', v); update('city', ''); }}
-                    disabled={!!userProfile?.province}
-                  >
-                    <SelectTrigger className={`h-14 rounded-2xl bg-white/5 border-white/10 font-bold ${userProfile?.province ? 'opacity-70' : ''}`}>
-                      <SelectValue>
-                        {PROVINCIAS_ARGENTINA.find(p => p.id === formData.province)?.nombre || 'Seleccionar provincia'}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl max-h-72">
-                      {PROVINCIAS_ARGENTINA.map(p => (
-                        <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Localidad</Label>
-                    {userProfile?.city && (
-                      <span className="text-[8px] font-bold text-primary uppercase">Vinculado a tu Agencia</span>
-                    )}
-                  </div>
-                  <Select
-                    value={formData.city}
-                    onValueChange={v => update('city', v)}
-                    disabled={!selectedProvince || !!userProfile?.city}
-                  >
-                    <SelectTrigger className={`h-14 rounded-2xl bg-white/5 border-white/10 font-bold ${userProfile?.city ? 'opacity-70' : ''}`}>
-                      <SelectValue>
-                        {selectedProvince?.localidades.find(l => l.id === formData.city)?.nombre || (selectedProvince ? 'Seleccionar localidad' : 'Primero elegí provincia')}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl max-h-72">
-                      {selectedProvince?.localidades.map(l => (
-                        <SelectItem key={l.id} value={l.id}>{l.nombre}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="flex justify-end pt-4">
-                <Button onClick={nextStep} className="h-14 px-10 rounded-full font-black uppercase italic tracking-tighter text-lg gap-2 shadow-lg shadow-primary/20">
-                  Siguiente <ArrowRight className="h-5 w-5 stroke-[3]" />
-                </Button>
-              </div>
-            </motion.div>
-          )}
-
-          {step === 2 && (
-            <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-8">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                className="hidden"
-                onChange={e => addPhotos(e.target.files)}
-              />
-
+          <div className="flex justify-between mb-12 relative max-w-lg mx-auto">
+            <div className="absolute top-1/2 left-0 w-full h-1 bg-border -translate-y-1/2 z-0 rounded-full" />
+            {Array.from({ length: TOTAL_STEPS }, (_, i) => i + 1).map((s) => (
               <div
-                className={`border-4 border-dashed rounded-[2rem] p-12 text-center space-y-6 cursor-pointer transition-all group ${
-                  isDragging ? 'border-primary/60 bg-primary/5' : 'border-white/5 bg-white/5 hover:border-primary/30'
+                key={s}
+                className={`relative z-10 flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full border-4 transition-all duration-500 ${
+                  step >= s ? 'bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/20' : 'bg-background border-border text-muted-foreground'
                 }`}
-                onClick={() => fileInputRef.current?.click()}
-                onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={e => { e.preventDefault(); setIsDragging(false); addPhotos(e.dataTransfer.files); }}
               >
-                <div className="bg-primary/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-500">
-                  <Camera className="h-10 w-10 text-primary" />
+                {step > s ? <CheckCircle2 className="h-5 w-5 md:h-6 md:w-6 stroke-[3]" /> : <span className="font-bold text-sm">{s}</span>}
+                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-max text-[7px] md:text-[8px] font-black uppercase tracking-widest text-muted-foreground">
+                  {STEP_LABELS[s - 1]}
                 </div>
-                <div className="space-y-2">
-                  <p className="text-xl font-bold tracking-tighter uppercase">Subir fotografías</p>
-                  <p className="text-sm text-muted-foreground font-medium">
-                    {photos.length === 0
-                      ? 'Arrastrá tus fotos aquí o hacé clic para buscar (Máx 15)'
-                      : `${photos.length}/15 fotos seleccionadas — hacé clic para agregar más`}
-                  </p>
-                </div>
-                {photos.length < 15 && (
-                  <Button variant="outline" className="rounded-full px-8 border-white/10 font-bold uppercase tracking-widest text-xs" onClick={e => { e.stopPropagation(); fileInputRef.current?.click(); }}>
-                    Seleccionar archivos
-                  </Button>
-                )}
               </div>
+            ))}
+          </div>
 
-              {photoPreviews.length > 0 && (
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
-                  {photoPreviews.map((url, i) => (
-                    <div key={i} className="relative aspect-square rounded-2xl overflow-hidden group">
-                      <img src={url} alt={`foto ${i + 1}`} className="w-full h-full object-cover" />
-                      {i === 0 && (
-                        <div className="absolute bottom-1 left-1 bg-primary/90 text-primary-foreground text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">
-                          Principal
-                        </div>
-                      )}
-                      <button
-                        onClick={() => removePhoto(i)}
-                        className="absolute top-1 right-1 bg-black/70 hover:bg-destructive text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
+          <Card className="border-border bg-card backdrop-blur-xl shadow-2xl rounded-[3.5rem] overflow-hidden">
+            <CardContent className="p-10">
+              {error && (
+                <div className="flex items-center gap-3 mb-6 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  {error}
                 </div>
               )}
 
-              <div className="flex justify-between pt-4">
-                <Button variant="ghost" onClick={prevStep} className="h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-white/5">
-                  <ArrowLeft className="h-5 w-5 stroke-[3]" /> Anterior
-                </Button>
-                <Button onClick={nextStep} className="h-14 px-10 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 shadow-lg shadow-primary/20">
-                  {photos.length === 0 ? 'Omitir' : 'Siguiente'} <ArrowRight className="h-5 w-5 stroke-[3]" />
-                </Button>
-              </div>
-            </motion.div>
-          )}
+              {step === 1 && (
+                <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Marca</Label>
+                      <Select value={formData.brand} onValueChange={handleBrandSelect}>
+                        <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
+                          <SelectValue placeholder="Seleccionar marca" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl max-h-72">
+                          {VEHICLE_CATALOG.map(b => (
+                            <SelectItem key={b.nombre} value={b.nombre}>{b.nombre}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-          {step === 3 && (
-            <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-8">
-              <h3 className="text-xl font-bold tracking-tighter uppercase">Documentación y Estado</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {[
-                  { id: 'hasVTV', label: 'VTV Vigente' },
-                  { id: 'hasPatenteAlDay', label: 'Patente al día' },
-                  { id: 'uniqueOwner', label: 'Único Dueño' },
-                  { id: 'officialService', label: 'Services Oficiales' },
-                  { id: 'gncObleaVigente', label: 'Oblea GNC Vigente' },
-                ].map(({ id, label }) => (
-                  <label
-                    key={id}
-                    htmlFor={id}
-                    className="flex items-center space-x-3 border border-white/5 bg-white/5 p-6 rounded-2xl hover:border-primary/30 transition-all cursor-pointer"
-                  >
-                    <Checkbox
-                      id={id}
-                      className="h-6 w-6 rounded-md border-white/20"
-                      checked={formData[id as keyof FormData] as boolean}
-                      onCheckedChange={v => update(id as keyof FormData, Boolean(v) as any)}
-                    />
-                    <span className="font-bold uppercase tracking-widest text-xs">{label}</span>
-                  </label>
-                ))}
-              </div>
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Modelo</Label>
+                      {selectedBrand ? (
+                        <Select value={formData.model} onValueChange={handleModelSelect}>
+                          <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
+                            <SelectValue placeholder="Seleccionar modelo" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl max-h-72">
+                            {selectedBrand.modelos.map(m => (
+                              <SelectItem key={m.nombre} value={m.nombre}>{m.nombre}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Input
+                          value={formData.model}
+                          onChange={e => update('model', e.target.value)}
+                          placeholder="Ej: Hilux, Vento..."
+                          className="h-14 rounded-xl bg-muted border-border font-bold"
+                        />
+                      )}
+                    </div>
 
-              <div className="space-y-3">
-                <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Observaciones / Detalles estéticos</Label>
-                <Textarea
-                  value={formData.description}
-                  onChange={e => update('description', e.target.value)}
-                  placeholder="Describí el estado general, equipamiento adicional, etc."
-                  className="min-h-[150px] rounded-2xl bg-white/5 border-white/10 font-bold p-6"
-                />
-              </div>
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Versión</Label>
+                      {selectedModel ? (
+                        <Select value={formData.version} onValueChange={handleVersionSelect}>
+                          <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
+                            <SelectValue placeholder="Seleccionar versión" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl max-h-72">
+                            {selectedModel.versiones.map(v => (
+                              <SelectItem key={v.nombre} value={v.nombre}>{v.nombre}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Input
+                          value={formData.version}
+                          onChange={e => update('version', e.target.value)}
+                          placeholder="Ej: 2.8 SRX 4X4 AT"
+                          className="h-14 rounded-xl bg-muted border-border font-bold"
+                        />
+                      )}
+                    </div>
 
-              <div className="flex justify-between pt-4">
-                <Button variant="ghost" onClick={prevStep} className="h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-white/5">
-                  <ArrowLeft className="h-5 w-5 stroke-[3]" /> Anterior
-                </Button>
-                <Button onClick={nextStep} className="h-14 px-10 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 shadow-lg shadow-primary/20">
-                  Siguiente <ArrowRight className="h-5 w-5 stroke-[3]" />
-                </Button>
-              </div>
-            </motion.div>
-          )}
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Año</Label>
+                      <Select value={formData.year} onValueChange={v => update('year', v)}>
+                        <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
+                          <SelectValue placeholder="Seleccionar año" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl max-h-72">
+                          {YEARS.map(y => (
+                            <SelectItem key={y} value={y}>{y}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-          {step === 4 && (
-            <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-8">
-              <h3 className="text-xl font-bold tracking-tighter uppercase">Precio y Condiciones de Venta</h3>
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Kilometraje</Label>
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        value={formatArgentineNumber(formData.km)}
+                        onChange={e => update('km', parseArgentineNumber(e.target.value))}
+                        placeholder="0"
+                        className="h-14 rounded-xl bg-muted border-border font-bold"
+                      />
+                    </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Moneda</Label>
-                  <Select value={formData.currency} onValueChange={v => update('currency', v as 'USD' | 'ARS')}>
-                    <SelectTrigger className="h-14 rounded-2xl bg-white/5 border-white/10 font-bold">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl">
-                      <SelectItem value="USD">Dólares (USD)</SelectItem>
-                      <SelectItem value="ARS">Pesos (ARS)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Precio</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={formData.price}
-                    onChange={e => update('price', e.target.value)}
-                    placeholder="0"
-                    className="h-14 rounded-2xl bg-white/5 border-white/10 font-bold text-2xl text-primary tracking-tighter"
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Condición</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          variant="outline"
+                          type="button"
+                          onClick={() => update('condition', 'USADO')}
+                          className={`h-14 rounded-xl font-bold uppercase tracking-widest transition-all ${formData.condition === 'USADO' ? 'bg-primary/15 border-primary text-primary shadow-md shadow-primary/20' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-primary/30 hover:text-white'}`}
+                        >
+                          Usado
+                        </Button>
+                        <Button
+                          variant="outline"
+                          type="button"
+                          onClick={() => update('condition', '0KM')}
+                          className={`h-14 rounded-xl font-bold uppercase tracking-widest transition-all ${formData.condition === '0KM' ? 'bg-primary/15 border-primary text-primary shadow-md shadow-primary/20' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-primary/30 hover:text-white'}`}
+                        >
+                          0 KM
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Combustible</Label>
+                      <Select value={formData.fuelType} onValueChange={v => update('fuelType', v)}>
+                        <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
+                          <SelectValue placeholder="Seleccionar" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          {FUEL_TYPES.map(f => (
+                            <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Transmisión</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {TRANSMISSIONS.map(t => (
+                          <Button
+                            key={t.value}
+                            variant="outline"
+                            type="button"
+                            onClick={() => update('transmission', t.value)}
+                            className={`h-14 rounded-xl font-bold uppercase tracking-widest transition-all ${formData.transmission === t.value ? 'bg-primary/15 border-primary text-primary shadow-md shadow-primary/20' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-primary/30 hover:text-white'}`}
+                          >
+                            {t.label}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Carrocería</Label>
+                      <Select value={formData.bodyType} onValueChange={v => update('bodyType', v)}>
+                        <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
+                          <SelectValue placeholder="Seleccionar" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          {BODY_TYPES.map(b => (
+                            <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Color</Label>
+                      <Select value={formData.color} onValueChange={v => update('color', v)}>
+                        <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
+                          <SelectValue placeholder="Seleccionar" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          {COLORS.map(c => (
+                            <SelectItem key={c.value} value={c.value}>
+                              <span className="flex items-center gap-2">
+                                <span className="w-3 h-3 rounded-full border border-border" style={{ background: c.hex }} />
+                                {c.label}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Provincia</Label>
+                        {userProfile?.province && (
+                          <span className="text-[8px] font-bold text-primary uppercase">Vinculado a tu Agencia</span>
+                        )}
+                      </div>
+                      <Select 
+                        value={formData.province} 
+                        onValueChange={v => { update('province', v); update('city', ''); }}
+                        disabled={!!userProfile?.province}
+                      >
+                        <SelectTrigger className={`h-14 rounded-xl bg-muted border-border font-bold ${userProfile?.province ? 'opacity-70' : ''}`}>
+                          <SelectValue>
+                            {PROVINCIAS_ARGENTINA.find(p => p.id === formData.province)?.nombre || 'Seleccionar provincia'}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl max-h-72">
+                          {PROVINCIAS_ARGENTINA.map(p => (
+                            <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Localidad</Label>
+                        {userProfile?.city && (
+                          <span className="text-[8px] font-bold text-primary uppercase">Vinculado a tu Agencia</span>
+                        )}
+                      </div>
+                      <Select
+                        value={formData.city}
+                        onValueChange={v => update('city', v)}
+                        disabled={!selectedProvince || !!userProfile?.city}
+                      >
+                        <SelectTrigger className={`h-14 rounded-xl bg-muted border-border font-bold ${userProfile?.city ? 'opacity-70' : ''}`}>
+                          <SelectValue>
+                            {selectedProvince?.localidades.find(l => l.id === formData.city)?.nombre || (selectedProvince ? 'Seleccionar localidad' : 'Primero elegí provincia')}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl max-h-72">
+                          {selectedProvince?.localidades.map(l => (
+                            <SelectItem key={l.id} value={l.id}>{l.nombre}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-4">
+                    <Button onClick={nextStep} className="h-14 px-10 rounded-full font-black uppercase italic tracking-tighter text-lg gap-2 shadow-lg shadow-primary/20">
+                      Siguiente <ArrowRight className="h-5 w-5 stroke-[3]" />
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+
+              {step === 2 && (
+                <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-8">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={e => addPhotos(e.target.files)}
                   />
-                </div>
-              </div>
 
-              <div className="p-6 rounded-3xl bg-white/5 border border-white/10 space-y-3 text-sm">
-                <p className="font-black uppercase tracking-widest text-[10px] text-muted-foreground mb-4">Resumen de publicación</p>
-                <p><span className="text-muted-foreground">Vehículo:</span> <span className="font-bold">{formData.brand} {formData.model} {formData.version}</span></p>
-                <p><span className="text-muted-foreground">Año:</span> <span className="font-bold">{formData.year}</span> &nbsp;|&nbsp; <span className="text-muted-foreground">KM:</span> <span className="font-bold">{Number(formData.km).toLocaleString()}</span></p>
-                <p><span className="text-muted-foreground">Fotos:</span> <span className="font-bold">{photos.length} imagen{photos.length !== 1 ? 'es' : ''}</span></p>
-              </div>
+                  <div
+                    className={`border-4 border-dashed rounded-[2rem] p-12 text-center space-y-6 cursor-pointer transition-all group ${
+                      isDragging ? 'border-primary/60 bg-primary/5' : 'border-border bg-muted hover:border-primary/30'
+                    }`}
+                    onClick={() => fileInputRef.current?.click()}
+                    onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={e => { e.preventDefault(); setIsDragging(false); addPhotos(e.dataTransfer.files); }}
+                  >
+                    <div className="bg-primary/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-500">
+                      <Camera className="h-10 w-10 text-primary" />
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-xl font-bold tracking-tighter uppercase">Subir fotografías</p>
+                      <p className="text-sm text-muted-foreground font-medium">
+                        {photos.length === 0
+                          ? 'Arrastrá tus fotos aquí o hacé clic para buscar (Máx 15)'
+                          : `${photos.length}/15 fotos seleccionadas — hacé clic para agregar más`}
+                      </p>
+                    </div>
+                    {photos.length < 15 && (
+                      <Button variant="outline" className="rounded-full px-8 border-border font-bold uppercase tracking-widest text-xs" onClick={e => { e.stopPropagation(); fileInputRef.current?.click(); }}>
+                        Seleccionar archivos
+                      </Button>
+                    )}
+                  </div>
 
-              <div className="p-8 rounded-3xl bg-primary/5 border border-primary/20 space-y-4">
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-primary" />
-                  <p className="text-sm font-bold uppercase tracking-widest">Publicación verificada</p>
-                </div>
-                <p className="text-xs text-muted-foreground font-medium">Al publicar, aceptás que la información es verídica y que sos el responsable legal de la unidad o tenés poder para comercializarla.</p>
-              </div>
-
-              <div className="flex justify-between pt-4">
-                <Button variant="ghost" onClick={prevStep} disabled={submitting} className="h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-white/5">
-                  <ArrowLeft className="h-5 w-5 stroke-[3]" /> Anterior
-                </Button>
-                <Button 
-                  type="submit" 
-                  onClick={handleSubmit}
-                  disabled={submitting}
-                  className="w-full h-16 rounded-full font-bold uppercase tracking-[0.2em] text-lg shadow-xl shadow-primary/20 group relative overflow-hidden active:scale-[0.98] transition-transform"
-                >
-                  {submitting ? (
-                    <><Loader2 className="h-5 w-5 animate-spin" /> Publicando...</>
-                  ) : (
-                    <><CheckCircle2 className="h-5 w-5 stroke-[3]" /> Finalizar Publicación</>
+                  {photoPreviews.length > 0 && (
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                      {photoPreviews.map((url, i) => (
+                        <div key={i} className="relative aspect-square rounded-xl overflow-hidden group">
+                          <img src={url} alt={`foto ${i + 1}`} className="w-full h-full object-cover" />
+                          {i === 0 && (
+                            <div className="absolute bottom-1 left-1 bg-primary/90 text-primary-foreground text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">
+                              Principal
+                            </div>
+                          )}
+                          <button
+                            onClick={() => removePhoto(i)}
+                            className="absolute top-1 right-1 bg-black/70 hover:bg-destructive text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   )}
-                </Button>
-              </div>
-            </motion.div>
-          )}
 
-        </CardContent>
-      </Card>
+                  {showNoPhotosDialog && (
+                    <div className="p-6 rounded-3xl bg-amber-500/5 border border-amber-500/20 space-y-4">
+                      <div className="flex items-center gap-3">
+                        <ImageOff className="h-5 w-5 text-amber-500" />
+                        <p className="text-sm font-bold uppercase tracking-widest">¿Publicar sin fotos?</p>
+                      </div>
+                      <p className="text-xs text-muted-foreground font-medium">Las publicaciones sin fotos tienen mucha menos visibilidad. ¿Estás seguro?</p>
+                      <div className="flex gap-3">
+                        <Button variant="outline" onClick={() => setShowNoPhotosDialog(false)} className="rounded-full px-6 border-border font-bold uppercase tracking-widest text-xs">
+                          Volver
+                        </Button>
+                        <Button onClick={confirmNoPhotos} className="rounded-full px-6 font-bold uppercase tracking-widest text-xs bg-amber-500 hover:bg-amber-600">
+                          Continuar sin fotos
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex flex-col-reverse sm:flex-row justify-between pt-4 gap-4">
+                    <Button variant="ghost" onClick={prevStep} className="w-full sm:w-auto h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-muted">
+                      <ArrowLeft className="h-5 w-5 stroke-[3]" /> Anterior
+                    </Button>
+                    <Button onClick={nextStep} className="w-full sm:w-auto h-14 px-10 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 shadow-lg shadow-primary/20">
+                      Siguiente <ArrowRight className="h-5 w-5 stroke-[3]" />
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+
+              {step === 3 && (
+                <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-8">
+                  <h3 className="text-xl font-bold tracking-tighter uppercase">Documentación y Estado</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      { id: 'hasVTV', label: 'VTV Vigente' },
+                      { id: 'hasPatenteAlDay', label: 'Patente al día' },
+                      { id: 'uniqueOwner', label: 'Único Dueño' },
+                      { id: 'officialService', label: 'Services Oficiales' },
+                      { id: 'gncObleaVigente', label: 'Oblea GNC Vigente' },
+                    ].map(({ id, label }) => (
+                      <label
+                        key={id}
+                        htmlFor={id}
+                        className="flex items-center space-x-3 border border-white/5 bg-white/5 p-6 rounded-xl hover:border-primary/30 transition-all cursor-pointer"
+                      >
+                        <Checkbox
+                          id={id}
+                          className="h-6 w-6 rounded-md border-white/20"
+                          checked={formData[id as keyof PublishFormData] as boolean}
+                          onCheckedChange={v => update(id as keyof PublishFormData, Boolean(v) as any)}
+                        />
+                        <span className="font-bold uppercase tracking-widest text-xs">{label}</span>
+                      </label>
+                    ))}
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Observaciones / Detalles estéticos</Label>
+                    <Textarea
+                      value={formData.description}
+                      onChange={e => update('description', e.target.value)}
+                      placeholder="Describí el estado general, equipamiento adicional, etc."
+                      className="min-h-[150px] rounded-xl bg-white/5 border-white/10 font-bold p-6"
+                    />
+                  </div>
+
+                  <div className="flex flex-col-reverse sm:flex-row justify-between pt-4 gap-4">
+                    <Button variant="ghost" onClick={prevStep} className="w-full sm:w-auto h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-muted">
+                      <ArrowLeft className="h-5 w-5 stroke-[3]" /> Anterior
+                    </Button>
+                    <Button onClick={nextStep} className="w-full sm:w-auto h-14 px-10 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 shadow-lg shadow-primary/20">
+                      Siguiente <ArrowRight className="h-5 w-5 stroke-[3]" />
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+
+              {step === 4 && (
+                <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-8">
+                  <StepEstadoTecnico inspection={inspection} onChange={setInspection} />
+                  <div className="flex flex-col-reverse sm:flex-row justify-between pt-4 gap-4">
+                    <Button variant="ghost" onClick={prevStep} className="w-full sm:w-auto h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-muted">
+                      <ArrowLeft className="h-5 w-5 stroke-[3]" /> Anterior
+                    </Button>
+                    <Button onClick={nextStep} className="w-full sm:w-auto h-14 px-10 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 shadow-lg shadow-primary/20">
+                      Siguiente <ArrowRight className="h-5 w-5 stroke-[3]" />
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+
+              {step === 5 && (
+                <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-8">
+                  <h3 className="text-xl font-bold tracking-tighter uppercase">Precio y Condiciones de Venta</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Moneda</Label>
+                      <Select value={formData.currency} onValueChange={v => update('currency', v as 'USD' | 'ARS')}>
+                        <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          <SelectItem value="USD">Dólares (USD)</SelectItem>
+                          <SelectItem value="ARS">Pesos (ARS)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Precio</Label>
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-lg">
+                          {formData.currency === 'USD' ? 'U$D' : '$'}
+                        </span>
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          value={formatArgentineNumber(formData.price)}
+                          onChange={e => update('price', parseArgentineNumber(e.target.value))}
+                          placeholder="0"
+                          className="h-14 rounded-xl bg-muted border-border font-bold text-2xl text-primary tracking-tighter pl-14"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-col-reverse sm:flex-row justify-between pt-4 gap-4">
+                    <Button variant="ghost" onClick={prevStep} className="w-full sm:w-auto h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-muted">
+                      <ArrowLeft className="h-5 w-5 stroke-[3]" /> Anterior
+                    </Button>
+                    <Button onClick={nextStep} className="w-full sm:w-auto h-14 px-10 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 shadow-lg shadow-primary/20">
+                      Siguiente <ArrowRight className="h-5 w-5 stroke-[3]" />
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+
+              {step === 6 && (
+                <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-8">
+                  <StepPreview formData={formData} inspection={inspection} photoPreviews={photoPreviews} photosCount={photos.length} />
+
+                  {photoUpload.isUploading && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between text-xs font-bold uppercase tracking-widest">
+                        <span>Subiendo fotos...</span>
+                        <span>{photoUpload.completedFiles}/{photoUpload.totalFiles}</span>
+                      </div>
+                      <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-primary rounded-full transition-all duration-300"
+                          style={{ width: `${photoUpload.overallProgress}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex flex-col-reverse sm:flex-row justify-between pt-4 gap-4">
+                    <Button variant="ghost" onClick={prevStep} disabled={submitting} className="w-full sm:w-auto h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-muted">
+                      <ArrowLeft className="h-5 w-5 stroke-[3]" /> Anterior
+                    </Button>
+                    <Button
+                      onClick={handleSubmit}
+                      disabled={submitting}
+                      className="w-full sm:w-auto h-14 px-12 rounded-full font-black uppercase italic tracking-tighter text-xl gap-2 shadow-xl shadow-primary/40 bg-primary text-primary-foreground hover:scale-105 transition-all"
+                    >
+                      {submitting ? <Loader2 className="h-6 w-6 animate-spin" /> : <>Publicar Unidad <CheckCircle2 className="h-6 w-6 stroke-[3]" /></>}
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   );
 }

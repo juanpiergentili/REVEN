@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import { Mail, Lock, ArrowRight, ShieldCheck, Building2, User, Phone, Fingerprint, CreditCard, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +13,7 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, OperationType } from '@/src/lib/firebase';
+import { loginDemoUser } from '@/src/lib/auth';
 import {
   Select,
   SelectContent,
@@ -21,8 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { AlertCircle, CheckCircle2 } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export function Login() {
   const [isLogin, setIsLogin] = useState(true);
@@ -68,58 +66,14 @@ export function Login() {
   const handleDemoMode = async (type: 'demo' | 'vendedor' | 'comprador') => {
     setLoading(true);
     setError(null);
-    
-    let demoEmail = 'DEMO@reven.com.ar';
-    let demoPass = 'DEMO1234';
-    
-    if (type === 'vendedor') {
-      demoEmail = 'vendedor.test@reven.com.ar';
-      demoPass = 'REVEN2026';
-    } else if (type === 'comprador') {
-      demoEmail = 'comprador.test@reven.com.ar';
-      demoPass = 'REVEN2026';
-    }
-    
     try {
-      await signInWithEmailAndPassword(auth, demoEmail, demoPass);
+      await loginDemoUser(type);
       navigate('/marketplace');
     } catch (err: any) {
-      if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/invalid-login-credentials') {
-        try {
-          const userCredential = await createUserWithEmailAndPassword(auth, demoEmail, demoPass);
-          const user = userCredential.user;
-          
-          const displayName = type === 'vendedor' ? 'Vendedor REVEN' : (type === 'comprador' ? 'Comprador REVEN' : 'Usuario Demo');
-          const companyName = type === 'vendedor' ? 'REVEN Motors (Vendedor)' : (type === 'comprador' ? 'AutoSelect B2B (Comprador)' : 'Reven Demo Dealer');
-
-          await updateProfile(user, { displayName });
-
-          await setDoc(doc(db, 'users', user.uid), {
-            uid: user.uid,
-            email: demoEmail,
-            name: displayName.split(' ')[0],
-            lastName: displayName.split(' ')[1] || 'Demo',
-            cuil: type === 'vendedor' ? '20-99999999-9' : '20-88888888-8',
-            phone: type === 'vendedor' ? '+54 9 11 5555-0001' : '+54 9 11 5555-0002',
-            company: companyName,
-            province: type === 'vendedor' ? 'buenosaires' : (type === 'comprador' ? 'caba' : ''),
-            city: type === 'vendedor' ? 'ba-sanisidro' : (type === 'comprador' ? 'caba-palermo' : ''),
-            plan: 'platinum',
-            role: 'user',
-            status: 'approved',
-            createdAt: serverTimestamp()
-          });
-          
-          navigate('/marketplace');
-        } catch (regErr: any) {
-          if (regErr.code === 'auth/email-already-in-use') {
-            setError(`El usuario '${demoEmail}' ya existe con otra contraseña. Por favor usa la correcta.`);
-          } else {
-            setError(`Error al inicializar acceso: ${regErr.message}`);
-          }
-        }
+      if (err.code === 'auth/email-already-in-use') {
+        setError('El usuario demo ya existe con otra contraseña.');
       } else {
-        setError(`Error en el acceso demo: ${err.message}`);
+        setError(`Error al inicializar acceso: ${err.message}`);
       }
     } finally {
       setLoading(false);
@@ -149,7 +103,7 @@ export function Login() {
           phone: regPhone,
           company: regCompany,
           plan: regPlan,
-          role: 'user',
+          role: 'USER',
           status: 'pending',
           createdAt: serverTimestamp()
         });
@@ -168,25 +122,17 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
+    <div className="bg-background relative">
       {/* Background Glows */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 blur-[120px] rounded-full" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/5 blur-[120px] rounded-full" />
+      <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 blur-[120px] rounded-full pointer-events-none z-0" />
+      <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/5 blur-[120px] rounded-full pointer-events-none z-0" />
 
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md z-10"
-      >
+      <div className="flex flex-col items-center px-4 py-12">
+      <div className="w-full max-w-md relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="text-center mb-10">
-          <motion.div 
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.5 }}
-            className="flex justify-center mb-6"
-          >
+          <div className="flex justify-center mb-6 animate-in zoom-in duration-500">
             <Logo className="text-5xl" variant="auto" />
-          </motion.div>
+          </div>
           <h2 className="text-3xl font-bold tracking-tighter uppercase">
             {isLogin ? 'Bienvenido a la Comunidad' : 'Solicitud de Admisión'}
           </h2>
@@ -197,19 +143,14 @@ export function Login() {
           </p>
         </div>
 
-        <div className="bg-card/50 backdrop-blur-xl border border-border p-8 rounded-[2.5rem] shadow-2xl">
+        <div className="bg-card/50 backdrop-blur-xl border border-border p-6 sm:p-8 rounded-[2.5rem] shadow-2xl">
           {error && (
             <div className={`mb-6 p-4 rounded-xl text-xs font-bold uppercase tracking-widest text-center ${error.includes('éxito') ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'}`}>
               {error}
             </div>
           )}
-          <AnimatePresence mode="wait">
             {isLogin ? (
-              <motion.form 
-                key="login"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
+              <form
                 className="space-y-6"
                 onSubmit={handleLogin}
               >
@@ -224,7 +165,7 @@ export function Login() {
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
                       placeholder="nombre@concesionaria.com" 
-                      className="h-14 pl-12 rounded-2xl bg-background/50 border-border focus:border-primary/50 transition-all font-bold"
+                      className="h-14 pl-12 rounded-xl bg-background/50 border-border focus:border-primary/50 transition-all font-bold"
                     />
                   </div>
                 </div>
@@ -242,14 +183,14 @@ export function Login() {
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
                       placeholder="••••••••" 
-                      className="h-14 pl-12 rounded-2xl bg-background/50 border-border focus:border-primary/50 transition-all font-bold"
+                      className="h-14 pl-12 rounded-xl bg-background/50 border-border focus:border-primary/50 transition-all font-bold"
                     />
                   </div>
                 </div>
                 <Button 
                   type="submit"
                   disabled={loading}
-                  className="w-full h-14 rounded-2xl font-bold text-lg shadow-lg shadow-primary/20 group uppercase tracking-tighter"
+                  className="w-full h-14 rounded-xl font-bold text-lg shadow-lg shadow-primary/20 group uppercase tracking-tighter"
                 >
                   {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : (
                     <>
@@ -265,7 +206,7 @@ export function Login() {
                       <Button 
                         type="button"
                         variant="outline" 
-                        className="rounded-2xl h-11 text-[10px] font-bold uppercase tracking-widest border-primary/20 hover:bg-primary/5 hover:text-primary transition-all"
+                        className="rounded-xl h-11 text-[10px] font-bold uppercase tracking-widest border-primary/20 hover:bg-primary/5 hover:text-primary transition-all"
                         onClick={() => handleDemoMode('vendedor')}
                         disabled={loading}
                       >
@@ -274,7 +215,7 @@ export function Login() {
                       <Button 
                         type="button"
                         variant="outline" 
-                        className="rounded-2xl h-11 text-[10px] font-bold uppercase tracking-widest border-primary/20 hover:bg-primary/5 hover:text-primary transition-all"
+                        className="rounded-xl h-11 text-[10px] font-bold uppercase tracking-widest border-primary/20 hover:bg-primary/5 hover:text-primary transition-all"
                         onClick={() => handleDemoMode('comprador')}
                         disabled={loading}
                       >
@@ -282,17 +223,13 @@ export function Login() {
                       </Button>
                     </div>
                   </div>
-              </motion.form>
+              </form>
             ) : (
-              <motion.form 
-                key="register"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
+              <form
                 className="space-y-4"
                 onSubmit={handleRegister}
               >
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name" className="text-[10px] font-bold uppercase tracking-widest ml-1">Nombre</Label>
                     <div className="relative">
@@ -320,7 +257,7 @@ export function Login() {
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="cuil" className="text-[10px] font-bold uppercase tracking-widest ml-1">CUIL / CUIT</Label>
                     <div className="relative">
@@ -418,13 +355,12 @@ export function Login() {
                 <Button 
                   type="submit"
                   disabled={loading}
-                  className="w-full h-14 rounded-2xl font-bold text-lg shadow-lg shadow-primary/20 mt-4 uppercase tracking-tighter"
+                  className="w-full h-14 rounded-xl font-bold text-lg shadow-lg shadow-primary/20 mt-4 uppercase tracking-tighter"
                 >
                   {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : 'ENVIAR SOLICITUD'}
                 </Button>
-              </motion.form>
+              </form>
             )}
-          </AnimatePresence>
         </div>
 
         <div className="mt-8 text-center space-y-4">
@@ -439,7 +375,8 @@ export function Login() {
             PLATAFORMA EXCLUSIVA B2B
           </div>
         </div>
-      </motion.div>
+      </div>
+      </div>
     </div>
   );
 }
