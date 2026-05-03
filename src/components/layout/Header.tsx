@@ -315,30 +315,105 @@ export function Header() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden border-t border-border bg-background"
+            className="md:hidden border-t border-border bg-background overflow-hidden"
           >
-            <div className="container mx-auto py-6 space-y-4 px-4">
+            <div className="container mx-auto py-4 px-4 space-y-1">
+              {/* Nav links */}
               {navItems.map((item) => (
                 <Link
                   key={item.name}
                   to={item.path}
-                  onClick={(e) => {
-                    handleNavClick(item.path, e);
-                    setIsMenuOpen(false);
-                  }}
-                  className="flex items-center gap-3 text-lg font-bold uppercase tracking-tighter text-muted-foreground hover:text-primary px-4 py-2"
+                  onClick={(e) => { handleNavClick(item.path, e); setIsMenuOpen(false); }}
+                  className={`flex items-center gap-3 font-bold uppercase tracking-widest text-xs px-4 py-3 rounded-xl transition-colors ${
+                    location.pathname === item.path
+                      ? 'text-primary bg-primary/5'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
+                  }`}
                 >
-                  <item.icon className="h-5 w-5" />
+                  <item.icon className="h-4 w-4" />
                   {item.name}
                 </Link>
               ))}
-              <div className="pt-4 flex flex-col gap-3 px-4">
-                <Button variant="outline" className="w-full rounded-2xl h-12 font-bold uppercase tracking-widest text-xs" onClick={() => { setIsLoginOpen(true); setIsMenuOpen(false); }}>
-                  INGRESAR
-                </Button>
-                <Button className="w-full rounded-2xl h-12 font-bold uppercase tracking-widest text-xs" onClick={() => { navigate('/?register=true'); setIsMenuOpen(false); }}>
-                  REGISTRARSE
-                </Button>
+
+              <div className="border-t border-border pt-3 mt-3 space-y-1">
+                {user ? (
+                  <>
+                    {/* User identity */}
+                    <div className="flex items-center gap-3 px-4 py-3 mb-1">
+                      <Avatar className="h-10 w-10 border-2 border-primary/20 shrink-0">
+                        <AvatarImage src={userProfile?.avatarUrl} />
+                        <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
+                          {userProfile?.name?.[0] || user.email?.[0]?.toUpperCase()}
+                          {userProfile?.lastName?.[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <p className="font-black uppercase tracking-tight text-sm leading-none truncate">
+                          {userProfile?.name} {userProfile?.lastName}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-0.5 truncate">
+                          {userProfile?.company || user.email}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Admin */}
+                    {userProfile?.role === 'ADMIN' && (
+                      <button
+                        onClick={() => { navigate('/admin'); setIsMenuOpen(false); }}
+                        className="flex items-center gap-3 w-full text-left font-bold uppercase tracking-widest text-xs px-4 py-3 rounded-xl text-primary hover:bg-primary/5 transition-colors"
+                      >
+                        <Shield className="h-4 w-4" /> Panel Admin
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => { navigate('/profile'); setIsMenuOpen(false); }}
+                      className="flex items-center gap-3 w-full text-left font-bold uppercase tracking-widest text-xs px-4 py-3 rounded-xl text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+                    >
+                      <User className="h-4 w-4" /> Perfil
+                    </button>
+
+                    <button
+                      onClick={() => { navigate('/profile'); setIsMenuOpen(false); }}
+                      className="flex items-center gap-3 w-full text-left font-bold uppercase tracking-widest text-xs px-4 py-3 rounded-xl text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+                    >
+                      <Building2 className="h-4 w-4" /> Mi Concesionaria
+                    </button>
+
+                    <button
+                      onClick={() => { navigate('/publish'); setIsMenuOpen(false); }}
+                      className="flex items-center gap-3 w-full text-left font-bold uppercase tracking-widest text-xs px-4 py-3 rounded-xl text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+                    >
+                      <Plus className="h-4 w-4" /> Publicar unidad
+                    </button>
+
+                    <div className="border-t border-border pt-2 mt-2">
+                      <button
+                        onClick={() => { handleLogout(); setIsMenuOpen(false); }}
+                        className="flex items-center gap-3 w-full text-left font-bold uppercase tracking-widest text-xs px-4 py-3 rounded-xl text-destructive hover:bg-destructive/5 transition-colors"
+                      >
+                        <LogOut className="h-4 w-4" /> Cerrar Sesión
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col gap-2 pt-1">
+                    <Button
+                      variant="outline"
+                      className="w-full rounded-2xl h-12 font-bold uppercase tracking-widest text-xs border-border"
+                      onClick={() => { setIsLoginOpen(true); setIsMenuOpen(false); }}
+                    >
+                      <User className="mr-2 h-4 w-4" /> Ingresar
+                    </Button>
+                    <Button
+                      className="w-full rounded-2xl h-12 font-bold uppercase tracking-widest text-xs shadow-lg shadow-primary/20"
+                      onClick={() => { navigate('/?register=true'); setIsMenuOpen(false); }}
+                    >
+                      Registrarse
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>

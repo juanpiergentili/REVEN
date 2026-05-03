@@ -3,7 +3,7 @@ import {
   collection, addDoc, updateDoc, doc,
   query, where, orderBy, limit, onSnapshot, serverTimestamp, getDocs,
 } from 'firebase/firestore';
-import { ref, uploadBytes, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import type { Vehicle } from '../types';
 
 type NewVehicle = Omit<Vehicle, 'id' | 'createdAt' | 'updatedAt' | 'publishedAt' | 'soldAt' | 'viewCount' | 'contactCount'>;
@@ -52,6 +52,14 @@ export async function updateVehicleStatus(
   status: Vehicle['status'],
 ): Promise<void> {
   await updateDoc(doc(db, 'vehicles', vehicleId), { status });
+}
+
+export async function pauseAllSellerListings(sellerId: string): Promise<number> {
+  const snap = await getDocs(
+    query(collection(db, 'vehicles'), where('sellerId', '==', sellerId), where('status', '==', 'ACTIVE'))
+  );
+  await Promise.all(snap.docs.map(d => updateDoc(doc(db, 'vehicles', d.id), { status: 'PAUSED' })));
+  return snap.size;
 }
 
 export function subscribeToVehicles(

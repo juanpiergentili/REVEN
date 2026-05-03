@@ -6,12 +6,13 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Camera, ArrowRight, ArrowLeft, CheckCircle2, X, Loader2, AlertCircle, ImageOff } from 'lucide-react';
+import { Camera, ArrowRight, ArrowLeft, CheckCircle2, X, Loader2, AlertCircle, ImageOff, Lock, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'motion/react';
 import { useAuth, db } from '@/src/lib/firebase';
-import { getDoc, doc } from 'firebase/firestore';
+import { getDoc, doc, getDocs, collection, query, where } from 'firebase/firestore';
+import { isTrialUser, isTrialExpired, getTrialDaysRemaining, getTrialEndDate, TRIAL_MAX_LISTINGS } from '@/src/lib/trial';
 import { createVehicle, updateVehiclePhotos } from '@/src/lib/vehicles';
 import { VEHICLE_CATALOG, BODY_TYPES, FUEL_TYPES, TRANSMISSIONS, COLORS } from '@/src/data/vehicle-catalog';
 import { PROVINCIAS_ARGENTINA } from '@/src/data/argentina-geo';
@@ -42,6 +43,7 @@ export function Publish() {
   const [error, setError] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [showNoPhotosDialog, setShowNoPhotosDialog] = useState(false);
+  const [activeListingCount, setActiveListingCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -49,18 +51,22 @@ export function Publish() {
 
   useEffect(() => {
     if (!user) return;
-    getDoc(doc(db, 'users', user.uid)).then(snap => {
+    getDoc(doc(db, 'users', user.uid)).then(async snap => {
       if (snap.exists()) {
         const data = snap.data();
         setUserProfile(data);
-        
-        // Pre-llenado de ubicación basada en la concesionaria
         if (data.province || data.city) {
           setFormData(prev => ({
             ...prev,
             province: data.province || prev.province,
             city: data.city || prev.city
           }));
+        }
+        if (isTrialUser(data)) {
+          const activeSnap = await getDocs(
+            query(collection(db, 'vehicles'), where('sellerId', '==', user.uid), where('status', '==', 'ACTIVE'))
+          );
+          setActiveListingCount(activeSnap.size);
         }
       }
     });
@@ -201,6 +207,12 @@ export function Publish() {
     }
   };
 
+  const trialExpired   = isTrialExpired(userProfile);
+  const trialUser      = isTrialUser(userProfile);
+  const trialDaysLeft  = getTrialDaysRemaining(userProfile);
+  const trialEndDate   = getTrialEndDate(userProfile);
+  const atTrialLimit   = trialUser && !trialExpired && activeListingCount >= TRIAL_MAX_LISTINGS;
+
   return (
     <div className="container mx-auto max-w-4xl py-20 px-4">
       <div className="mb-12 text-center space-y-4">
@@ -211,23 +223,98 @@ export function Publish() {
         <p className="text-muted-foreground font-medium">Completá los pasos para publicar tu unidad en la comunidad.</p>
       </div>
 
-      {/* Step indicators */}
-      <div className="flex justify-between mb-12 relative max-w-lg mx-auto">
-        <div className="absolute top-1/2 left-0 w-full h-1 bg-border -translate-y-1/2 z-0 rounded-full" />
-        {Array.from({ length: TOTAL_STEPS }, (_, i) => i + 1).map((s) => (
-          <div
-            key={s}
-            className={`relative z-10 flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full border-4 transition-all duration-500 ${
-              step >= s ? 'bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/20' : 'bg-background border-border text-muted-foreground'
-            }`}
-          >
-            {step > s ? <CheckCircle2 className="h-5 w-5 md:h-6 md:w-6 stroke-[3]" /> : <span className="font-bold text-sm">{s}</span>}
-            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-max text-[7px] md:text-[8px] font-black uppercase tracking-widest text-muted-foreground">
-              {STEP_LABELS[s - 1]}
+      {/* Trial expired gate */}
+      {trialExpired && (
+        <Card className="border-red-500/20 bg-card backdrop-blur-xl shadow-2xl rounded-[3.5rem] overflow-hidden">
+          <CardContent className="p-10 flex flex-col items-center text-center space-y-6">
+            <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center">
+              <Lock className="h-10 w-10 text-red-400" />
             </div>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold tracking-tighter uppercase">Período de prueba vencido</h2>
+              <p className="text-muted-foreground font-medium max-w-md">
+                Tu prueba gratuita de 60 días finalizó el{' '}
+                <span className="text-foreground font-bold">
+                  {trialEndDate?.toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                </span>.
+              </p>
+              <p className="text-muted-foreground font-medium max-w-md">
+                Tus publicaciones fueron pausadas automáticamente. Activá tu plan para volver a publicar y dar visibilidad a tu stock.
+              </p>
+            </div>
+            <Button
+              onClick={() => navigate('/')}
+              className="rounded-full px-10 h-12 font-black uppercase tracking-widest shadow-lg shadow-primary/20"
+            >
+              Ver planes
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Trial limit gate */}
+      {!trialExpired && atTrialLimit && (
+        <Card className="border-yellow-500/20 bg-card backdrop-blur-xl shadow-2xl rounded-[3.5rem] overflow-hidden">
+          <CardContent className="p-10 flex flex-col items-center text-center space-y-6">
+            <div className="w-20 h-20 rounded-full bg-yellow-500/10 flex items-center justify-center">
+              <Clock className="h-10 w-10 text-yellow-400" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold tracking-tighter uppercase">Límite de prueba alcanzado</h2>
+              <p className="text-muted-foreground font-medium max-w-md">
+                Tu período de prueba permite un máximo de <span className="text-foreground font-bold">{TRIAL_MAX_LISTINGS} publicaciones activas</span> simultáneas.
+              </p>
+              <p className="text-muted-foreground font-medium max-w-md">
+                Pausá una publicación existente para liberar un espacio, o activá tu plan para publicar sin límites.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => navigate('/profile')} className="rounded-full px-8 h-12 font-bold uppercase tracking-widest border-border">
+                Gestionar stock
+              </Button>
+              <Button onClick={() => navigate('/')} className="rounded-full px-8 h-12 font-black uppercase tracking-widest shadow-lg shadow-primary/20">
+                Ver planes
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Normal publish form */}
+      {!trialExpired && !atTrialLimit && (
+        <>
+          {/* Trial progress banner */}
+          {trialUser && (
+            <div className="mb-8 flex items-center justify-between gap-4 px-6 py-4 rounded-2xl bg-primary/5 border border-primary/20">
+              <div className="flex items-center gap-3">
+                <Clock className="h-4 w-4 text-primary shrink-0" />
+                <span className="text-sm font-bold">
+                  Período de prueba — {activeListingCount}/{TRIAL_MAX_LISTINGS} publicaciones activas
+                </span>
+              </div>
+              <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground shrink-0">
+                {trialDaysLeft} día{trialDaysLeft !== 1 ? 's' : ''} restante{trialDaysLeft !== 1 ? 's' : ''}
+              </span>
+            </div>
+          )}
+
+          {/* Step indicators */}
+          <div className="flex justify-between mb-12 relative max-w-lg mx-auto">
+            <div className="absolute top-1/2 left-0 w-full h-1 bg-border -translate-y-1/2 z-0 rounded-full" />
+            {Array.from({ length: TOTAL_STEPS }, (_, i) => i + 1).map((s) => (
+              <div
+                key={s}
+                className={`relative z-10 flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full border-4 transition-all duration-500 ${
+                  step >= s ? 'bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/20' : 'bg-background border-border text-muted-foreground'
+                }`}
+              >
+                {step > s ? <CheckCircle2 className="h-5 w-5 md:h-6 md:w-6 stroke-[3]" /> : <span className="font-bold text-sm">{s}</span>}
+                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-max text-[7px] md:text-[8px] font-black uppercase tracking-widest text-muted-foreground">
+                  {STEP_LABELS[s - 1]}
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
       <Card className="border-border bg-card backdrop-blur-xl shadow-2xl rounded-[3.5rem] overflow-hidden">
         <CardContent className="p-10">
@@ -336,7 +423,7 @@ export function Publish() {
                       variant="outline"
                       type="button"
                       onClick={() => update('condition', 'USADO')}
-                      className={`h-14 rounded-xl border-white/10 font-bold uppercase tracking-widest ${formData.condition === 'USADO' ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted border-border text-muted-foreground hover:bg-muted/80'}`}
+                      className={`h-14 rounded-xl font-bold uppercase tracking-widest transition-all ${formData.condition === 'USADO' ? 'bg-primary/15 border-primary text-primary shadow-md shadow-primary/20' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-primary/30 hover:text-white'}`}
                     >
                       Usado
                     </Button>
@@ -344,7 +431,7 @@ export function Publish() {
                       variant="outline"
                       type="button"
                       onClick={() => update('condition', '0KM')}
-                      className={`h-14 rounded-xl border-white/10 font-bold uppercase tracking-widest ${formData.condition === '0KM' ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted border-border text-muted-foreground hover:bg-muted/80'}`}
+                      className={`h-14 rounded-xl font-bold uppercase tracking-widest transition-all ${formData.condition === '0KM' ? 'bg-primary/15 border-primary text-primary shadow-md shadow-primary/20' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-primary/30 hover:text-white'}`}
                     >
                       0 KM
                     </Button>
@@ -374,7 +461,7 @@ export function Publish() {
                         variant="outline"
                         type="button"
                         onClick={() => update('transmission', t.value)}
-                        className={`h-14 rounded-xl border-white/10 font-bold uppercase tracking-widest ${formData.transmission === t.value ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted border-border text-muted-foreground hover:bg-muted/80'}`}
+                        className={`h-14 rounded-xl font-bold uppercase tracking-widest transition-all ${formData.transmission === t.value ? 'bg-primary/15 border-primary text-primary shadow-md shadow-primary/20' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-primary/30 hover:text-white'}`}
                       >
                         {t.label}
                       </Button>
@@ -711,6 +798,8 @@ export function Publish() {
 
         </CardContent>
       </Card>
+        </>
+      )}
     </div>
   );
 }

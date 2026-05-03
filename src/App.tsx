@@ -9,6 +9,7 @@ import { Login } from '@/src/pages/Login';
 import { Messages } from '@/src/pages/Messages';
 import { Profile } from '@/src/pages/Profile';
 import { Admin } from '@/src/pages/Admin';
+import { ProtectedRoute } from '@/src/components/auth/ProtectedRoute';
 
 function AppContent() {
   const location = useLocation();
@@ -22,13 +23,13 @@ function AppContent() {
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/marketplace" element={<Marketplace />} />
-          <Route path="/vehicle/:id" element={<VehicleDetail />} />
-          <Route path="/publish" element={<Publish />} />
+          <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
+          <Route path="/vehicle/:id" element={<ProtectedRoute><VehicleDetail /></ProtectedRoute>} />
+          <Route path="/publish" element={<ProtectedRoute><Publish /></ProtectedRoute>} />
           <Route path="/login" element={<Login />} />
-          <Route path="/messages" element={<Messages />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/profile/:uid" element={<Profile />} />
+          <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/profile/:uid" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/admin" element={<Admin />} />
           {/* Fallback to home */}
           <Route path="*" element={<Home />} />

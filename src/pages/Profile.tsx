@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ChevronLeft, Eye, MessageSquare, Clock, BarChart3, TrendingUp, Award,
   MapPin, Building2, Phone, Mail, Loader2, ShoppingBag, Plus, Settings,
-  Save, Pause, Play, CheckCircle2, Package,
+  Save, Pause, Play, CheckCircle2, Package, Lock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +18,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { getResponseBadge } from '@/src/lib/analytics';
 import { useAuth, db } from '@/src/lib/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { getVehiclesBySeller, updateVehicleStatus } from '@/src/lib/vehicles';
+import { getVehiclesBySeller, updateVehicleStatus, pauseAllSellerListings } from '@/src/lib/vehicles';
+import { isTrialUser, isTrialExpired, getTrialDaysRemaining, getTrialEndDate, TRIAL_MAX_LISTINGS } from '@/src/lib/trial';
 import { PROVINCIAS_ARGENTINA } from '@/src/data/argentina-geo';
 import type { Vehicle } from '../types';
 
@@ -74,8 +75,9 @@ export function Profile() {
       setLoading(true);
       try {
         const userDoc = await getDoc(doc(db, 'users', targetUid));
+        let data: any = null;
         if (userDoc.exists()) {
-          const data = userDoc.data();
+          data = userDoc.data();
           setProfileData(data);
           setEditForm({
             company: data.company || '',
@@ -86,7 +88,12 @@ export function Profile() {
             lastName: data.lastName || '',
           });
         }
-        const vehicles = await getVehiclesBySeller(targetUid);
+        let vehicles = await getVehiclesBySeller(targetUid);
+        // Auto-pause all active listings when trial has expired
+        if (isOwnProfile && isTrialExpired(data) && vehicles.some(v => v.status === 'ACTIVE')) {
+          await pauseAllSellerListings(targetUid);
+          vehicles = vehicles.map(v => v.status === 'ACTIVE' ? { ...v, status: 'PAUSED' as Vehicle['status'] } : v);
+        }
         setAllListings(vehicles);
       } catch (err) {
         console.error('Error fetching profile:', err);
@@ -113,6 +120,8 @@ export function Profile() {
 
   const handleToggleStatus = async (vehicle: Vehicle) => {
     const next = vehicle.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
+    if (next === 'ACTIVE' && isTrialExpired(profileData)) return;
+    if (next === 'ACTIVE' && isTrialUser(profileData) && allListings.filter(v => v.status === 'ACTIVE').length >= TRIAL_MAX_LISTINGS) return;
     setTogglingId(vehicle.id);
     try {
       await updateVehicleStatus(vehicle.id, next);
@@ -154,6 +163,11 @@ export function Profile() {
   const provinceName = PROVINCIAS_ARGENTINA.find(p => p.id === profileData.province)?.nombre || profileData.province || 'No especificada';
   const cityName = PROVINCIAS_ARGENTINA.find(p => p.id === profileData.province)?.localidades.find(l => l.id === profileData.city)?.nombre || profileData.city || '';
 
+  const trialExpired     = isTrialExpired(profileData);
+  const trialUserProfile = isTrialUser(profileData);
+  const trialDaysLeft    = getTrialDaysRemaining(profileData);
+  const trialEndDate     = getTrialEndDate(profileData);
+
   // Real metrics computed from actual vehicle data
   const activeListings  = allListings.filter(v => v.status === 'ACTIVE');
   const pausedListings  = allListings.filter(v => v.status === 'PAUSED');
@@ -180,6 +194,36 @@ export function Profile() {
       </div>
 
       <main className="container mx-auto px-4 md:px-8 py-12 max-w-6xl">
+        {/* Trial status banner */}
+        {isOwnProfile && trialUserProfile && (
+          <div className={`mb-10 p-5 rounded-2xl border flex items-center gap-4 ${trialExpired ? 'bg-red-500/5 border-red-500/20' : 'bg-primary/5 border-primary/20'}`}>
+            <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${trialExpired ? 'bg-red-500/10' : 'bg-primary/10'}`}>
+              {trialExpired ? <Lock className="h-5 w-5 text-red-400" /> : <Clock className="h-5 w-5 text-primary" />}
+            </div>
+            <div className="flex-1 space-y-0.5">
+              {trialExpired ? (
+                <>
+                  <p className="font-bold uppercase tracking-widest text-sm text-red-400">Período de prueba vencido</p>
+                  <p className="text-xs text-muted-foreground font-medium">
+                    Tus publicaciones fueron pausadas el {trialEndDate?.toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })}. Activá tu plan para volver a publicar.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="font-bold uppercase tracking-widest text-sm text-primary">Período de prueba activo</p>
+                  <p className="text-xs text-muted-foreground font-medium">
+                    {trialDaysLeft} día{trialDaysLeft !== 1 ? 's' : ''} restantes · {activeListings.length}/{TRIAL_MAX_LISTINGS} publicaciones activas
+                  </p>
+                </>
+              )}
+            </div>
+            {trialExpired && (
+              <Button size="sm" onClick={() => navigate('/')} className="shrink-0 rounded-full h-9 px-5 font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20">
+                Ver planes
+              </Button>
+            )}
+          </div>
+        )}
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -238,10 +282,12 @@ export function Profile() {
                 </Button>
                 <Button
                   onClick={() => navigate('/publish')}
+                  disabled={trialExpired}
                   size="sm"
                   className="rounded-full font-bold uppercase tracking-widest text-[10px] gap-2 shadow-lg shadow-primary/20 h-10 px-6"
                 >
-                  <Plus className="h-3.5 w-3.5" /> Publicar Unidad
+                  {trialExpired ? <Lock className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+                  {trialExpired ? 'Prueba vencida' : 'Publicar Unidad'}
                 </Button>
               </div>
             )}
@@ -284,8 +330,9 @@ export function Profile() {
               {isOwnProfile ? 'Administrar mi Stock' : 'Unidades Disponibles'}
             </h2>
             {isOwnProfile && (
-              <Button onClick={() => navigate('/publish')} className="rounded-full font-bold uppercase tracking-widest text-[10px] gap-2">
-                <Plus className="h-4 w-4" /> Nueva Unidad
+              <Button onClick={() => navigate('/publish')} disabled={trialExpired} className="rounded-full font-bold uppercase tracking-widest text-[10px] gap-2">
+                {trialExpired ? <Lock className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                {trialExpired ? 'Prueba vencida' : 'Nueva Unidad'}
               </Button>
             )}
           </div>
@@ -329,6 +376,7 @@ export function Profile() {
                     <VehicleGrid
                       listings={list}
                       isOwnProfile={isOwnProfile}
+                      trialExpired={trialExpired}
                       togglingId={togglingId}
                       markingSoldId={markingSoldId}
                       onToggle={handleToggleStatus}
@@ -429,10 +477,11 @@ export function Profile() {
 }
 
 function VehicleGrid({
-  listings, isOwnProfile, togglingId, markingSoldId, onToggle, onMarkSold, onNavigate,
+  listings, isOwnProfile, trialExpired = false, togglingId, markingSoldId, onToggle, onMarkSold, onNavigate,
 }: {
   listings: Vehicle[];
   isOwnProfile: boolean;
+  trialExpired?: boolean;
   togglingId: string | null;
   markingSoldId: string | null;
   onToggle: (v: Vehicle) => void;
@@ -505,12 +554,14 @@ function VehicleGrid({
                   <Button
                     size="sm"
                     variant="outline"
-                    disabled={isToggling || isMarkingSold}
+                    disabled={isToggling || isMarkingSold || (trialExpired && listing.status === 'PAUSED')}
                     onClick={() => onToggle(listing)}
                     className="rounded-full font-bold uppercase tracking-widest text-[9px] h-8 px-4 border-white/10 hover:border-primary/30 gap-1.5"
                   >
                     {isToggling ? (
                       <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : trialExpired && listing.status === 'PAUSED' ? (
+                      <><Lock className="h-3 w-3" /> Requiere plan</>
                     ) : listing.status === 'ACTIVE' ? (
                       <><Pause className="h-3 w-3" /> Pausar</>
                     ) : (
