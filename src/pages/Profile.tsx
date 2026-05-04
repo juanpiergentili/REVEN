@@ -29,9 +29,9 @@ function StatCard({ icon: Icon, label, value, accent = false }: { icon: any; lab
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className={`p-6 rounded-3xl border space-y-3 ${accent ? 'bg-primary/5 border-primary/20' : 'bg-white/5 border-white/5'}`}
+      className={`p-6 rounded-3xl border space-y-3 ${accent ? 'bg-primary/5 border-primary/20' : 'bg-card border-border'}`}
     >
-      <div className={`h-10 w-10 rounded-2xl flex items-center justify-center ${accent ? 'bg-primary/10' : 'bg-white/5'}`}>
+      <div className={`h-10 w-10 rounded-2xl flex items-center justify-center ${accent ? 'bg-primary/10' : 'bg-muted'}`}>
         <Icon className={`h-5 w-5 ${accent ? 'text-primary' : 'text-muted-foreground'}`} />
       </div>
       <div>
@@ -47,7 +47,7 @@ const STATUS_CONFIG = {
   PAUSED:   { label: 'Pausado',  color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' },
   SOLD:     { label: 'Vendido',  color: 'bg-primary/20 text-primary border-primary/30' },
   RESERVED: { label: 'Reservado',color: 'bg-purple-500/20 text-purple-400 border-purple-500/30' },
-  DRAFT:    { label: 'Borrador', color: 'bg-white/5 text-muted-foreground border-white/10' },
+  DRAFT:    { label: 'Borrador', color: 'bg-muted text-muted-foreground border-border' },
 } as const;
 
 export function Profile() {
@@ -181,21 +181,18 @@ export function Profile() {
   const visibleListings = isOwnProfile ? allListings : activeListings;
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <div className="border-b border-white/5 bg-black/40 backdrop-blur-xl sticky top-20 z-40">
-        <div className="container mx-auto px-4 md:px-8 py-6 flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="rounded-full font-bold uppercase tracking-widest text-[10px] gap-2">
+    <div className="min-h-screen bg-background pb-20 overflow-x-hidden">
+      <main className="container mx-auto px-4 md:px-8 py-8 max-w-6xl">
+        <div className="flex items-center justify-between mb-8">
+          <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="rounded-full font-bold uppercase tracking-widest text-[10px] gap-2 hover:bg-muted">
             <ChevronLeft className="h-4 w-4" /> Volver
           </Button>
           {isOwnProfile && (
-            <Badge className="bg-primary/20 text-primary border-primary/20 font-bold tracking-widest text-[10px] px-4 py-1.5 rounded-full">
-              GESTIÓN DE CONCESIONARIA
+            <Badge className="bg-primary/10 text-primary border border-primary/20 font-bold tracking-widest text-[10px] px-4 py-1.5 rounded-full">
+              MI CONCESIONARIA
             </Badge>
           )}
         </div>
-      </div>
-
-      <main className="container mx-auto px-4 md:px-8 py-12 max-w-6xl">
         {/* Trial status banner */}
         {isOwnProfile && trialUserProfile && (
           <div className={`mb-10 p-5 rounded-2xl border flex items-center gap-4 ${trialExpired ? 'bg-red-500/5 border-red-500/20' : 'bg-primary/5 border-primary/20'}`}>
@@ -239,14 +236,14 @@ export function Profile() {
                 {profileData.name?.[0]}{profileData.lastName?.[0]}
               </AvatarFallback>
             </Avatar>
-            <div className="absolute -bottom-2 -right-2 bg-background border border-white/5 p-2 rounded-2xl shadow-xl">
+            <div className="absolute -bottom-2 -right-2 bg-card border border-border p-2 rounded-2xl shadow-xl">
               <Award className="h-5 w-5 text-primary" />
             </div>
           </div>
 
-          <div className="flex-1 space-y-4">
+          <div className="flex-1 min-w-0 space-y-4">
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-4xl md:text-5xl font-bold tracking-tighter uppercase">{profileData.name} {profileData.lastName}</h1>
+              <h1 className="text-3xl md:text-5xl font-bold tracking-tighter uppercase break-words">{profileData.name} {profileData.lastName}</h1>
               <Badge className="bg-primary text-primary-foreground font-black text-[10px] rounded-full px-4 py-1 shadow-lg shadow-primary/20 uppercase tracking-widest">
                 {profileData.plan || 'Standard'}
               </Badge>
@@ -256,40 +253,40 @@ export function Profile() {
             </div>
 
             <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
-              <span className="flex items-center gap-2 font-bold text-white/80">
+              <span className="flex items-center gap-2 font-bold text-foreground">
                 <Building2 className="h-4 w-4 text-primary" /> {profileData.company || 'Agencia Independiente'}
               </span>
-              <span className="flex items-center gap-2 font-bold text-white/80">
+              <span className="flex items-center gap-2 font-bold text-foreground">
                 <MapPin className="h-4 w-4 text-primary" /> {cityName}{cityName ? ', ' : ''}{provinceName}
               </span>
-              <span className="flex items-center gap-2 font-bold text-white/80">
+              <span className="flex items-center gap-2 font-bold text-foreground">
                 <Clock className="h-4 w-4 text-primary" /> Activo ahora
               </span>
             </div>
 
-            <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground pt-2">
-              <span className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" /> {profileData.email}</span>
-              <span className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" /> {profileData.phone || 'No especificado'}</span>
+            <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground pt-2 min-w-0">
+              <span className="flex items-center gap-1.5 min-w-0"><Mail className="h-3.5 w-3.5 shrink-0" /> <span className="truncate">{profileData.email}</span></span>
+              <span className="flex items-center gap-1.5 shrink-0"><Phone className="h-3.5 w-3.5" /> {profileData.phone || 'No especificado'}</span>
             </div>
 
             {isOwnProfile && (
-              <div className="pt-4 flex gap-4">
+              <div className="pt-4 flex gap-3 w-full">
                 <Button
                   onClick={() => setIsEditDialogOpen(true)}
                   variant="outline"
                   size="sm"
-                  className="rounded-full font-bold uppercase tracking-widest text-[10px] gap-2 border-primary/20 hover:bg-primary/5 h-10 px-6"
+                  className="flex-1 rounded-full font-bold uppercase tracking-wide text-[10px] gap-2 border-primary/20 hover:bg-primary/5 h-10"
                 >
-                  <Settings className="h-3.5 w-3.5" /> Configurar Concesionaria
+                  <Settings className="h-3.5 w-3.5 shrink-0" /> Configurar
                 </Button>
                 <Button
                   onClick={() => navigate('/publish')}
                   disabled={trialExpired}
                   size="sm"
-                  className="rounded-full font-bold uppercase tracking-widest text-[10px] gap-2 shadow-lg shadow-primary/20 h-10 px-6"
+                  className="flex-1 rounded-full font-bold uppercase tracking-wide text-[10px] gap-2 shadow-lg shadow-primary/20 h-10"
                 >
-                  {trialExpired ? <Lock className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
-                  {trialExpired ? 'Prueba vencida' : 'Publicar'}
+                  {trialExpired ? <Lock className="h-3.5 w-3.5 shrink-0" /> : <Plus className="h-3.5 w-3.5 shrink-0" />}
+                  {trialExpired ? 'Vencida' : 'Publicar'}
                 </Button>
               </div>
             )}
@@ -322,7 +319,7 @@ export function Profile() {
           </div>
         </div>
 
-        <Separator className="bg-white/5 mb-16" />
+        <Separator className="mb-16" />
 
         {/* Listings */}
         <div>
@@ -340,8 +337,8 @@ export function Profile() {
           </div>
 
           {visibleListings.length === 0 ? (
-            <div className="p-20 text-center border-2 border-dashed border-white/5 rounded-[3rem] space-y-4">
-              <div className="bg-white/5 w-16 h-16 rounded-full flex items-center justify-center mx-auto">
+            <div className="p-20 text-center border-2 border-dashed border-border rounded-[3rem] space-y-4">
+              <div className="bg-muted w-16 h-16 rounded-full flex items-center justify-center mx-auto">
                 <TrendingUp className="h-8 w-8 text-muted-foreground/30" />
               </div>
               <p className="text-muted-foreground font-medium">No hay publicaciones activas en este momento.</p>
@@ -353,7 +350,7 @@ export function Profile() {
             </div>
           ) : isOwnProfile ? (
             <Tabs defaultValue="all">
-              <TabsList className="mb-8 bg-white/5 rounded-2xl p-1 h-auto gap-1">
+              <TabsList className="mb-8 bg-muted rounded-2xl p-1 h-auto gap-1 flex-wrap">
                 <TabsTrigger value="all"    className="rounded-xl font-bold text-[10px] uppercase tracking-widest px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                   Todo ({allListings.length})
                 </TabsTrigger>
@@ -401,7 +398,7 @@ export function Profile() {
         <DialogContent className="max-w-2xl rounded-[3rem] border-border bg-card/95 backdrop-blur-2xl p-10">
           <DialogHeader>
             <DialogTitle className="text-3xl font-bold tracking-tighter uppercase">Configuración de Concesionaria</DialogTitle>
-            <DialogDescription className="font-medium text-white/50">Vinculá los datos de tu agencia para que se reflejen en tus publicaciones.</DialogDescription>
+            <DialogDescription className="font-medium text-muted-foreground">Vinculá los datos de tu agencia para que se reflejen en tus publicaciones.</DialogDescription>
           </DialogHeader>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6">
@@ -411,14 +408,14 @@ export function Profile() {
                 value={editForm.company}
                 onChange={e => setEditForm(prev => ({ ...prev, company: e.target.value }))}
                 placeholder="Automotores Reven S.A."
-                className="h-14 rounded-[2.5rem] bg-white/5 border-white/10 font-bold px-6"
+                className="h-14 rounded-[2.5rem] bg-muted border-border font-bold px-6"
               />
             </div>
 
             <div className="space-y-3">
               <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-primary">Provincia</Label>
               <Select value={editForm.province} onValueChange={v => setEditForm(prev => ({ ...prev, province: v, city: '' }))} disabled={loadingProvincias}>
-                <SelectTrigger className="h-14 rounded-[2.5rem] bg-white/5 border-white/10 font-bold px-6">
+                <SelectTrigger className="h-14 rounded-[2.5rem] bg-muted border-border font-bold px-6">
                   <SelectValue>{loadingProvincias ? 'Cargando...' : (provincias.find(p => p.id === editForm.province)?.nombre || 'Seleccionar')}</SelectValue>
                 </SelectTrigger>
                 <SelectContent className="rounded-[2.5rem]">
@@ -432,7 +429,7 @@ export function Profile() {
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Localidad</Label>
               <Select value={editForm.city} onValueChange={v => setEditForm(prev => ({ ...prev, city: v }))} disabled={!editForm.province || loadingLocalidades}>
-                <SelectTrigger className="h-14 rounded-[2.5rem] bg-white/5 border-white/10 font-bold px-6">
+                <SelectTrigger className="h-14 rounded-[2.5rem] bg-muted border-border font-bold px-6">
                   <SelectValue>{loadingLocalidades ? 'Cargando...' : (localidades.find(l => l.id === editForm.city)?.nombre || 'Seleccionar')}</SelectValue>
                 </SelectTrigger>
                 <SelectContent className="rounded-[2.5rem]">
@@ -449,7 +446,7 @@ export function Profile() {
                 value={editForm.phone}
                 onChange={e => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
                 placeholder="+54 9 11 ..."
-                className="h-12 rounded-xl bg-white/5 border-white/10 font-bold"
+                className="h-12 rounded-xl bg-muted border-border font-bold"
               />
             </div>
 
@@ -459,7 +456,7 @@ export function Profile() {
                 value={editForm.name}
                 onChange={e => setEditForm(prev => ({ ...prev, name: e.target.value }))}
                 placeholder="Nombre"
-                className="h-12 rounded-xl bg-white/5 border-white/10 font-bold"
+                className="h-12 rounded-xl bg-muted border-border font-bold"
               />
             </div>
           </div>
@@ -494,7 +491,7 @@ function VehicleGrid({
 }) {
   if (listings.length === 0) {
     return (
-      <div className="py-16 text-center border-2 border-dashed border-white/5 rounded-[3rem]">
+      <div className="py-16 text-center border-2 border-dashed border-border rounded-[3rem]">
         <p className="text-muted-foreground font-medium text-sm">Sin unidades en esta categoría.</p>
       </div>
     );
@@ -514,7 +511,7 @@ function VehicleGrid({
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: i * 0.05 }}
-            className="group relative bg-white/5 border border-white/5 hover:border-primary/30 rounded-[2.5rem] overflow-hidden transition-all duration-500"
+            className="group relative bg-card border border-border hover:border-primary/30 rounded-[2.5rem] overflow-hidden transition-all duration-500 shadow-sm"
           >
             {/* Photo */}
             <div
@@ -557,7 +554,7 @@ function VehicleGrid({
                     size="sm"
                     variant="outline"
                     onClick={() => onEdit(listing.id)}
-                    className="rounded-full font-bold uppercase tracking-widest text-[9px] h-8 px-4 border-white/10 hover:border-primary/30 gap-1.5"
+                    className="rounded-full font-bold uppercase tracking-widest text-[9px] h-8 px-4 border-border hover:border-primary/30 gap-1.5"
                   >
                     <Settings className="h-3.5 w-3.5" /> Editar
                   </Button>
@@ -568,7 +565,7 @@ function VehicleGrid({
                         variant="outline"
                         disabled={isToggling || isMarkingSold || (trialExpired && listing.status === 'PAUSED')}
                         onClick={() => onToggle(listing)}
-                        className="rounded-full font-bold uppercase tracking-widest text-[9px] h-8 px-4 border-white/10 hover:border-primary/30 gap-1.5"
+                        className="rounded-full font-bold uppercase tracking-widest text-[9px] h-8 px-4 border-border hover:border-primary/30 gap-1.5"
                       >
                         {isToggling ? (
                           <Loader2 className="h-3 w-3 animate-spin" />

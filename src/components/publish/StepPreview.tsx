@@ -30,7 +30,7 @@ export function StepPreview({ formData, inspection, photoPreviews, photosCount, 
       {/* Photo carousel */}
       {photoPreviews.length > 0 ? (
         <div className="space-y-3">
-          <div className="relative aspect-[16/9] rounded-3xl overflow-hidden bg-white/5">
+          <div className="relative aspect-[16/9] rounded-3xl overflow-hidden bg-muted/30">
             <img
               src={photoPreviews[0]}
               alt="Foto principal"
@@ -48,7 +48,7 @@ export function StepPreview({ formData, inspection, photoPreviews, photosCount, 
                 </div>
               ))}
               {photoPreviews.length > 6 && (
-                <div className="shrink-0 w-20 h-20 rounded-xl bg-white/5 flex items-center justify-center">
+                <div className="shrink-0 w-20 h-20 rounded-xl bg-muted/30 flex items-center justify-center">
                   <span className="text-xs font-bold text-muted-foreground">+{photoPreviews.length - 6}</span>
                 </div>
               )}
@@ -63,7 +63,7 @@ export function StepPreview({ formData, inspection, photoPreviews, photosCount, 
       )}
 
       {/* Vehicle data */}
-      <div className="p-6 rounded-3xl bg-white/5 border border-white/10 space-y-4">
+      <div className="p-6 rounded-3xl bg-muted/30 border border-border space-y-4">
         <p className="font-black uppercase tracking-widest text-[10px] text-muted-foreground">Datos del vehículo</p>
         <div className="space-y-3 text-sm">
           <div className="flex justify-between">
@@ -117,7 +117,7 @@ export function StepPreview({ formData, inspection, photoPreviews, photosCount, 
       </div>
 
       {/* Documentación */}
-      <div className="p-6 rounded-3xl bg-white/5 border border-white/10 space-y-3">
+      <div className="p-6 rounded-3xl bg-muted/30 border border-border space-y-3">
         <p className="font-black uppercase tracking-widest text-[10px] text-muted-foreground">Documentación</p>
         <div className="flex flex-wrap gap-2">
           {formData.hasVTV && <Badge className="bg-green-500/10 text-green-500 border-green-500/20 rounded-full">VTV Vigente</Badge>}
@@ -133,7 +133,7 @@ export function StepPreview({ formData, inspection, photoPreviews, photosCount, 
 
       {/* Inspección */}
       {hasInspection && (
-        <div className="p-6 rounded-3xl bg-white/5 border border-white/10 space-y-3">
+        <div className="p-6 rounded-3xl bg-muted/30 border border-border space-y-3">
           <p className="font-black uppercase tracking-widest text-[10px] text-muted-foreground">Estado Técnico</p>
           <div className="flex flex-wrap gap-2">
             {inspection.sinGastos && (
@@ -177,7 +177,7 @@ export function StepPreview({ formData, inspection, photoPreviews, photosCount, 
       </div>
 
       {formData.description && (
-        <div className="p-6 rounded-3xl bg-white/5 border border-white/10 space-y-2">
+        <div className="p-6 rounded-3xl bg-muted/30 border border-border space-y-2">
           <p className="font-black uppercase tracking-widest text-[10px] text-muted-foreground">Descripción</p>
           <p className="text-sm whitespace-pre-wrap">{formData.description}</p>
         </div>

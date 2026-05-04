@@ -94,11 +94,11 @@ export function StepEstadoTecnico({ inspection, onChange }: Props) {
           className={`flex items-center gap-4 border-2 p-6 rounded-xl cursor-pointer transition-all ${
             inspection.sinGastos
               ? 'border-green-500/50 bg-green-500/10 shadow-lg shadow-green-500/5'
-              : 'border-white/10 bg-white/5 hover:border-green-500/20'
+              : 'border-border bg-muted/30 hover:border-green-500/20'
           }`}
         >
           <Checkbox
-            className="h-7 w-7 rounded-lg border-white/20"
+            className="h-7 w-7 rounded-lg border-border"
             checked={inspection.sinGastos}
             onCheckedChange={v => handleSinGastos(Boolean(v))}
           />
@@ -121,10 +121,10 @@ export function StepEstadoTecnico({ inspection, onChange }: Props) {
       {!inspection.sinGastos && (
         <div className="space-y-4">
       {/* Observaciones Internas */}
-      <div className="border border-white/10 rounded-xl overflow-hidden bg-white/5">
+      <div className="border border-border rounded-xl overflow-hidden bg-muted/30">
         <button 
           onClick={() => toggleSection('observaciones')}
-          className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+          className="w-full flex items-center justify-between p-4 hover:bg-muted/60 transition-colors"
         >
           <div className="flex items-center gap-3">
             <div className="bg-amber-500/10 p-2 rounded-xl">
@@ -149,11 +149,11 @@ export function StepEstadoTecnico({ inspection, onChange }: Props) {
                     className={`flex items-center space-x-3 border p-4 rounded-xl cursor-pointer transition-all ${
                       inspection.observacionesInternas.includes(obs)
                         ? 'border-amber-500/40 bg-amber-500/5'
-                        : 'border-white/5 bg-white/5 hover:border-white/10'
+                        : 'border-border bg-muted/30 hover:border-primary/30'
                     }`}
                   >
                     <Checkbox
-                      className="h-5 w-5 rounded-md border-white/20"
+                      className="h-5 w-5 rounded-md border-border"
                       checked={inspection.observacionesInternas.includes(obs)}
                       onCheckedChange={() => toggleObservacion(obs)}
                     />
@@ -167,7 +167,7 @@ export function StepEstadoTecnico({ inspection, onChange }: Props) {
                   value={inspection.observacionesNotas}
                   onChange={e => onChange({ ...inspection, observacionesNotas: e.target.value })}
                   placeholder="Ej: Vidrio trasero fisurado, falta alfombra baúl..."
-                  className="min-h-[80px] rounded-xl bg-white/5 border-white/10 font-bold p-4"
+                  className="min-h-[80px] rounded-xl bg-muted border-border font-bold p-4"
                 />
               </div>
             </motion.div>
@@ -176,10 +176,10 @@ export function StepEstadoTecnico({ inspection, onChange }: Props) {
       </div>
 
       {/* Cubiertas */}
-      <div className="border border-white/10 rounded-xl overflow-hidden bg-white/5">
+      <div className="border border-border rounded-xl overflow-hidden bg-muted/30">
         <button 
           onClick={() => toggleSection('cubiertas')}
-          className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+          className="w-full flex items-center justify-between p-4 hover:bg-muted/60 transition-colors"
         >
           <div className="flex items-center gap-3">
             <div className="bg-blue-500/10 p-2 rounded-xl">
@@ -200,7 +200,7 @@ export function StepEstadoTecnico({ inspection, onChange }: Props) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Cubiertas a cambiar</Label>
-                  <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 h-14">
+                  <div className="flex bg-muted p-1 rounded-xl border border-border h-14">
                     {[0, 1, 2, 3, 4].map(num => (
                       <button
                         key={num}
@@ -212,7 +212,7 @@ export function StepEstadoTecnico({ inspection, onChange }: Props) {
                         className={`flex-1 rounded-lg font-black text-sm transition-all ${
                           inspection.cubiertas.cambiar === num
                             ? 'bg-blue-500 text-white shadow-md'
-                            : 'text-muted-foreground hover:bg-white/5'
+                            : 'text-muted-foreground hover:bg-muted/60'
                         }`}
                       >
                         {num}
@@ -227,11 +227,11 @@ export function StepEstadoTecnico({ inspection, onChange }: Props) {
                   className={`flex items-center space-x-3 border p-6 rounded-xl cursor-pointer transition-all ${
                     inspection.cubiertas.sinAuxilio
                       ? 'border-amber-500/40 bg-amber-500/5'
-                      : 'border-white/5 bg-white/5 hover:border-white/10'
+                      : 'border-border bg-muted/30 hover:border-primary/30'
                   }`}
                 >
                   <Checkbox
-                    className="h-6 w-6 rounded-md border-white/20"
+                    className="h-6 w-6 rounded-md border-border"
                     checked={inspection.cubiertas.sinAuxilio}
                     onCheckedChange={v => onChange({
                       ...inspection,
@@ -247,10 +247,10 @@ export function StepEstadoTecnico({ inspection, onChange }: Props) {
       </div>
 
       {/* Chapa y Pintura */}
-      <div className="border border-white/10 rounded-xl overflow-hidden bg-white/5">
+      <div className="border border-border rounded-xl overflow-hidden bg-muted/30">
         <button 
           onClick={() => toggleSection('chapa')}
-          className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+          className="w-full flex items-center justify-between p-4 hover:bg-muted/60 transition-colors"
         >
           <div className="flex items-center gap-3">
             <div className="bg-purple-500/10 p-2 rounded-xl">
@@ -281,7 +281,7 @@ export function StepEstadoTecnico({ inspection, onChange }: Props) {
                     <div
                       key={panel}
                       className={`border rounded-xl p-4 transition-all ${
-                        currentTipo ? 'border-purple-500/30 bg-purple-500/5' : 'border-white/5 bg-white/5'
+                        currentTipo ? 'border-purple-500/30 bg-purple-500/5' : 'border-border bg-muted/30'
                       }`}
                     >
                       <p className="font-bold text-xs uppercase tracking-widest mb-3">{panel}</p>
@@ -304,7 +304,7 @@ export function StepEstadoTecnico({ inspection, onChange }: Props) {
                             className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
                               currentTipo === t.value
                                 ? 'bg-purple-500 text-white'
-                                : 'bg-white/5 text-muted-foreground hover:bg-white/10'
+                                : 'bg-muted text-muted-foreground hover:bg-muted/80'
                             }`}
                           >
                             {t.label}
@@ -321,10 +321,10 @@ export function StepEstadoTecnico({ inspection, onChange }: Props) {
       </div>
 
       {/* Ópticas */}
-      <div className="border border-white/10 rounded-xl overflow-hidden bg-white/5">
+      <div className="border border-border rounded-xl overflow-hidden bg-muted/30">
         <button 
           onClick={() => toggleSection('opticas')}
-          className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+          className="w-full flex items-center justify-between p-4 hover:bg-muted/60 transition-colors"
         >
           <div className="flex items-center gap-3">
             <div className="bg-cyan-500/10 p-2 rounded-xl">
@@ -352,11 +352,11 @@ export function StepEstadoTecnico({ inspection, onChange }: Props) {
                     className={`flex items-center space-x-3 border p-4 rounded-xl cursor-pointer transition-all ${
                       inspection.opticasDanadas.includes(opt)
                         ? 'border-cyan-500/40 bg-cyan-500/5'
-                        : 'border-white/5 bg-white/5 hover:border-white/10'
+                        : 'border-border bg-muted/30 hover:border-primary/30'
                     }`}
                   >
                     <Checkbox
-                      className="h-5 w-5 rounded-md border-white/20"
+                      className="h-5 w-5 rounded-md border-border"
                       checked={inspection.opticasDanadas.includes(opt)}
                       onCheckedChange={() => toggleOptica(opt)}
                     />
@@ -370,10 +370,10 @@ export function StepEstadoTecnico({ inspection, onChange }: Props) {
       </div>
 
       {/* Estado Mecánico */}
-      <div className="border border-white/10 rounded-xl overflow-hidden bg-white/5">
+      <div className="border border-border rounded-xl overflow-hidden bg-muted/30">
         <button 
           onClick={() => toggleSection('mecanica')}
-          className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+          className="w-full flex items-center justify-between p-4 hover:bg-muted/60 transition-colors"
         >
           <div className="flex items-center gap-3">
             <div className="bg-red-500/10 p-2 rounded-xl">
@@ -401,11 +401,11 @@ export function StepEstadoTecnico({ inspection, onChange }: Props) {
                     className={`flex items-center space-x-3 border p-5 rounded-2xl cursor-pointer transition-all ${
                       inspection.fallasMecanicas.includes(falla)
                         ? 'border-red-500/40 bg-red-500/5'
-                        : 'border-white/5 bg-white/5 hover:border-white/10'
+                        : 'border-border bg-muted/30 hover:border-primary/30'
                     }`}
                   >
                     <Checkbox
-                      className="h-5 w-5 rounded-md border-white/20"
+                      className="h-5 w-5 rounded-md border-border"
                       checked={inspection.fallasMecanicas.includes(falla)}
                       onCheckedChange={() => toggleFallaMecanica(falla)}
                     />

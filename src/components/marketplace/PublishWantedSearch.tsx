@@ -7,7 +7,6 @@ import { Label } from '@/components/ui/label';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
 import { VEHICLE_CATALOG, COLORS } from '@/src/data/vehicle-catalog';
 import { createWantedSearch } from '@/src/lib/wantedSearches';
 import { useAuth, db } from '@/src/lib/firebase';
@@ -134,7 +133,7 @@ export function PublishWantedSearch({ open, onClose }: Props) {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 26, stiffness: 220 }}
-            className="fixed right-0 top-0 bottom-0 w-full max-w-lg bg-background border-l border-border z-50 flex flex-col"
+            className="fixed right-0 top-0 h-dvh w-full max-w-lg bg-background border-l border-border z-50 flex flex-col"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-border shrink-0">
@@ -151,7 +150,7 @@ export function PublishWantedSearch({ open, onClose }: Props) {
 
             {/* Scrollable form */}
             <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
-              <div className="flex-1 overflow-y-auto p-6 space-y-5">
+              <div className="flex-1 overflow-y-auto overscroll-contain p-6 space-y-5">
                 {error && (
                   <div className="p-3 rounded-xl bg-destructive/10 text-destructive text-xs font-bold uppercase tracking-widest text-center">
                     {error}
@@ -210,16 +209,16 @@ export function PublishWantedSearch({ open, onClose }: Props) {
                 {/* Condición */}
                 <div className="space-y-3">
                   <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Condición</Label>
-                  <div className="flex gap-6">
+                  <div className="grid grid-cols-2 gap-2">
                     {(['0KM', 'USADO'] as VehicleCondition[]).map(cond => (
-                      <label key={cond} className="flex items-center gap-2.5 cursor-pointer select-none">
-                        <Checkbox
-                          checked={conditions.includes(cond)}
-                          onCheckedChange={() => toggleCondition(cond)}
-                          className="rounded"
-                        />
-                        <span className="text-sm font-bold">{cond}</span>
-                      </label>
+                      <button
+                        key={cond}
+                        type="button"
+                        onClick={() => setConditions([cond])}
+                        className={`h-11 rounded-xl font-bold text-xs transition-all border ${conditions[0] === cond ? 'bg-primary/15 border-primary text-primary' : 'bg-muted border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'}`}
+                      >
+                        {cond}
+                      </button>
                     ))}
                   </div>
                 </div>

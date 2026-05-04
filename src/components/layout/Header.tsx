@@ -194,8 +194,8 @@ export function Header() {
               >
                 <item.icon className="h-4 w-4" />
                 {item.name}
-                {item.badge && !isLanding && (
-                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground font-bold">
+                {item.badge > 0 && !isLanding && (
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground font-black">
                     {item.badge}
                   </span>
                 )}
@@ -257,14 +257,7 @@ export function Header() {
                         <DropdownMenuSeparator />
                       </>
                     )}
-                    <DropdownMenuItem 
-                      className="rounded-xl font-bold uppercase tracking-widest text-[10px] px-3 py-2 cursor-pointer"
-                      onClick={() => navigate('/profile')}
-                    >
-                      <User className="mr-2 h-4 w-4" />
-                      Perfil
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       className="rounded-xl font-bold uppercase tracking-widest text-[10px] px-3 py-2 cursor-pointer"
                       onClick={() => navigate('/profile')}
                     >
@@ -344,7 +337,7 @@ export function Header() {
                   className={`flex items-center gap-3 font-bold uppercase tracking-widest text-xs px-4 py-3 rounded-xl transition-colors ${
                     location.pathname === item.path
                       ? 'text-primary bg-primary/5'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                   }`}
                 >
                   <item.icon className="h-4 w-4" />
@@ -386,21 +379,14 @@ export function Header() {
 
                     <button
                       onClick={() => { navigate('/profile'); setIsMenuOpen(false); }}
-                      className="flex items-center gap-3 w-full text-left font-bold uppercase tracking-widest text-xs px-4 py-3 rounded-xl text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
-                    >
-                      <User className="h-4 w-4" /> Perfil
-                    </button>
-
-                    <button
-                      onClick={() => { navigate('/profile'); setIsMenuOpen(false); }}
-                      className="flex items-center gap-3 w-full text-left font-bold uppercase tracking-widest text-xs px-4 py-3 rounded-xl text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+                      className="flex items-center gap-3 w-full text-left font-bold uppercase tracking-widest text-xs px-4 py-3 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                     >
                       <Building2 className="h-4 w-4" /> Mi Concesionaria
                     </button>
 
                     <button
                       onClick={() => { navigate('/publish'); setIsMenuOpen(false); }}
-                      className="flex items-center gap-3 w-full text-left font-bold uppercase tracking-widest text-xs px-4 py-3 rounded-xl text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+                      className="flex items-center gap-3 w-full text-left font-bold uppercase tracking-widest text-xs px-4 py-3 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                     >
                       <Plus className="h-4 w-4" /> Publicar unidad
                     </button>

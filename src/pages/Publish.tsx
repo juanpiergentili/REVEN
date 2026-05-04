@@ -448,7 +448,7 @@ export function Publish() {
                           variant="outline"
                           type="button"
                           onClick={() => update('condition', 'USADO')}
-                          className={`h-14 rounded-xl font-bold uppercase tracking-widest transition-all ${formData.condition === 'USADO' ? 'bg-primary/15 border-primary text-primary shadow-md shadow-primary/20' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-primary/30 hover:text-white'}`}
+                          className={`h-14 rounded-xl font-bold uppercase tracking-widest transition-all ${formData.condition === 'USADO' ? 'bg-primary/15 border-primary text-primary shadow-md shadow-primary/20' : 'bg-muted border-border text-muted-foreground hover:bg-muted/80 hover:border-primary/30 hover:text-foreground'}`}
                         >
                           Usado
                         </Button>
@@ -456,7 +456,7 @@ export function Publish() {
                           variant="outline"
                           type="button"
                           onClick={() => update('condition', '0KM')}
-                          className={`h-14 rounded-xl font-bold uppercase tracking-widest transition-all ${formData.condition === '0KM' ? 'bg-primary/15 border-primary text-primary shadow-md shadow-primary/20' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-primary/30 hover:text-white'}`}
+                          className={`h-14 rounded-xl font-bold uppercase tracking-widest transition-all ${formData.condition === '0KM' ? 'bg-primary/15 border-primary text-primary shadow-md shadow-primary/20' : 'bg-muted border-border text-muted-foreground hover:bg-muted/80 hover:border-primary/30 hover:text-foreground'}`}
                         >
                           0 KM
                         </Button>
@@ -486,7 +486,7 @@ export function Publish() {
                             variant="outline"
                             type="button"
                             onClick={() => update('transmission', t.value)}
-                            className={`h-14 rounded-xl font-bold uppercase tracking-widest transition-all ${formData.transmission === t.value ? 'bg-primary/15 border-primary text-primary shadow-md shadow-primary/20' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-primary/30 hover:text-white'}`}
+                            className={`h-14 rounded-xl font-bold uppercase tracking-widest transition-all ${formData.transmission === t.value ? 'bg-primary/15 border-primary text-primary shadow-md shadow-primary/20' : 'bg-muted border-border text-muted-foreground hover:bg-muted/80 hover:border-primary/30 hover:text-foreground'}`}
                           >
                             {t.label}
                           </Button>
@@ -688,7 +688,7 @@ export function Publish() {
                       <label
                         key={id}
                         htmlFor={id}
-                        className="flex items-center space-x-3 border border-white/5 bg-white/5 p-6 rounded-xl hover:border-primary/30 transition-all cursor-pointer"
+                        className="flex items-center space-x-3 border border-border bg-muted/30 p-6 rounded-xl hover:border-primary/30 transition-all cursor-pointer"
                       >
                         <Checkbox
                           id={id}
@@ -707,7 +707,7 @@ export function Publish() {
                       value={formData.description}
                       onChange={e => update('description', e.target.value)}
                       placeholder="Describí el estado general, equipamiento adicional, etc."
-                      className="min-h-[150px] rounded-xl bg-white/5 border-white/10 font-bold p-6"
+                      className="min-h-[150px] rounded-xl bg-muted border-border font-bold p-6"
                     />
                   </div>
 
@@ -803,7 +803,7 @@ export function Publish() {
                         <span>Subiendo fotos...</span>
                         <span>{photoUpload.completedFiles}/{photoUpload.totalFiles}</span>
                       </div>
-                      <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden">
+                      <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
                         <div
                           className="h-full bg-primary rounded-full transition-all duration-300"
                           style={{ width: `${photoUpload.overallProgress}%` }}

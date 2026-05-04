@@ -82,7 +82,7 @@ function FilterSection({ title, children, defaultOpen = true }: { title: string;
 }
 
 export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }: FilterSidebarProps) {
-  const { brands, models, versions } = useArgAutos(
+  const { brands, models, versions, loadingVersions } = useArgAutos(
     filters.brand !== 'todos' ? filters.brand : undefined,
     filters.model !== 'todos' ? filters.model : undefined
   );
@@ -143,7 +143,7 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
               <Button
                 key={c}
                 variant="outline"
-                className={`rounded-xl font-bold text-xs transition-all ${filters.condition === c ? 'bg-primary/15 border-primary text-primary shadow-sm shadow-primary/20' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-primary/40 hover:text-white'}`}
+                className={`rounded-xl font-bold text-xs transition-all ${filters.condition === c ? 'bg-primary/15 border-primary text-primary shadow-sm shadow-primary/20' : 'bg-muted border-border text-muted-foreground hover:bg-muted/80 hover:border-primary/40 hover:text-foreground'}`}
                 onClick={() => update('condition', filters.condition === c ? null : c)}
               >
                 {c}
@@ -155,7 +155,7 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
         {/* Tipo de vehículo */}
         <FilterSection title="Tipo de Vehículo">
           <Select value={filters.bodyType} onValueChange={v => update('bodyType', v)}>
-            <SelectTrigger className="rounded-xl bg-white/5 border-white/10 h-11 font-bold text-sm text-foreground hover:border-primary/40 transition-all">
+            <SelectTrigger className="rounded-xl bg-muted border-border h-11 font-bold text-sm text-foreground hover:border-primary/40 transition-all">
               <SelectValue placeholder="Todos los tipos" />
             </SelectTrigger>
             <SelectContent className="rounded-xl">
@@ -170,7 +170,7 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
         {/* Marca */}
         <FilterSection title="Marca">
           <Select value={filters.brand} onValueChange={v => update('brand', v)}>
-            <SelectTrigger className="rounded-xl bg-white/5 border-white/10 h-11 font-bold text-sm text-foreground hover:border-primary/40 transition-all">
+            <SelectTrigger className="rounded-xl bg-muted border-border h-11 font-bold text-sm text-foreground hover:border-primary/40 transition-all">
               <SelectValue placeholder="Todas las marcas" />
             </SelectTrigger>
             <SelectContent className="rounded-xl max-h-60">
@@ -186,7 +186,7 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
         {filters.brand !== 'todos' && models.length > 0 && (
           <FilterSection title="Modelo">
             <Select value={filters.model} onValueChange={v => update('model', v)}>
-              <SelectTrigger className="rounded-xl bg-white/5 border-white/10 h-11 font-bold text-sm text-foreground hover:border-primary/40 transition-all">
+              <SelectTrigger className="rounded-xl bg-muted border-border h-11 font-bold text-sm text-foreground hover:border-primary/40 transition-all">
                 <SelectValue placeholder="Todos los modelos" />
               </SelectTrigger>
               <SelectContent className="rounded-xl max-h-60">
@@ -200,11 +200,15 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
         )}
 
         {/* Versión */}
-        {filters.model !== 'todos' && versions.length > 0 && (
+        {filters.model !== 'todos' && (
           <FilterSection title="Versión">
-            <Select value={filters.version} onValueChange={v => update('version', v)}>
-              <SelectTrigger className="rounded-xl bg-white/5 border-white/10 h-11 font-bold text-sm text-foreground hover:border-primary/40 transition-all">
-                <SelectValue placeholder="Todas las versiones" />
+            <Select
+              value={filters.version}
+              onValueChange={v => update('version', v)}
+              disabled={loadingVersions}
+            >
+              <SelectTrigger className="rounded-xl bg-muted border-border h-11 font-bold text-sm text-foreground hover:border-primary/40 transition-all">
+                <SelectValue placeholder={loadingVersions ? 'Cargando versiones...' : 'Todas las versiones'} />
               </SelectTrigger>
               <SelectContent className="rounded-xl max-h-60">
                 <SelectItem value="todos">Todas</SelectItem>
@@ -213,6 +217,11 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
                 ))}
               </SelectContent>
             </Select>
+            {!loadingVersions && versions.length === 0 && (
+              <p className="text-[10px] text-muted-foreground/50 font-medium text-center pt-1">
+                Sin versiones disponibles
+              </p>
+            )}
           </FilterSection>
         )}
 
@@ -220,7 +229,7 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
         <FilterSection title="Año" defaultOpen={false}>
           <div className="flex gap-2">
             <Select value={filters.yearFrom} onValueChange={v => update('yearFrom', v)}>
-              <SelectTrigger className="rounded-xl bg-white/5 border-white/10 h-11 font-bold text-sm text-foreground hover:border-primary/40 transition-all">
+              <SelectTrigger className="rounded-xl bg-muted border-border h-11 font-bold text-sm text-foreground hover:border-primary/40 transition-all">
                 <SelectValue placeholder="Desde" />
               </SelectTrigger>
               <SelectContent className="rounded-xl max-h-52">
@@ -231,7 +240,7 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
               </SelectContent>
             </Select>
             <Select value={filters.yearTo} onValueChange={v => update('yearTo', v)}>
-              <SelectTrigger className="rounded-xl bg-white/5 border-white/10 h-11 font-bold text-sm text-foreground hover:border-primary/40 transition-all">
+              <SelectTrigger className="rounded-xl bg-muted border-border h-11 font-bold text-sm text-foreground hover:border-primary/40 transition-all">
                 <SelectValue placeholder="Hasta" />
               </SelectTrigger>
               <SelectContent className="rounded-xl max-h-52">
@@ -247,7 +256,7 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
         {/* Kilometraje */}
         <FilterSection title="Kilometraje" defaultOpen={false}>
           <Select value={filters.kmRange} onValueChange={v => update('kmRange', v)}>
-            <SelectTrigger className="rounded-xl bg-white/5 border-white/10 h-11 font-bold text-sm text-foreground hover:border-primary/40 transition-all">
+            <SelectTrigger className="rounded-xl bg-muted border-border h-11 font-bold text-sm text-foreground hover:border-primary/40 transition-all">
               <SelectValue placeholder="Todos" />
             </SelectTrigger>
             <SelectContent className="rounded-xl">
@@ -260,8 +269,8 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
           </Select>
           {filters.kmRange === 'custom' && (
             <div className="flex gap-2 mt-2">
-              <Input placeholder="Min" className="h-11 rounded-xl bg-white/5 border-white/10 font-bold text-sm text-foreground placeholder:text-white/30 focus:border-primary/50 transition-all" value={filters.kmMin} onChange={e => update('kmMin', e.target.value)} type="number" />
-              <Input placeholder="Max" className="h-11 rounded-xl bg-white/5 border-white/10 font-bold text-sm text-foreground placeholder:text-white/30 focus:border-primary/50 transition-all" value={filters.kmMax} onChange={e => update('kmMax', e.target.value)} type="number" />
+              <Input placeholder="Min" className="h-11 rounded-xl bg-muted border-border font-bold text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/50 transition-all" value={filters.kmMin} onChange={e => update('kmMin', e.target.value)} type="number" />
+              <Input placeholder="Max" className="h-11 rounded-xl bg-muted border-border font-bold text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/50 transition-all" value={filters.kmMax} onChange={e => update('kmMax', e.target.value)} type="number" />
             </div>
           )}
         </FilterSection>
@@ -269,7 +278,7 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
         {/* Combustible */}
         <FilterSection title="Combustible" defaultOpen={false}>
           <Select value={filters.fuelType} onValueChange={v => update('fuelType', v)}>
-            <SelectTrigger className="rounded-xl bg-white/5 border-white/10 h-11 font-bold text-sm text-foreground hover:border-primary/40 transition-all">
+            <SelectTrigger className="rounded-xl bg-muted border-border h-11 font-bold text-sm text-foreground hover:border-primary/40 transition-all">
               <SelectValue placeholder="Todos" />
             </SelectTrigger>
             <SelectContent className="rounded-xl">
@@ -288,7 +297,7 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
               <Button
                 key={t.value}
                 variant="outline"
-                className={`rounded-xl font-bold text-xs transition-all ${filters.transmission === t.value ? 'bg-primary/15 border-primary text-primary shadow-sm shadow-primary/20' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-primary/40 hover:text-white'}`}
+                className={`rounded-xl font-bold text-xs transition-all ${filters.transmission === t.value ? 'bg-primary/15 border-primary text-primary shadow-sm shadow-primary/20' : 'bg-muted border-border text-muted-foreground hover:bg-muted/80 hover:border-primary/40 hover:text-foreground'}`}
                 onClick={() => update('transmission', filters.transmission === t.value ? 'todos' : t.value)}
               >
                 {t.label}
@@ -303,39 +312,45 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
             <Button
               variant="outline"
               size="sm"
-              className={`rounded-xl text-[10px] font-bold flex-1 transition-all ${filters.currency === 'USD' ? 'bg-primary/15 border-primary text-primary shadow-sm shadow-primary/20' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-primary/40 hover:text-white'}`}
+              className={`rounded-xl text-[10px] font-bold flex-1 transition-all ${filters.currency === 'USD' ? 'bg-primary/15 border-primary text-primary shadow-sm shadow-primary/20' : 'bg-muted border-border text-muted-foreground hover:bg-muted/80 hover:border-primary/40 hover:text-foreground'}`}
               onClick={() => update('currency', 'USD')}
             >USD</Button>
             <Button
               variant="outline"
               size="sm"
-              className={`rounded-xl text-[10px] font-bold flex-1 transition-all ${filters.currency === 'ARS' ? 'bg-primary/15 border-primary text-primary shadow-sm shadow-primary/20' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-primary/40 hover:text-white'}`}
+              className={`rounded-xl text-[10px] font-bold flex-1 transition-all ${filters.currency === 'ARS' ? 'bg-primary/15 border-primary text-primary shadow-sm shadow-primary/20' : 'bg-muted border-border text-muted-foreground hover:bg-muted/80 hover:border-primary/40 hover:text-foreground'}`}
               onClick={() => update('currency', 'ARS')}
             >ARS</Button>
           </div>
           <div className="flex gap-2">
-            <Input placeholder="Min" className="h-11 rounded-xl bg-white/5 border-white/10 font-bold text-sm text-foreground placeholder:text-white/30 focus:border-primary/50 transition-all" value={filters.minPrice} onChange={e => update('minPrice', e.target.value)} type="number" />
-            <Input placeholder="Max" className="h-11 rounded-xl bg-white/5 border-white/10 font-bold text-sm text-foreground placeholder:text-white/30 focus:border-primary/50 transition-all" value={filters.maxPrice} onChange={e => update('maxPrice', e.target.value)} type="number" />
+            <Input placeholder="Min" className="h-11 rounded-xl bg-muted border-border font-bold text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/50 transition-all" value={filters.minPrice} onChange={e => update('minPrice', e.target.value)} type="number" />
+            <Input placeholder="Max" className="h-11 rounded-xl bg-muted border-border font-bold text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/50 transition-all" value={filters.maxPrice} onChange={e => update('maxPrice', e.target.value)} type="number" />
           </div>
         </FilterSection>
 
         {/* Ubicación */}
         <FilterSection title="Ubicación">
           <Select value={filters.province} onValueChange={v => update('province', v)}>
-            <SelectTrigger className="rounded-xl bg-white/5 border-white/10 h-11 font-bold text-sm text-foreground hover:border-primary/40 transition-all">
-              <SelectValue placeholder="Toda Argentina" />
+            <SelectTrigger className="rounded-xl bg-muted border-border h-11 font-bold text-sm text-foreground hover:border-primary/40 transition-all">
+              <span className="truncate">
+                {filters.province === 'todos'
+                  ? 'Toda Argentina'
+                  : provincias.find(p => String(p.id) === String(filters.province))?.nombre ?? filters.province}
+              </span>
             </SelectTrigger>
             <SelectContent className="rounded-xl max-h-60">
               <SelectItem value="todos">Toda Argentina</SelectItem>
               {provincias.map(p => (
-                <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
+                <SelectItem key={p.id} value={String(p.id)}>{p.nombre}</SelectItem>
               ))}
             </SelectContent>
           </Select>
           {filters.province !== 'todos' && localidades.length > 0 && (
             <Select value={filters.city} onValueChange={v => update('city', v)}>
-              <SelectTrigger className="rounded-xl bg-white/5 border-white/10 h-11 font-bold text-sm text-foreground hover:border-primary/40 transition-all mt-2">
-                <SelectValue placeholder="Toda la provincia" />
+              <SelectTrigger className="rounded-xl bg-muted border-border h-11 font-bold text-sm text-foreground hover:border-primary/40 transition-all mt-2">
+                <span className="truncate">
+                  {filters.city === 'todos' ? 'Toda la provincia' : filters.city}
+                </span>
               </SelectTrigger>
               <SelectContent className="rounded-xl max-h-60">
                 <SelectItem value="todos">Toda la provincia</SelectItem>

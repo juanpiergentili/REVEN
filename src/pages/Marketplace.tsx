@@ -275,16 +275,22 @@ export function Marketplace() {
 
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex flex-col min-h-screen bg-background overflow-x-hidden">
 
       {/* ── Hero ── */}
-      <div className="relative py-12 flex items-center overflow-hidden border-b border-border bg-black/40">
+      <div className="relative py-14 flex items-center overflow-hidden bg-zinc-950">
+        {/* Top accent line */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+        {/* Ambient glow */}
+        <div className="absolute -top-32 -left-32 w-[500px] h-[500px] bg-primary/8 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+
         <div className="container mx-auto relative z-10 px-4 md:px-8">
           <div className="mb-6">
             <Button
               variant="ghost" size="sm"
               onClick={() => navigate('/')}
-              className="rounded-full font-bold uppercase tracking-widest text-[10px] gap-2 hover:bg-muted"
+              className="rounded-full font-bold uppercase tracking-widest text-[10px] gap-2 text-white/50 hover:text-white hover:bg-white/10"
             >
               <ChevronLeft className="h-4 w-4" /> Volver al Inicio
             </Button>
@@ -292,24 +298,29 @@ export function Marketplace() {
 
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
             <div className="max-w-2xl space-y-4">
-              <Badge className="bg-primary/20 text-primary border-primary/20 font-bold tracking-tighter px-4 py-1 rounded-full text-xs">
+              <Badge className="bg-primary/15 text-primary border border-primary/25 font-bold tracking-tighter px-4 py-1.5 rounded-full text-xs">
                 MARKETPLACE B2B EXCLUSIVO
               </Badge>
-              <h1 className="text-4xl md:text-5xl font-bold tracking-tighter uppercase leading-none">
+              <h1 className="text-4xl md:text-6xl font-bold tracking-tighter uppercase leading-none text-white">
                 {activeTab === 'stock' ? (
                   <>STOCK <span className="text-primary">MAYORISTA</span><br />Y VERIFICADO</>
                 ) : (
                   <>BÚSQUEDAS <span className="text-primary">ACTIVAS</span><br />DE COLEGAS</>
                 )}
               </h1>
+              <p className="text-sm text-white/40 font-medium max-w-md leading-relaxed">
+                {activeTab === 'stock'
+                  ? 'Catálogo exclusivo B2B para profesionales del sector automotor.'
+                  : 'Publicaciones activas de colegas buscando unidades específicas.'}
+              </p>
             </div>
 
             <div className="flex items-center gap-3 w-full md:max-w-md">
               <div className="relative flex-1">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
                 <Input
                   placeholder="Buscar marca, modelo, versión..."
-                  className="h-12 pl-10 rounded-xl bg-muted border-border focus:border-primary/50 transition-all text-base"
+                  className="h-12 pl-10 rounded-xl bg-white/[0.07] border-white/[0.12] text-white placeholder:text-white/30 focus:border-primary/60 focus:bg-white/10 transition-all text-base"
                   value={filters.searchQuery}
                   onChange={e => setFilters({ ...filters, searchQuery: e.target.value })}
                 />
@@ -318,8 +329,8 @@ export function Marketplace() {
               {/* Mobile filter button con badge */}
               <Button
                 size="lg"
-                variant={activeFilterCount > 0 ? 'default' : 'outline'}
-                className="relative h-12 w-12 rounded-xl shrink-0 lg:hidden border-border"
+                variant={activeFilterCount > 0 ? 'default' : 'ghost'}
+                className={`relative h-12 w-12 rounded-xl shrink-0 lg:hidden ${activeFilterCount === 0 ? 'border border-white/20 text-white hover:bg-white/10' : ''}`}
                 onClick={() => setShowMobileFilters(true)}
               >
                 <SlidersHorizontal className="h-5 w-5" />
@@ -334,16 +345,16 @@ export function Marketplace() {
 
           <div className="mt-10">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="bg-muted border border-border p-1 rounded-xl h-14">
-                <TabsTrigger value="stock" className="rounded-xl px-8 font-bold uppercase tracking-widest text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                  Stock Disponible
+              <TabsList className="w-full bg-white/[0.06] border border-white/[0.10] p-1 rounded-xl h-auto min-h-[3.5rem]">
+                <TabsTrigger value="stock" className="flex-1 min-w-0 rounded-xl py-2.5 font-bold uppercase tracking-wide text-xs text-white/50 transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25">
+                  Stock
                   {!loadingVehicles && (
-                    <span className="ml-2 text-[10px] opacity-60">({vehicles.length})</span>
+                    <span className="ml-1.5 text-[10px] opacity-60">({vehicles.length})</span>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="wanted" className="rounded-xl px-8 font-bold uppercase tracking-widest text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                  Búsquedas de Colegas
-                  <span className="ml-2 text-[10px] opacity-60">({wantedSearches.length})</span>
+                <TabsTrigger value="wanted" className="flex-1 min-w-0 rounded-xl py-2.5 font-bold uppercase tracking-wide text-xs text-white/50 transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25">
+                  Búsquedas
+                  <span className="ml-1.5 text-[10px] opacity-60">({wantedSearches.length})</span>
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -517,7 +528,7 @@ export function Marketplace() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 26, stiffness: 220 }}
-              className="fixed right-0 top-0 bottom-0 w-[90vw] max-w-sm bg-background border-l border-border z-50 flex flex-col"
+              className="fixed right-0 top-0 h-dvh w-[90vw] max-w-sm bg-background border-l border-border z-50 flex flex-col"
             >
               {/* Drawer header */}
               <div className="flex items-center justify-between p-6 border-b border-border">
