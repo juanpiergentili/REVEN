@@ -133,7 +133,7 @@ export const INITIAL_FORM: PublishFormData = {
   condition: 'USADO', province: '', city: '',
   hasVTV: false, hasPatenteAlDay: false, gncObleaVigente: false,
   uniqueOwner: false, officialService: false,
-  description: '', currency: 'USD', price: '',
+  description: '', currency: 'ARS', price: '',
 };
 
 // ─── Validaciones por paso ───────────────────────────────────────────────────
@@ -173,16 +173,19 @@ export function validateStep(
     // Step 4 (estado técnico) — todo opcional
     case 4:
       return null;
-    // Step 5 (precio)
-    case 5: {
+    // Step 5 (cotización ACARA) — informativo, sin validación
+    case 5:
+      return null;
+    // Step 6 (precio)
+    case 6: {
       const priceRaw = parseArgentineNumber(formData.price);
       if (!priceRaw || Number(priceRaw) <= 0) {
         return 'El precio debe ser mayor a 0.';
       }
       return null;
     }
-    // Step 6 (preview) — sin validación extra
-    case 6:
+    // Step 7 (preview) — sin validación extra
+    case 7:
       return null;
     default:
       return null;

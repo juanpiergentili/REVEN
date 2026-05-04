@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Camera, ArrowRight, ArrowLeft, CheckCircle2, X, Loader2, AlertCircle, ImageOff, Lock, Clock, Save } from 'lucide-react';
+import { Camera, ArrowRight, ArrowLeft, CheckCircle2, X, Loader2, AlertCircle, ImageOff, Lock, Clock, Save, DollarSign, TrendingUp, Info } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'motion/react';
@@ -28,8 +28,8 @@ import {
   type PublishFormData, type InspectionFormData,
 } from '@/src/lib/publish-helpers';
 
-const TOTAL_STEPS = 6;
-const STEP_LABELS = ['Datos', 'Fotos', 'Legal', 'Estado', 'Precio', 'Preview'];
+const TOTAL_STEPS = 7;
+const STEP_LABELS = ['Datos', 'Fotos', 'Legal', 'Estado', 'Cotización', 'Precio', 'Preview'];
 const currentYear = new Date().getFullYear();
 const YEARS = Array.from({ length: currentYear - 1989 }, (_, i) => String(currentYear + 1 - i));
 
@@ -738,6 +738,86 @@ export function Publish() {
 
               {step === 5 && (
                 <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-8">
+                  <div className="text-center space-y-3">
+                    <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto">
+                      <TrendingUp className="h-8 w-8 text-primary" />
+                    </div>
+                    <h3 className="text-xl font-bold tracking-tighter uppercase">Cotización ACARA</h3>
+                    <p className="text-sm text-muted-foreground font-medium max-w-md mx-auto">
+                      Valores de referencia del mercado para la versión seleccionada según ACARA (Asociación de Concesionarios de Automotores).
+                    </p>
+                  </div>
+
+                  {valuations.length > 0 ? (
+                    <div className="space-y-4">
+                      <div className="rounded-2xl border border-border overflow-hidden">
+                        <div className="grid grid-cols-3 bg-muted/50 px-6 py-3 border-b border-border">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Año</span>
+                          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-right">Valor ACARA</span>
+                          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-right">Moneda</span>
+                        </div>
+                        {valuations.map((val) => (
+                          <div
+                            key={val.id}
+                            className={`grid grid-cols-3 px-6 py-4 border-b border-border last:border-b-0 transition-colors ${
+                              val.year.toString() === formData.year
+                                ? 'bg-primary/5 border-l-4 border-l-primary'
+                                : 'hover:bg-muted/30'
+                            }`}
+                          >
+                            <span className={`font-bold tracking-tighter ${
+                              val.year.toString() === formData.year ? 'text-primary' : ''
+                            }`}>
+                              {val.year}
+                              {val.year.toString() === formData.year && (
+                                <Badge className="ml-2 bg-primary/15 text-primary border-none text-[8px] font-black px-2 py-0 rounded-full">TU AÑO</Badge>
+                              )}
+                            </span>
+                            <span className="font-bold text-right tracking-tighter text-lg">
+                              $ {formatArgentineNumber(val.price)}
+                            </span>
+                            <span className="text-right text-xs font-bold text-muted-foreground uppercase">
+                              {val.currency || 'ARS'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex items-start gap-3 p-4 rounded-xl bg-primary/5 border border-primary/20">
+                        <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                        <p className="text-xs text-muted-foreground font-medium leading-relaxed">
+                          Estos valores son referenciales del mercado argentino. El precio final lo definís vos en el próximo paso.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-12 text-center space-y-4 rounded-2xl bg-muted/30 border border-border">
+                      <div className="bg-muted w-16 h-16 rounded-full flex items-center justify-center">
+                        <DollarSign className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                      <div className="space-y-2 max-w-sm">
+                        <p className="font-bold uppercase tracking-tighter">Sin cotización ACARA disponible</p>
+                        <p className="text-xs text-muted-foreground font-medium">
+                          {!formData.version
+                            ? 'Seleccioná una versión en el paso 1 para consultar cotizaciones.'
+                            : 'Esta versión aún no cuenta con cotización de ACARA. Podés definir tu precio manualmente en el siguiente paso.'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex flex-col-reverse sm:flex-row justify-between pt-4 gap-4">
+                    <Button variant="ghost" onClick={prevStep} className="w-full sm:w-auto h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-muted">
+                      <ArrowLeft className="h-5 w-5 stroke-[3]" /> Anterior
+                    </Button>
+                    <Button onClick={nextStep} className="w-full sm:w-auto h-14 px-10 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 shadow-lg shadow-primary/20">
+                      Siguiente <ArrowRight className="h-5 w-5 stroke-[3]" />
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+
+              {step === 6 && (
+                <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-8">
                   <h3 className="text-xl font-bold tracking-tighter uppercase">Precio y Condiciones de Venta</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-3">
@@ -787,7 +867,7 @@ export function Publish() {
                 </motion.div>
               )}
 
-              {step === 6 && (
+              {step === 7 && (
                 <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-8">
                   <StepPreview 
                     formData={formData} 

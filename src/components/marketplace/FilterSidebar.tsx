@@ -52,7 +52,7 @@ export const INITIAL_FILTERS: FilterState = {
   transmission: 'todos',
   minPrice: '',
   maxPrice: '',
-  currency: 'USD',
+  currency: 'ARS',
   province: 'todos',
   city: 'todos',
   color: 'todos',

@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
-  Search, SlidersHorizontal, ChevronLeft, MessageCircle,
+  Search, SlidersHorizontal, ChevronLeft, ChevronRight, MessageCircle,
   Plus, X, Loader2, ChevronDown, Check, PackageSearch, Sparkles,
 } from 'lucide-react';
 import { subscribeToVehicles } from '@/src/lib/vehicles';
@@ -227,6 +227,8 @@ function WantedCard({ wanted, onContact }: { wanted: WantedSearch; onContact: ()
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
+const ITEMS_PER_PAGE_OPTIONS = [12, 24, 48];
+
 export function Marketplace() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [wantedSearches, setWantedSearches] = useState<WantedSearch[]>(MOCK_WANTED);
@@ -234,6 +236,8 @@ export function Marketplace() {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showPublishWanted, setShowPublishWanted] = useState(false);
   const [activeTab, setActiveTab] = useState('stock');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(12);
   const navigate = useNavigate();
 
   const {
@@ -272,6 +276,33 @@ export function Marketplace() {
     );
     return unsub;
   }, []);
+
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters, sortBy]);
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filteredVehicles.length / itemsPerPage));
+  const paginatedVehicles = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredVehicles.slice(start, start + itemsPerPage);
+  }, [filteredVehicles, currentPage, itemsPerPage]);
+
+  const pageNumbers = useMemo(() => {
+    const pages: (number | '...')[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (currentPage > 3) pages.push('...');
+      for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) pages.push(i);
+      if (currentPage < totalPages - 2) pages.push('...');
+      pages.push(totalPages);
+    }
+    return pages;
+  }, [currentPage, totalPages]);
 
 
   return (
@@ -371,7 +402,7 @@ export function Marketplace() {
             <div className="flex flex-col lg:flex-row gap-12">
 
               {/* Desktop sidebar */}
-              <aside className="hidden lg:block w-72 shrink-0">
+              <aside className="hidden lg:block w-64 shrink-0">
                 <FilterSidebar
                   filters={filters}
                   onFilterChange={setFilters}
@@ -401,7 +432,33 @@ export function Marketplace() {
                     </AnimatePresence>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-3 shrink-0">
+                    {/* Items per page */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-10 gap-2 font-bold tracking-tighter uppercase text-xs rounded-full hover:bg-muted border border-border"
+                        >
+                          {itemsPerPage}/pág
+                          <ChevronDown className="h-3.5 w-3.5 text-primary" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="rounded-xl p-2 min-w-[140px]">
+                        {ITEMS_PER_PAGE_OPTIONS.map(opt => (
+                          <DropdownMenuItem
+                            key={opt}
+                            onClick={() => { setItemsPerPage(opt); setCurrentPage(1); }}
+                            className="rounded-xl font-bold uppercase tracking-widest text-[10px] px-3 py-2.5 cursor-pointer flex items-center justify-between"
+                          >
+                            {opt} vehículos
+                            {opt === itemsPerPage && <Check className="h-3.5 w-3.5 text-primary" />}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
                     <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground hidden sm:block">
                       Ordenar:
                     </span>
@@ -420,12 +477,13 @@ export function Marketplace() {
                     ? <EmptyFiltered onClear={clearFilters} />
                     : <EmptyNoData />
                 ) : (
+                  <>
                   <motion.div
                     layout
                     className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8"
                   >
                     <AnimatePresence mode="popLayout">
-                      {filteredVehicles.map(vehicle => (
+                      {paginatedVehicles.map(vehicle => (
                         <motion.div
                           key={vehicle.id}
                           layout
@@ -439,6 +497,53 @@ export function Marketplace() {
                       ))}
                     </AnimatePresence>
                   </motion.div>
+
+                  {/* Pagination Controls */}
+                  {totalPages > 1 && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 border-t border-border mt-4">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                        Mostrando {((currentPage - 1) * itemsPerPage) + 1}–{Math.min(currentPage * itemsPerPage, filteredVehicles.length)} de {filteredVehicles.length}
+                      </p>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 rounded-xl"
+                          disabled={currentPage === 1}
+                          onClick={() => setCurrentPage(p => p - 1)}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        {pageNumbers.map((page, i) =>
+                          page === '...' ? (
+                            <span key={`dots-${i}`} className="px-1 text-muted-foreground font-bold text-xs">…</span>
+                          ) : (
+                            <Button
+                              key={page}
+                              variant={currentPage === page ? 'default' : 'ghost'}
+                              size="icon"
+                              className={`h-9 w-9 rounded-xl font-bold text-xs ${
+                                currentPage === page ? 'shadow-lg shadow-primary/20' : ''
+                              }`}
+                              onClick={() => setCurrentPage(page as number)}
+                            >
+                              {page}
+                            </Button>
+                          )
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 rounded-xl"
+                          disabled={currentPage === totalPages}
+                          onClick={() => setCurrentPage(p => p + 1)}
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  </>
                 )}
               </div>
             </div>
@@ -449,7 +554,7 @@ export function Marketplace() {
             <div className="flex flex-col lg:flex-row gap-12">
 
               {/* Sidebar */}
-              <aside className="hidden lg:block w-72 shrink-0">
+              <aside className="hidden lg:block w-64 shrink-0">
                 <div className="sticky top-32 space-y-6">
                   <div className="p-6 rounded-2xl bg-primary/5 border border-primary/20 space-y-4">
                     <h4 className="text-sm font-bold uppercase tracking-tighter">¿Buscás algo específico?</h4>
