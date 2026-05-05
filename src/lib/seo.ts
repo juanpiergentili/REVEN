@@ -24,19 +24,19 @@ export function generateVehicleSlug(
     )
     .filter(Boolean);
 
-  // Append short ID (last 8 chars) for uniqueness
-  const shortId = id.slice(-8).toLowerCase();
-  parts.push(shortId);
+  // Append full Firestore ID unmodified — needed for exact document lookup
+  parts.push(id);
 
   return parts.join('-');
 }
 
 /**
  * Extrae el ID del vehículo del slug SEO.
- * El ID es siempre los últimos 8 caracteres del slug.
+ * El ID es el último segmento del slug (sin guiones, case-sensitive).
  */
 export function extractIdFromSlug(slug: string): string {
-  // The ID is the last segment after the final dash
+  // Firestore IDs are 20-char alphanumeric with no dashes — always the last segment.
+  // Also handles legacy URLs that are just the bare ID (no dashes at all).
   const parts = slug.split('-');
   return parts[parts.length - 1];
 }
