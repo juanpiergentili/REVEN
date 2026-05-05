@@ -24,8 +24,8 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
     >
       <Link to={getVehiclePath(vehicle.brand, vehicle.model, vehicle.version, vehicle.year, vehicle.id)}>
-        <Card className="overflow-hidden group bg-card/50 border-border hover:border-primary/50 transition-colors duration-500 rounded-2xl gap-0 py-0">
-          <div className="relative aspect-[16/11] overflow-hidden bg-muted">
+        <Card className="overflow-hidden group bg-card/50 border-border hover:border-primary/50 transition-colors duration-500 rounded-2xl p-0 gap-0">
+          <div className="relative aspect-[16/11] overflow-hidden bg-muted rounded-t-2xl">
             {hasPhoto ? (
               <img
                 src={vehicle.photos[0]}
