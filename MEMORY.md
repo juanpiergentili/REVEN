@@ -48,3 +48,8 @@ Nuestra aplicación front-end base ya está prácticamente lista en términos de
    - Validar que todas tus variables de entorno correspondan a producción, habilitar dominios, y comprobar que todo carga instantáneo.
 
 > **Tip para el asistente de IA o el Socio:** Si quieres retomar inmediatamente después de leer esto, arranca chequeando el componente `Publish.tsx` o el flujo de Admisión de Concesionarias. 
+
+## 🚀 Despliegue (Deploy)
+Cada vez que se realicen cambios importantes, se debe ejecutar el siguiente flujo para actualizar la plataforma:
+1. `npm run build` (Genera la carpeta `dist`)
+2. `firebase deploy` (Sube el hosting, reglas de Firestore y Storage)

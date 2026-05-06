@@ -9,8 +9,19 @@ import type { ChapaPinturaItem, EstadoCubiertas } from '../types';
  * Formatea un string numérico con separador de miles argentino (punto).
  * Ej: "1234567" → "1.234.567"
  */
-export function formatArgentineNumber(value: string): string {
-  const clean = value.replace(/\D/g, '');
+export function formatArgentineNumber(value: string | number): string {
+  if (value === null || value === undefined) return '';
+  let sValue = String(value);
+
+  // Si tiene un punto decimal y parece ser formato API (ej: 1234.56), lo redondeamos
+  if (sValue.includes('.') && (sValue.match(/\./g) || []).length === 1) {
+    const num = parseFloat(sValue);
+    if (!isNaN(num)) {
+      sValue = Math.round(num).toString();
+    }
+  }
+
+  const clean = sValue.replace(/\D/g, '');
   if (!clean) return '';
   return clean.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }

@@ -162,7 +162,16 @@ export function useArgAutos(selectedBrandName?: string, selectedModelName?: stri
     setLoadingValuations(true);
     fetch(`${BASE_URL}/versions/${selectedVersionId}/valuations?currency=ars&sources=acara`)
       .then(r => r.json())
-      .then(d => { if (d.data) setValuations(d.data); })
+      .then(d => {
+        if (d.data) {
+          const normalized = d.data.map((v: any) => ({
+            ...v,
+            price: v.price ? Math.round(Number(v.price)).toString() : v.price,
+            acara_price: v.acara_price ? Math.round(Number(v.acara_price)).toString() : v.acara_price
+          }));
+          setValuations(normalized);
+        }
+      })
       .catch(() => setValuations([]))
       .finally(() => setLoadingValuations(false));
   }, [selectedVersionId]);
