@@ -129,10 +129,11 @@ export type PublishFormData = {
   province: string;
   city: string;
   hasVTV: boolean;
-  hasPatenteAlDay: boolean;
   gncObleaVigente: boolean;
   uniqueOwner: boolean;
   officialService: boolean;
+  verificacionPolicial: boolean;
+  garantiaFabrica: boolean;
   description: string;
   currency: 'USD' | 'ARS';
   price: string;
@@ -142,8 +143,9 @@ export const INITIAL_FORM: PublishFormData = {
   brand: '', model: '', version: '', year: '', km: '',
   fuelType: '', bodyType: '', transmission: '', color: '',
   condition: 'USADO', province: '', city: '',
-  hasVTV: false, hasPatenteAlDay: false, gncObleaVigente: false,
+  hasVTV: false, gncObleaVigente: false,
   uniqueOwner: false, officialService: false,
+  verificacionPolicial: false, garantiaFabrica: false,
   description: '', currency: 'ARS', price: '',
 };
 

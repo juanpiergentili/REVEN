@@ -334,16 +334,21 @@ export function VehicleDetail() {
               </div>
 
               {/* Doc badges */}
-              {(vehicle.hasVTV || vehicle.hasPatenteAlDay || vehicle.gncObleaVigente) && (
+              {(vehicle.hasVTV || vehicle.gncObleaVigente || vehicle.verificacionPolicial || vehicle.garantiaFabrica) && (
                 <div className="flex flex-wrap gap-2 pt-2">
                   {vehicle.hasVTV && (
                     <Badge variant="outline" className="rounded-full border-green-500/30 text-green-400 font-bold text-[10px] uppercase tracking-widest px-3 py-1 gap-1.5">
                       <CheckCircle2 className="h-3 w-3" /> VTV Vigente
                     </Badge>
                   )}
-                  {vehicle.hasPatenteAlDay && (
+                  {vehicle.verificacionPolicial && (
                     <Badge variant="outline" className="rounded-full border-green-500/30 text-green-400 font-bold text-[10px] uppercase tracking-widest px-3 py-1 gap-1.5">
-                      <CheckCircle2 className="h-3 w-3" /> Patente al día
+                      <CheckCircle2 className="h-3 w-3" /> Verificación Policial
+                    </Badge>
+                  )}
+                  {vehicle.garantiaFabrica && (
+                    <Badge variant="outline" className="rounded-full border-green-500/30 text-green-400 font-bold text-[10px] uppercase tracking-widest px-3 py-1 gap-1.5">
+                      <CheckCircle2 className="h-3 w-3" /> Garantía de Fábrica
                     </Badge>
                   )}
                   {vehicle.gncObleaVigente && (

@@ -121,11 +121,12 @@ export function StepPreview({ formData, inspection, photoPreviews, photosCount, 
         <p className="font-black uppercase tracking-widest text-[10px] text-muted-foreground">Documentación</p>
         <div className="flex flex-wrap gap-2">
           {formData.hasVTV && <Badge className="bg-green-500/10 text-green-500 border-green-500/20 rounded-full">VTV Vigente</Badge>}
-          {formData.hasPatenteAlDay && <Badge className="bg-green-500/10 text-green-500 border-green-500/20 rounded-full">Patente al día</Badge>}
           {formData.uniqueOwner && <Badge className="bg-green-500/10 text-green-500 border-green-500/20 rounded-full">Único dueño</Badge>}
           {formData.officialService && <Badge className="bg-green-500/10 text-green-500 border-green-500/20 rounded-full">Services oficiales</Badge>}
           {formData.gncObleaVigente && <Badge className="bg-green-500/10 text-green-500 border-green-500/20 rounded-full">Oblea GNC</Badge>}
-          {!formData.hasVTV && !formData.hasPatenteAlDay && !formData.uniqueOwner && !formData.officialService && !formData.gncObleaVigente && (
+          {formData.verificacionPolicial && <Badge className="bg-green-500/10 text-green-500 border-green-500/20 rounded-full">Verificación Policial</Badge>}
+          {formData.garantiaFabrica && <Badge className="bg-green-500/10 text-green-500 border-green-500/20 rounded-full">Garantía de Fábrica</Badge>}
+          {!formData.hasVTV && !formData.uniqueOwner && !formData.officialService && !formData.gncObleaVigente && !formData.verificacionPolicial && !formData.garantiaFabrica && (
             <span className="text-xs text-muted-foreground">Sin documentación marcada</span>
           )}
         </div>

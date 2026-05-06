@@ -85,10 +85,11 @@ export function Publish() {
             currency: vehicle.currency || 'ARS',
             description: vehicle.description || '',
             hasVTV: vehicle.hasVTV || false,
-            hasPatenteAlDay: vehicle.hasPatenteAlDay || false,
             uniqueOwner: vehicle.uniqueOwner || false,
             officialService: vehicle.officialService || false,
             gncObleaVigente: vehicle.gncObleaVigente || false,
+            verificacionPolicial: vehicle.verificacionPolicial || false,
+            garantiaFabrica: vehicle.garantiaFabrica || false,
           });
           const inspData = vehicle.inspectionData || vehicle.inspection;
           if (inspData) {
@@ -208,10 +209,11 @@ export function Publish() {
         isInspected: false,
         description: formData.description,
         hasVTV: formData.hasVTV,
-        hasPatenteAlDay: formData.hasPatenteAlDay,
         uniqueOwner: formData.uniqueOwner,
         officialService: formData.officialService,
         gncObleaVigente: formData.gncObleaVigente,
+        verificacionPolicial: formData.verificacionPolicial,
+        garantiaFabrica: formData.garantiaFabrica,
         inspectionData: inspData as any,
       };
 
@@ -681,10 +683,11 @@ export function Publish() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {[
                       { id: 'hasVTV', label: 'VTV Vigente' },
-                      { id: 'hasPatenteAlDay', label: 'Patente al día' },
                       { id: 'uniqueOwner', label: 'Único Dueño' },
                       { id: 'officialService', label: 'Services Oficiales' },
                       { id: 'gncObleaVigente', label: 'Oblea GNC Vigente' },
+                      { id: 'verificacionPolicial', label: 'Verificación Policial' },
+                      { id: 'garantiaFabrica', label: 'Garantía de Fábrica' },
                     ].map(({ id, label }) => (
                       <label
                         key={id}
