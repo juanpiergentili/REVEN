@@ -120,11 +120,12 @@ export function Publish() {
   };
 
   const handleModelSelect = (modelName: string) => {
-    setFormData(prev => ({
-      ...prev,
-      model: modelName,
-      version: ''
-    }));
+    setFormData(prev => ({ ...prev, model: modelName, year: '', version: '' }));
+    setError(null);
+  };
+
+  const handleYearSelect = (year: string) => {
+    setFormData(prev => ({ ...prev, year, version: '' }));
     setError(null);
   };
 
@@ -405,22 +406,8 @@ export function Publish() {
                     </div>
 
                     <div className="space-y-3">
-                      <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Versión</Label>
-                      <Select value={formData.version} onValueChange={handleVersionSelect} disabled={!formData.model || loadingVersions}>
-                        <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
-                          <SelectValue placeholder={loadingVersions ? "Cargando..." : "Seleccionar versión"} />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl max-h-72">
-                          {versions.map(v => (
-                            <SelectItem key={v.name} value={v.name}>{v.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-3">
                       <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Año</Label>
-                      <Select value={formData.year} onValueChange={v => update('year', v)}>
+                      <Select value={formData.year} onValueChange={handleYearSelect} disabled={!formData.model}>
                         <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
                           <SelectValue placeholder="Seleccionar año" />
                         </SelectTrigger>
@@ -428,6 +415,26 @@ export function Publish() {
                           {YEARS.map(y => (
                             <SelectItem key={y} value={y}>{y}</SelectItem>
                           ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Versión</Label>
+                      <Select value={formData.version} onValueChange={handleVersionSelect} disabled={!formData.year || loadingVersions}>
+                        <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
+                          <SelectValue placeholder={loadingVersions ? "Cargando..." : "Seleccionar versión"} />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl max-h-72">
+                          {versions
+                            .filter(v => {
+                              if (!formData.year) return true;
+                              const hasYear = /\b(19|20)\d{2}\b/.test(v.name);
+                              return !hasYear || v.name.includes(formData.year);
+                            })
+                            .map(v => (
+                              <SelectItem key={v.name} value={v.name}>{v.name}</SelectItem>
+                            ))}
                         </SelectContent>
                       </Select>
                     </div>
