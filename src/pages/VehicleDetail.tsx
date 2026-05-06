@@ -1,14 +1,14 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
-  ChevronLeft, Share2, MapPin, Calendar, Gauge, Fuel,
+  ChevronLeft, ChevronRight, Share2, MapPin, Calendar, Gauge, Fuel,
   CheckCircle2, MessageSquare, Eye, ShieldCheck, Users, ArrowRight, Car, Loader2,
-  AlertCircle, Wrench, PaintBucket, Settings
+  AlertCircle, Wrench, PaintBucket, Settings, X, Expand,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { doc, getDoc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '@/src/lib/firebase';
 import type { Vehicle } from '@/src/types';
@@ -20,6 +20,7 @@ export function VehicleDetail() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [activePhoto, setActivePhoto] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -64,6 +65,25 @@ export function VehicleDetail() {
     fetchVehicle();
   }, [id]);
 
+  const photos = vehicle?.photos?.length > 0 ? vehicle.photos : [];
+  const hasPhotos = photos.length > 0;
+
+  const prev = useCallback(() =>
+    setActivePhoto(i => (i - 1 + photos.length) % photos.length), [photos.length]);
+  const next = useCallback(() =>
+    setActivePhoto(i => (i + 1) % photos.length), [photos.length]);
+
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') prev();
+      else if (e.key === 'ArrowRight') next();
+      else if (e.key === 'Escape') setLightboxOpen(false);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [lightboxOpen, prev, next]);
+
   const formatDate = (dateString: string) => {
     try {
       return new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(dateString));
@@ -96,9 +116,6 @@ export function VehicleDetail() {
     );
   }
 
-  const photos = vehicle.photos?.length > 0 ? vehicle.photos : [];
-  const hasPhotos = photos.length > 0;
-
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* Top Bar */}
@@ -130,21 +147,58 @@ export function VehicleDetail() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="relative aspect-[16/9] rounded-[3rem] overflow-hidden border border-border/50 shadow-2xl bg-white/5"
+                className="relative aspect-[16/9] rounded-[3rem] overflow-hidden border border-border/50 shadow-2xl bg-muted group"
               >
                 {hasPhotos ? (
-                  <img
-                    src={photos[activePhoto]}
-                    alt={`${vehicle.brand} ${vehicle.model}`}
-                    className="w-full h-full object-cover transition-all duration-700"
-                  />
+                  <>
+                    <img
+                      src={photos[activePhoto]}
+                      alt={`${vehicle.brand} ${vehicle.model}`}
+                      className="w-full h-full object-cover transition-all duration-700 cursor-zoom-in"
+                      onClick={() => setLightboxOpen(true)}
+                    />
+                    {/* Expand hint */}
+                    <button
+                      onClick={() => setLightboxOpen(true)}
+                      className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Expand className="h-4 w-4" />
+                    </button>
+                    {/* Prev / Next arrows */}
+                    {photos.length > 1 && (
+                      <>
+                        <button
+                          onClick={prev}
+                          className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <ChevronLeft className="h-6 w-6" />
+                        </button>
+                        <button
+                          onClick={next}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <ChevronRight className="h-6 w-6" />
+                        </button>
+                        {/* Dot indicators */}
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
+                          {photos.map((_, i) => (
+                            <button
+                              key={i}
+                              onClick={() => setActivePhoto(i)}
+                              className={`rounded-full transition-all ${i === activePhoto ? 'bg-white w-5 h-2' : 'bg-white/40 w-2 h-2 hover:bg-white/70'}`}
+                            />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </>
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center gap-4 text-muted-foreground">
                     <Car className="h-20 w-20 opacity-20" />
                     <p className="text-xs font-bold uppercase tracking-widest opacity-40">Sin fotografías</p>
                   </div>
                 )}
-                <div className="absolute top-6 left-6 flex gap-2">
+                <div className="absolute top-6 left-6 flex gap-2 pointer-events-none">
                   <Badge className="bg-primary text-primary-foreground font-bold px-4 py-1.5 rounded-full shadow-xl shadow-primary/20">
                     {vehicle.condition}
                   </Badge>
@@ -161,7 +215,7 @@ export function VehicleDetail() {
                   {photos.map((photo, i) => (
                     <button
                       key={i}
-                      onClick={() => setActivePhoto(i)}
+                      onClick={() => { setActivePhoto(i); }}
                       className={`relative aspect-square rounded-2xl overflow-hidden border-2 transition-all ${
                         activePhoto === i ? 'border-primary scale-95' : 'border-transparent opacity-60 hover:opacity-100'
                       }`}
@@ -172,6 +226,80 @@ export function VehicleDetail() {
                 </div>
               )}
             </div>
+
+            {/* Lightbox */}
+            <AnimatePresence>
+              {lightboxOpen && hasPhotos && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
+                  onClick={() => setLightboxOpen(false)}
+                >
+                  {/* Close */}
+                  <button
+                    className="absolute top-4 right-4 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-2 transition-all"
+                    onClick={() => setLightboxOpen(false)}
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+
+                  {/* Counter */}
+                  <div className="absolute top-4 left-1/2 -translate-x-1/2 text-white/50 font-bold text-xs uppercase tracking-widest">
+                    {activePhoto + 1} / {photos.length}
+                  </div>
+
+                  {/* Image */}
+                  <motion.img
+                    key={activePhoto}
+                    initial={{ opacity: 0, scale: 0.96 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    src={photos[activePhoto]}
+                    alt={`${vehicle.brand} ${vehicle.model} ${activePhoto + 1}`}
+                    className="max-h-[85vh] max-w-[90vw] object-contain rounded-2xl shadow-2xl"
+                    onClick={e => e.stopPropagation()}
+                  />
+
+                  {/* Arrows */}
+                  {photos.length > 1 && (
+                    <>
+                      <button
+                        onClick={e => { e.stopPropagation(); prev(); }}
+                        className="absolute left-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-3 transition-all"
+                      >
+                        <ChevronLeft className="h-8 w-8" />
+                      </button>
+                      <button
+                        onClick={e => { e.stopPropagation(); next(); }}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-3 transition-all"
+                      >
+                        <ChevronRight className="h-8 w-8" />
+                      </button>
+                    </>
+                  )}
+
+                  {/* Thumbnail strip */}
+                  {photos.length > 1 && (
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 px-4 overflow-x-auto max-w-[90vw]">
+                      {photos.map((photo, i) => (
+                        <button
+                          key={i}
+                          onClick={e => { e.stopPropagation(); setActivePhoto(i); }}
+                          className={`shrink-0 w-14 h-14 rounded-xl overflow-hidden border-2 transition-all ${
+                            i === activePhoto ? 'border-primary' : 'border-transparent opacity-50 hover:opacity-100'
+                          }`}
+                        >
+                          <img src={photo} alt="" className="w-full h-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Description */}
             <div className="p-10 rounded-[3rem] bg-card/30 border border-border/50 space-y-6">
