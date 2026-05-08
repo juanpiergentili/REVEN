@@ -134,7 +134,7 @@ export function useArgAutos(selectedBrandName?: string, selectedModelName?: stri
           const d = await res.json();
           if (!cancelled && d.data) {
             setVersions(d.data
-              .map((v: any) => ({ ...v, name: v.name_raw || v.name.toUpperCase() }))
+              .map((v: any) => ({ ...v, name: (v.name_raw || v.name.toUpperCase()).replace(/,/g, '.') }))
               .sort((a: Version, b: Version) => a.name.localeCompare(b.name)));
             return;
           }

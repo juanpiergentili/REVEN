@@ -17,6 +17,7 @@ import { createVehicle, updateVehiclePhotos, getVehicleById, updateVehicleDetail
 import { BODY_TYPES, FUEL_TYPES, TRANSMISSIONS, COLORS } from '@/src/data/vehicle-catalog';
 import { useGeoRef } from '@/src/hooks/useGeoRef';
 import { useArgAutos } from '@/src/hooks/useArgAutos';
+import type { Version } from '@/src/hooks/useArgAutos';
 import type { FuelType, BodyType, Transmission, VehicleCondition } from '@/src/types';
 import { usePhotoUpload } from '@/src/hooks/usePhotoUpload';
 import { StepEstadoTecnico } from '@/src/components/publish/StepEstadoTecnico';
@@ -57,6 +58,39 @@ export function Publish() {
   const photoUpload = usePhotoUpload();
   const { provincias, localidades, loadingProvincias, loadingLocalidades } = useGeoRef(formData.province);
   const { brands, models, versions, valuations, loadingBrands, loadingModels, loadingVersions } = useArgAutos(formData.brand, formData.model, formData.version);
+  const [versionsForYear, setVersionsForYear] = useState<Version[]>([]);
+  const [loadingVersionYear, setLoadingVersionYear] = useState(false);
+
+  useEffect(() => {
+    setVersionsForYear(versions);
+    if (!formData.year || versions.length === 0) return;
+
+    const yearNum = Number(formData.year);
+    const apiVersions = versions.filter(v => v.id < 10000);
+    if (apiVersions.length === 0) return;
+
+    let cancelled = false;
+    setLoadingVersionYear(true);
+
+    Promise.all(
+      apiVersions.map(v =>
+        fetch(`https://argautos.com/api/v1/versions/${v.id}/valuations?currency=ars&sources=acara`)
+          .then(r => r.json())
+          .then(d => ({ version: v, hasYear: (d.data || []).some((val: any) => Number(val.year) === yearNum) }))
+          .catch(() => ({ version: v, hasYear: true }))
+      )
+    ).then(results => {
+      if (cancelled) return;
+      const matched = results.filter(r => r.hasYear).map(r => r.version);
+      const staticVersions = versions.filter(v => v.id >= 10000);
+      const combined = [...matched, ...staticVersions].sort((a, b) => a.name.localeCompare(b.name));
+      setVersionsForYear(combined.length > 0 ? combined : versions);
+    }).finally(() => {
+      if (!cancelled) setLoadingVersionYear(false);
+    });
+
+    return () => { cancelled = true; };
+  }, [versions, formData.year]);
 
   // Load existing vehicle data if editing
   useEffect(() => {
@@ -383,7 +417,7 @@ export function Publish() {
                         <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
                           <SelectValue placeholder={loadingBrands ? "Cargando..." : "Seleccionar marca"} />
                         </SelectTrigger>
-                        <SelectContent className="rounded-xl max-h-72">
+                        <SelectContent className="rounded-xl max-h-72" alignItemWithTrigger={false}>
                           {brands.map(b => (
                             <SelectItem key={b.name} value={b.name}>{b.name}</SelectItem>
                           ))}
@@ -397,7 +431,7 @@ export function Publish() {
                         <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
                           <SelectValue placeholder={loadingModels ? "Cargando..." : "Seleccionar modelo"} />
                         </SelectTrigger>
-                        <SelectContent className="rounded-xl max-h-72">
+                        <SelectContent className="rounded-xl max-h-72" alignItemWithTrigger={false}>
                           {models.map(m => (
                             <SelectItem key={m.name} value={m.name}>{m.name}</SelectItem>
                           ))}
@@ -411,7 +445,7 @@ export function Publish() {
                         <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
                           <SelectValue placeholder="Seleccionar año" />
                         </SelectTrigger>
-                        <SelectContent className="rounded-xl max-h-72">
+                        <SelectContent className="rounded-xl max-h-72" alignItemWithTrigger={false}>
                           {YEARS.map(y => (
                             <SelectItem key={y} value={y}>{y}</SelectItem>
                           ))}
@@ -421,20 +455,14 @@ export function Publish() {
 
                     <div className="space-y-3">
                       <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Versión</Label>
-                      <Select value={formData.version} onValueChange={handleVersionSelect} disabled={!formData.year || loadingVersions}>
+                      <Select value={formData.version} onValueChange={handleVersionSelect} disabled={!formData.year || loadingVersions || loadingVersionYear}>
                         <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
-                          <SelectValue placeholder={loadingVersions ? "Cargando..." : "Seleccionar versión"} />
+                          <SelectValue placeholder={loadingVersions || loadingVersionYear ? "Cargando..." : "Seleccionar versión"} />
                         </SelectTrigger>
-                        <SelectContent className="rounded-xl max-h-72">
-                          {versions
-                            .filter(v => {
-                              if (!formData.year) return true;
-                              const hasYear = /\b(19|20)\d{2}\b/.test(v.name);
-                              return !hasYear || v.name.includes(formData.year);
-                            })
-                            .map(v => (
-                              <SelectItem key={v.name} value={v.name}>{v.name}</SelectItem>
-                            ))}
+                        <SelectContent className="rounded-xl max-h-72" alignItemWithTrigger={false}>
+                          {versionsForYear.map(v => (
+                            <SelectItem key={v.name} value={v.name}>{v.name}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -554,7 +582,7 @@ export function Publish() {
                             {loadingProvincias ? 'Cargando provincias...' : (provincias.find(p => p.id === formData.province)?.nombre || 'Seleccionar provincia')}
                           </SelectValue>
                         </SelectTrigger>
-                        <SelectContent className="rounded-xl max-h-72">
+                        <SelectContent className="rounded-xl max-h-72" alignItemWithTrigger={false}>
                           {provincias.map(p => (
                             <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
                           ))}
@@ -579,7 +607,7 @@ export function Publish() {
                             {loadingLocalidades ? 'Cargando localidades...' : (localidades.find(l => l.id === formData.city)?.nombre || (formData.province ? 'Seleccionar localidad' : 'Primero elegí provincia'))}
                           </SelectValue>
                         </SelectTrigger>
-                        <SelectContent className="rounded-xl max-h-72">
+                        <SelectContent className="rounded-xl max-h-72" alignItemWithTrigger={false}>
                           {localidades.map(l => (
                             <SelectItem key={l.id} value={l.id}>{l.nombre}</SelectItem>
                           ))}
