@@ -216,6 +216,8 @@ export function Home() {
     if (videoRef.current && videoRef.current.readyState >= 3) {
       setIsVideoLoaded(true);
     }
+    const timer = setTimeout(() => setIsVideoLoaded(true), 2500); // Max wait time 2.5s
+    return () => clearTimeout(timer);
   }, []);
 
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -319,11 +321,19 @@ export function Home() {
             >
               <Logo className="text-6xl" variant="auto" />
             </motion.div>
-            <div className="flex flex-col items-center gap-8">
-              <div style={{ perspective: '800px' }}>
+            <div className="flex flex-col items-center gap-8 relative">
+              <div style={{ perspective: '800px' }} className="relative flex items-center justify-center">
+                {/* Tire floor mark */}
                 <motion.div
-                  style={{ rotateX: '65deg', rotateY: '15deg' }}
-                  className="drop-shadow-[0_20px_20px_rgba(34,197,94,0.4)]"
+                  animate={{ x: [20, -100], opacity: [0, 1, 0] }}
+                  transition={{ repeat: Infinity, duration: 0.3, ease: "linear" }}
+                  className="absolute bottom-4 right-1/2 w-24 h-1.5 bg-gradient-to-l from-primary to-transparent blur-[1px] rounded-full z-0"
+                  style={{ transform: 'rotateX(50deg) rotateY(15deg)' }}
+                />
+
+                <motion.div
+                  style={{ rotateX: '50deg', rotateY: '15deg' }}
+                  className="drop-shadow-[0_15px_15px_rgba(34,197,94,0.3)] relative z-10"
                 >
                   <motion.div
                     animate={{ rotate: 360 }}
@@ -335,15 +345,12 @@ export function Home() {
                 </motion.div>
               </div>
               <motion.div 
-                animate={{ opacity: [0.5, 1, 0.5] }}
+                animate={{ opacity: [0.6, 1, 0.6] }}
                 transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-                className="flex flex-col items-center gap-1 mt-2"
+                className="mt-2"
               >
-                <span className="font-semibold uppercase tracking-[0.3em] text-[10px] md:text-xs text-primary/70">
-                  SISTEMA REVEN
-                </span>
-                <span className="font-bold uppercase tracking-[0.15em] text-sm md:text-base text-primary drop-shadow-[0_0_8px_rgba(34,197,94,0.3)]">
-                  Arrancando motores
+                <span className="font-bold uppercase tracking-[0.2em] text-sm md:text-base text-primary drop-shadow-[0_0_8px_rgba(34,197,94,0.3)]">
+                  ARRANCANDO MOTORES
                 </span>
               </motion.div>
             </div>
