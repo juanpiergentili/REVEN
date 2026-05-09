@@ -569,88 +569,90 @@ export function Profile() {
             {/* Foto de perfil */}
             <div className="space-y-4">
               <Label className="text-[10px] font-bold uppercase tracking-widest text-primary">Foto de Perfil</Label>
-              <div className="flex items-start gap-6">
-                <div className="relative shrink-0">
-                  <Avatar className="h-20 w-20 border-4 border-primary/20">
-                    <AvatarImage src={avatarPreview || editForm.avatarUrl || ''} />
-                    <AvatarFallback className="bg-primary/10 text-primary font-bold text-2xl">
-                      {profileData?.name?.[0]}{profileData?.lastName?.[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                  <button
-                    type="button"
-                    onClick={() => avatarInputRef.current?.click()}
-                    className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground rounded-full w-7 h-7 flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
-                  >
-                    <Upload className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-                <div className="flex-1 space-y-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => avatarInputRef.current?.click()}
-                    className="rounded-full font-bold uppercase tracking-widest text-[10px] gap-2 border-border h-9"
-                  >
-                    <Upload className="h-3.5 w-3.5" /> Subir imagen de galería
-                  </Button>
-                  <p className="text-[10px] text-muted-foreground font-medium">JPG, PNG o WEBP. Tamaño máximo 5MB.</p>
+              <div className="flex items-center gap-5">
+                <Avatar className="h-20 w-20 border-4 border-primary/20 shrink-0">
+                  <AvatarImage src={avatarPreview || editForm.avatarUrl || ''} />
+                  <AvatarFallback className="bg-primary/10 text-primary font-bold text-2xl">
+                    {profileData?.name?.[0]}{profileData?.lastName?.[0]}
+                  </AvatarFallback>
+                </Avatar>
 
-                  {/* Instagram import */}
-                  <div className="border border-border rounded-2xl p-3 space-y-2 bg-muted/30">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
-                      <Instagram className="h-3 w-3" /> Importar imagen de perfil de Instagram
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <div className="relative flex-1">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs font-bold">@</span>
-                        <Input
-                          placeholder="usuario"
-                          value={instaHandle}
-                          onChange={e => {
-                            setInstaHandle(e.target.value.replace('@', ''));
-                            setInstaVerified(null);
-                          }}
-                          className="h-8 rounded-xl bg-background border-border text-xs font-bold pl-7"
-                        />
+                <div className="flex-1 border border-border rounded-2xl p-4 space-y-3 bg-muted/30">
+                  <p className="text-xs font-bold uppercase tracking-widest flex items-center gap-2 text-muted-foreground">
+                    <Instagram className="h-4 w-4" /> Importar foto de perfil de Instagram
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs font-bold">@</span>
+                      <Input
+                        placeholder="usuario"
+                        autoComplete="off"
+                        autoCapitalize="none"
+                        spellCheck={false}
+                        value={instaHandle}
+                        onChange={e => {
+                          setInstaHandle(e.target.value.replace('@', ''));
+                          setInstaVerified(null);
+                        }}
+                        className="h-9 rounded-xl bg-background border-border text-xs font-bold pl-7"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={!instaHandle || instaVerifying}
+                      onClick={async () => {
+                        setInstaVerifying(true);
+                        setInstaVerified(null);
+                        const url = `https://unavatar.io/instagram/${instaHandle}`;
+                        try {
+                          const res = await fetch(url);
+                          if (res.ok && res.headers.get('content-type')?.startsWith('image')) {
+                            setInstaVerified(true);
+                          } else {
+                            setInstaVerified(false);
+                          }
+                        } catch {
+                          setInstaVerified(false);
+                        } finally {
+                          setInstaVerifying(false);
+                        }
+                      }}
+                      className="h-9 rounded-xl font-bold text-[10px] uppercase tracking-widest shrink-0"
+                    >
+                      {instaVerifying ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Verificar'}
+                    </Button>
+                  </div>
+                  {instaVerified === true && (
+                    <div className="flex items-center gap-3 pt-1">
+                      <img
+                        src={`https://unavatar.io/instagram/${instaHandle}`}
+                        alt={instaHandle}
+                        className="w-10 h-10 rounded-full border-2 border-primary/30 object-cover shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] text-emerald-500 font-bold flex items-center gap-1">
+                          <CheckCircle2 className="h-3 w-3" /> @{instaHandle} verificado
+                        </p>
                       </div>
                       <Button
                         type="button"
                         size="sm"
-                        variant="outline"
-                        disabled={!instaHandle || instaVerifying}
-                        onClick={async () => {
-                          setInstaVerifying(true);
-                          setInstaVerified(null);
+                        onClick={() => {
                           const url = `https://unavatar.io/instagram/${instaHandle}`;
-                          try {
-                            const res = await fetch(url);
-                            if (res.ok && res.headers.get('content-type')?.startsWith('image')) {
-                              setInstaVerified(true);
-                              setEditForm(prev => ({ ...prev, avatarUrl: url }));
-                              setAvatarPreview(url);
-                            } else {
-                              setInstaVerified(false);
-                            }
-                          } catch {
-                            setInstaVerified(false);
-                          } finally {
-                            setInstaVerifying(false);
-                          }
+                          setEditForm(prev => ({ ...prev, avatarUrl: url }));
+                          setAvatarPreview(url);
                         }}
-                        className="h-8 rounded-xl font-bold text-[10px] uppercase tracking-widest shrink-0"
+                        className="h-8 rounded-xl font-bold text-[10px] uppercase tracking-widest gap-1.5 shrink-0 shadow-lg shadow-primary/20"
                       >
-                        {instaVerifying ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Verificar'}
+                        <Upload className="h-3 w-3" /> Importar foto
                       </Button>
                     </div>
-                    {instaVerified === true && (
-                      <p className="text-[10px] text-emerald-500 font-bold flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Perfil encontrado. Imagen importada.</p>
-                    )}
-                    {instaVerified === false && (
-                      <p className="text-[10px] text-destructive font-bold">No se encontró el perfil de Instagram. Verificá el usuario.</p>
-                    )}
-                  </div>
+                  )}
+                  {instaVerified === false && (
+                    <p className="text-[10px] text-destructive font-bold">No se encontró el perfil. Verificá el usuario.</p>
+                  )}
                 </div>
               </div>
             </div>

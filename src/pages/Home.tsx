@@ -216,6 +216,10 @@ export function Home() {
   const [discountCode, setDiscountCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<null | 'REVEN20' | 'REVENFREE60'>(null);
   const [instagramUser, setInstagramUser] = useState('');
+  const [regInstaVerifying, setRegInstaVerifying] = useState(false);
+  const [regInstaVerified, setRegInstaVerified] = useState<boolean | null>(null);
+  const [regInstaAvatarUrl, setRegInstaAvatarUrl] = useState<string | null>(null);
+  const [regInstaImported, setRegInstaImported] = useState(false);
 
   const isFreeTrial = appliedCoupon === 'REVENFREE60';
 
@@ -248,7 +252,7 @@ export function Home() {
         plan, billingCycle, discountCode: appliedCoupon ?? null,
         trialDays: isFreeTrial ? 60 : null, role: 'USER', status: 'pending',
         instagram: instagramUser || null,
-        avatarUrl: instagramUser ? `https://unavatar.io/instagram/${instagramUser}` : null,
+        avatarUrl: regInstaImported ? (regInstaAvatarUrl || null) : null,
         createdAt: serverTimestamp(),
       });
       setIsAdmissionOpen(false);
@@ -783,16 +787,68 @@ export function Home() {
                   <Label htmlFor="pop-insta" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">
                     Usuario de Instagram <span className="text-muted-foreground/50 normal-case tracking-normal font-medium">(opcional — para importar tu foto de perfil)</span>
                   </Label>
-                  <div className="relative">
-                    <Instagram className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="pop-insta"
-                      value={instagramUser}
-                      onChange={(e) => setInstagramUser(e.target.value.replace('@', ''))}
-                      placeholder="tu_usuario"
-                      className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm pl-10 pr-4"
-                    />
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Instagram className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="pop-insta"
+                        value={instagramUser}
+                        onChange={(e) => {
+                          setInstagramUser(e.target.value.replace('@', ''));
+                          setRegInstaVerified(null);
+                          setRegInstaAvatarUrl(null);
+                          setRegInstaImported(false);
+                        }}
+                        placeholder="tu_usuario"
+                        autoComplete="off"
+                        autoCapitalize="none"
+                        spellCheck={false}
+                        className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm pl-10 pr-4"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-12 px-4 rounded-xl font-bold text-sm shrink-0"
+                      disabled={!instagramUser.trim() || regInstaVerifying}
+                      onClick={async () => {
+                        setRegInstaVerifying(true);
+                        setRegInstaVerified(null);
+                        try {
+                          const url = `https://unavatar.io/instagram/${instagramUser.trim()}`;
+                          const res = await fetch(url);
+                          setRegInstaVerified(res.ok);
+                          if (res.ok) setRegInstaAvatarUrl(url);
+                        } catch {
+                          setRegInstaVerified(false);
+                        } finally {
+                          setRegInstaVerifying(false);
+                        }
+                      }}
+                    >
+                      {regInstaVerifying ? <Loader className="h-4 w-4 animate-spin" /> : 'Verificar'}
+                    </Button>
                   </div>
+                  {regInstaVerified === true && regInstaAvatarUrl && (
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 border border-border">
+                      <img src={regInstaAvatarUrl} alt="instagram" className="w-10 h-10 rounded-full object-cover border-2 border-primary/30" />
+                      <div className="flex-1">
+                        <p className="text-xs font-bold text-primary">@{instagramUser} verificado</p>
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="h-8 px-3 rounded-lg font-bold text-xs"
+                        onClick={() => setRegInstaImported(true)}
+                        disabled={regInstaImported}
+                      >
+                        {regInstaImported ? '✓ Importada' : 'Importar foto'}
+                      </Button>
+                    </div>
+                  )}
+                  {regInstaVerified === false && (
+                    <p className="text-xs text-destructive font-medium ml-1">No se encontró el perfil @{instagramUser}</p>
+                  )}
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-2">
