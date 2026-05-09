@@ -176,7 +176,7 @@ export function Header() {
 
   return (
     <header className="fixed top-4 left-0 right-0 z-50 px-4 md:px-6">
-      <div className="max-w-screen-xl mx-auto flex h-16 items-center justify-between px-5 md:px-8 rounded-2xl border border-white/10 bg-background/60 backdrop-blur-2xl shadow-xl transition-colors duration-300">
+      <div className="max-w-screen-xl mx-auto flex h-16 items-center justify-between px-5 md:px-8 rounded-2xl border border-white/10 bg-background/30 backdrop-blur-2xl shadow-xl transition-colors duration-300">
         <div className="flex items-center gap-8">
           <Link to="/" className="flex items-center space-x-2 group">
             <Logo className="text-4xl" variant="auto" />
@@ -238,14 +238,14 @@ export function Header() {
                 <DropdownMenu>
                   <DropdownMenuTrigger className="relative h-11 flex items-center gap-3 px-2 rounded-2xl hover:bg-primary/5 border border-transparent hover:border-primary/20 transition-all bg-transparent outline-none cursor-pointer">
                       <Avatar className="h-8 w-8 border-2 border-primary/20">
-                        <AvatarImage src={userProfile?.avatarUrl} />
-                        <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
-                          {userProfile?.name?.[0] || user?.email?.[0]?.toUpperCase()}
+                        <AvatarImage src={userProfile?.logoUrl || userProfile?.avatarUrl} />
+                        <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs flex items-center justify-center">
+                          <Building2 className="h-4 w-4" />
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex flex-col items-start text-left">
-                        <span className="text-[10px] font-black uppercase tracking-tighter leading-none">{userProfile?.name} {userProfile?.lastName}</span>
-                        <span className="text-[8px] text-muted-foreground font-bold uppercase tracking-widest mt-0.5">{userProfile?.company || 'Concesionaria'}</span>
+                        <span className="text-[10px] font-black uppercase tracking-tighter leading-none">{userProfile?.company || 'Mi Concesionaria'}</span>
+                        <span className="text-[8px] text-muted-foreground font-bold uppercase tracking-widest mt-0.5">{userProfile?.name} {userProfile?.lastName}</span>
                       </div>
                       <ChevronDown className="h-3 w-3 text-muted-foreground" />
                   </DropdownMenuTrigger>
@@ -360,18 +360,17 @@ export function Header() {
                     {/* User identity */}
                     <div className="flex items-center gap-3 px-4 py-3 mb-1">
                       <Avatar className="h-10 w-10 border-2 border-primary/20 shrink-0">
-                        <AvatarImage src={userProfile?.avatarUrl} />
-                        <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
-                          {userProfile?.name?.[0] || user.email?.[0]?.toUpperCase()}
-                          {userProfile?.lastName?.[0]}
+                        <AvatarImage src={userProfile?.logoUrl || userProfile?.avatarUrl} />
+                        <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs flex items-center justify-center">
+                          <Building2 className="h-4 w-4" />
                         </AvatarFallback>
                       </Avatar>
                       <div className="min-w-0">
                         <p className="font-black uppercase tracking-tight text-sm leading-none truncate">
-                          {userProfile?.name} {userProfile?.lastName}
+                          {userProfile?.company || 'Mi Concesionaria'}
                         </p>
                         <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-0.5 truncate">
-                          {userProfile?.company || user.email}
+                          {userProfile?.name} {userProfile?.lastName}
                         </p>
                       </div>
                     </div>
@@ -457,20 +456,6 @@ export function Header() {
       {/* Login Dialog */}
       <Dialog open={isLoginOpen} onOpenChange={setIsLoginOpen}>
         <DialogContent className="max-w-lg p-0 overflow-hidden rounded-[2.5rem] border-border bg-card/95 backdrop-blur-2xl shadow-2xl">
-          <div className="flex items-center gap-0.5 md:gap-4 h-full">
-          <Link to="/" className="flex items-center gap-2 group">
-            <div className="h-10 w-10 bg-primary rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform">
-              <span className="text-white font-black text-xl italic tracking-tighter">R</span>
-            </div>
-            <div className="flex flex-col -gap-1">
-              <span className="text-xl font-black tracking-tighter uppercase leading-none">Reven</span>
-              <span className="text-[7px] font-bold uppercase tracking-[0.3em] opacity-40 leading-none ml-0.5 text-primary">Marketplace</span>
-            </div>
-          </Link>
-          <Badge variant="outline" className="hidden lg:flex border-primary/20 bg-primary/5 text-primary font-black text-[8px] px-2 py-0 rounded-full tracking-tighter opacity-60">
-            v1.2.5
-          </Badge>
-        </div>
           <div className="p-10 md:p-12">
             <div className="text-center mb-10">
               <div className="flex justify-center mb-6">

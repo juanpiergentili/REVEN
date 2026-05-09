@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Zap, Check, ArrowRight, ShieldCheck, FileText, Loader2,
-  Users, Shield, CreditCard, Plus, MapPin, Loader, Instagram
+  Users, Shield, CreditCard, Plus, MapPin, Loader, Instagram, Upload, Camera
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +14,8 @@ import { Label } from '@/components/ui/label';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, OperationType } from '@/src/lib/firebase';
+import { storage } from '@/src/lib/firebase';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
   Select,
   SelectContent,
@@ -216,10 +218,9 @@ export function Home() {
   const [discountCode, setDiscountCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<null | 'REVEN20' | 'REVENFREE60'>(null);
   const [instagramUser, setInstagramUser] = useState('');
-  const [regInstaVerifying, setRegInstaVerifying] = useState(false);
-  const [regInstaVerified, setRegInstaVerified] = useState<boolean | null>(null);
-  const [regInstaAvatarUrl, setRegInstaAvatarUrl] = useState<string | null>(null);
-  const [regInstaImported, setRegInstaImported] = useState(false);
+  const [regLogoFile, setRegLogoFile] = useState<File | null>(null);
+  const [regLogoPreview, setRegLogoPreview] = useState('');
+  const regLogoInputRef = useRef<HTMLInputElement>(null);
 
   const isFreeTrial = appliedCoupon === 'REVENFREE60';
 
@@ -247,12 +248,21 @@ export function Home() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       await updateProfile(user, { displayName: `${name} ${lastName}` });
+
+      let logoUrl: string | null = null;
+      if (regLogoFile) {
+        const logoRef = storageRef(storage, `users/${user.uid}/logo_${Date.now()}`);
+        await uploadBytes(logoRef, regLogoFile);
+        logoUrl = await getDownloadURL(logoRef);
+      }
+
       await setDoc(doc(db, 'users', user.uid), {
         uid: user.uid, email, name, lastName, cuil, phone, company,
         plan, billingCycle, discountCode: appliedCoupon ?? null,
         trialDays: isFreeTrial ? 60 : null, role: 'USER', status: 'pending',
         instagram: instagramUser || null,
-        avatarUrl: regInstaImported ? (regInstaAvatarUrl || null) : null,
+        avatarUrl: logoUrl,
+        logoUrl,
         createdAt: serverTimestamp(),
       });
       setIsAdmissionOpen(false);
@@ -337,7 +347,7 @@ export function Home() {
             transition={{ duration: 0.8 }}
             className="max-w-3xl space-y-8"
           >
-            <Badge className="bg-primary text-primary-foreground font-black tracking-widest px-5 py-2 rounded-full text-[10px] md:text-xs uppercase border-0">
+            <Badge className="bg-primary/15 backdrop-blur-sm border border-primary/40 text-primary font-black tracking-widest px-5 py-2 rounded-full text-[10px] md:text-xs uppercase">
               LA RED DE TRADING B2B N°1 DE ARGENTINA
             </Badge>
 
@@ -782,73 +792,61 @@ export function Home() {
                   </div>
                 </div>
 
-                {/* Optional Instagram for photo */}
+                {/* Logo / foto de la concesionaria */}
                 <div className="space-y-2">
-                  <Label htmlFor="pop-insta" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">
-                    Usuario de Instagram <span className="text-muted-foreground/50 normal-case tracking-normal font-medium">(opcional — para importar tu foto de perfil)</span>
+                  <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">
+                    Logo / Foto de la concesionaria <span className="text-muted-foreground/50 normal-case tracking-normal font-medium">(opcional)</span>
                   </Label>
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <Instagram className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="pop-insta"
-                        value={instagramUser}
-                        onChange={(e) => {
-                          setInstagramUser(e.target.value.replace('@', ''));
-                          setRegInstaVerified(null);
-                          setRegInstaAvatarUrl(null);
-                          setRegInstaImported(false);
-                        }}
-                        placeholder="tu_usuario"
-                        autoComplete="off"
-                        autoCapitalize="none"
-                        spellCheck={false}
-                        className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm pl-10 pr-4"
-                      />
-                    </div>
+                  <input
+                    ref={regLogoInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={e => {
+                      const f = e.target.files?.[0];
+                      if (f) { setRegLogoFile(f); setRegLogoPreview(URL.createObjectURL(f)); }
+                    }}
+                  />
+                  <div className="flex items-center gap-4">
+                    {regLogoPreview ? (
+                      <div className="h-14 w-14 rounded-2xl border-2 border-primary/30 overflow-hidden bg-muted shrink-0">
+                        <img src={regLogoPreview} alt="logo" className="w-full h-full object-contain p-1" />
+                      </div>
+                    ) : (
+                      <div className="h-14 w-14 rounded-2xl border-2 border-dashed border-border bg-muted/50 flex items-center justify-center shrink-0">
+                        <Camera className="h-5 w-5 text-muted-foreground/40" />
+                      </div>
+                    )}
                     <Button
                       type="button"
                       variant="outline"
-                      className="h-12 px-4 rounded-xl font-bold text-sm shrink-0"
-                      disabled={!instagramUser.trim() || regInstaVerifying}
-                      onClick={async () => {
-                        setRegInstaVerifying(true);
-                        setRegInstaVerified(null);
-                        try {
-                          const url = `https://unavatar.io/instagram/${instagramUser.trim()}`;
-                          const res = await fetch(url);
-                          setRegInstaVerified(res.ok);
-                          if (res.ok) setRegInstaAvatarUrl(url);
-                        } catch {
-                          setRegInstaVerified(false);
-                        } finally {
-                          setRegInstaVerifying(false);
-                        }
-                      }}
+                      onClick={() => regLogoInputRef.current?.click()}
+                      className="h-10 rounded-xl font-bold text-[10px] uppercase tracking-widest gap-2 border-border"
                     >
-                      {regInstaVerifying ? <Loader className="h-4 w-4 animate-spin" /> : 'Verificar'}
+                      <Upload className="h-3.5 w-3.5" />
+                      {regLogoPreview ? 'Cambiar imagen' : 'Subir imagen'}
                     </Button>
                   </div>
-                  {regInstaVerified === true && regInstaAvatarUrl && (
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 border border-border">
-                      <img src={regInstaAvatarUrl} alt="instagram" className="w-10 h-10 rounded-full object-cover border-2 border-primary/30" />
-                      <div className="flex-1">
-                        <p className="text-xs font-bold text-primary">@{instagramUser} verificado</p>
-                      </div>
-                      <Button
-                        type="button"
-                        size="sm"
-                        className="h-8 px-3 rounded-lg font-bold text-xs"
-                        onClick={() => setRegInstaImported(true)}
-                        disabled={regInstaImported}
-                      >
-                        {regInstaImported ? '✓ Importada' : 'Importar foto'}
-                      </Button>
-                    </div>
-                  )}
-                  {regInstaVerified === false && (
-                    <p className="text-xs text-destructive font-medium ml-1">No se encontró el perfil @{instagramUser}</p>
-                  )}
+                </div>
+
+                {/* Optional Instagram */}
+                <div className="space-y-2">
+                  <Label htmlFor="pop-insta" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">
+                    Instagram <span className="text-muted-foreground/50 normal-case tracking-normal font-medium">(opcional)</span>
+                  </Label>
+                  <div className="relative">
+                    <Instagram className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="pop-insta"
+                      value={instagramUser}
+                      onChange={(e) => setInstagramUser(e.target.value.replace('@', ''))}
+                      placeholder="tu_usuario"
+                      autoComplete="off"
+                      autoCapitalize="none"
+                      spellCheck={false}
+                      className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm pl-10 pr-4"
+                    />
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-2">
