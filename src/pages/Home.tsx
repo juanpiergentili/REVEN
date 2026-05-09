@@ -49,7 +49,7 @@ const SOLUTIONS_RIGHT = [
 const STEPS = [
   { number: '01', title: 'Solicitá Admisión', desc: 'Completá el formulario con tus datos profesionales y de tu concesionaria.' },
   { number: '02', title: 'Verificación', desc: 'Auditamos tu perfil para asegurar que sos un profesional real del sector.' },
-  { number: '03', title: 'Trading Activo', desc: 'Ya podés publicar, comprar y permutar con la red privada más grande de Argentina.' },
+  { number: '03', title: 'Operá con Reven', desc: 'Ya podés publicar, comprar y permutar con la red privada más grande de Argentina.' },
 ];
 
 const FAQ_ITEMS = [
