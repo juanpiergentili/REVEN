@@ -558,13 +558,13 @@ export function Profile() {
       />
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl rounded-[3rem] border-border bg-card/95 backdrop-blur-2xl p-0 overflow-hidden max-h-[90vh]">
-          <div className="p-10 pb-6 border-b border-border">
+        <DialogContent className="sm:max-w-2xl rounded-[3rem] border-border bg-card/95 backdrop-blur-2xl p-0 flex flex-col max-h-[90vh]">
+          <div className="p-8 pb-6 border-b border-border shrink-0">
             <DialogTitle className="text-3xl font-bold tracking-tighter uppercase">Configuración de Concesionaria</DialogTitle>
             <DialogDescription className="font-medium text-muted-foreground mt-1">Vinculá los datos de tu agencia para que se reflejen en tus publicaciones.</DialogDescription>
           </div>
 
-          <div className="overflow-y-auto px-10 py-6 space-y-8">
+          <div className="flex-1 overflow-y-auto px-8 py-6 space-y-8">
 
             {/* Foto de perfil */}
             <div className="space-y-4">
@@ -745,7 +745,7 @@ export function Profile() {
             </div>
           </div>
 
-          <div className="px-10 py-6 border-t border-border flex justify-between gap-4">
+          <div className="px-8 py-5 border-t border-border flex justify-between gap-4 shrink-0">
             <Button variant="ghost" onClick={() => setIsEditDialogOpen(false)} className="rounded-xl font-bold uppercase tracking-widest text-xs">
               Cancelar
             </Button>
