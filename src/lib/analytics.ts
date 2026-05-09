@@ -101,7 +101,7 @@ export function getAverageResponseTime(timestamps: number[] | undefined): string
 export function getResponseBadge(timestamps: number[] | undefined): { label: string; color: string } {
   if (!timestamps || timestamps.length === 0) return { label: 'Nuevo', color: 'bg-muted' };
   const avg = timestamps.reduce((a, b) => a + b, 0) / timestamps.length;
-  if (avg <= 30) return { label: 'Responde rápido', color: 'bg-green-500' };
+  if (avg <= 30) return { label: 'Responde rápido', color: 'bg-emerald-700 text-emerald-100' };
   if (avg <= 120) return { label: 'Buena respuesta', color: 'bg-blue-500' };
   if (avg <= 480) return { label: 'Responde frecuentemente', color: 'bg-yellow-500' };
   return { label: 'Puede demorar', color: 'bg-orange-500' };

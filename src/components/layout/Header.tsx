@@ -176,7 +176,7 @@ export function Header() {
 
   return (
     <header className="fixed top-4 left-0 right-0 z-50 px-4 md:px-6">
-      <div className="max-w-screen-xl mx-auto flex h-16 items-center justify-between px-5 md:px-8 rounded-2xl border border-border bg-background/95 backdrop-blur-xl shadow-xl transition-colors duration-300">
+      <div className="max-w-screen-xl mx-auto flex h-16 items-center justify-between px-5 md:px-8 rounded-2xl border border-white/10 bg-background/60 backdrop-blur-2xl shadow-xl transition-colors duration-300">
         <div className="flex items-center gap-8">
           <Link to="/" className="flex items-center space-x-2 group">
             <Logo className="text-4xl" variant="auto" />
@@ -292,7 +292,7 @@ export function Header() {
                   className="rounded-full px-6 font-bold uppercase tracking-widest text-xs h-11 shadow-lg shadow-primary/20 group"
                   onClick={() => navigate('/publish')}
                 >
-                  PUBLICAR
+                  PUBLICAR UNIDAD
                   <Plus className="ml-2 h-4 w-4 group-hover:rotate-90 transition-transform" />
                 </Button>
               </>
@@ -334,7 +334,7 @@ export function Header() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden border-t border-border bg-background overflow-hidden"
+            className="md:hidden border-t border-white/10 bg-background/70 backdrop-blur-2xl overflow-hidden"
           >
             <div className="container mx-auto py-4 px-4 space-y-1">
               {/* Nav links */}
@@ -395,7 +395,7 @@ export function Header() {
 
                     <button
                       onClick={() => { navigate('/publish'); setIsMenuOpen(false); }}
-                      className="flex items-center gap-3 w-full text-left font-bold uppercase tracking-widest text-xs px-4 py-3 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                      className="flex items-center gap-3 w-full text-left font-bold uppercase tracking-widest text-xs px-4 py-3 rounded-xl text-primary bg-primary/10 hover:bg-primary/20 transition-colors"
                     >
                       <Plus className="h-4 w-4" /> Publicar unidad
                     </button>

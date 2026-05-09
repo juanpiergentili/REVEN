@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Zap, Check, ArrowRight, ShieldCheck, FileText, Loader2,
-  Users, Shield, CreditCard, Plus, MapPin, Loader
+  Users, Shield, CreditCard, Plus, MapPin, Loader, Instagram
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -215,6 +215,7 @@ export function Home() {
   const [plan, setPlan] = useState('plata');
   const [discountCode, setDiscountCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<null | 'REVEN20' | 'REVENFREE60'>(null);
+  const [instagramUser, setInstagramUser] = useState('');
 
   const isFreeTrial = appliedCoupon === 'REVENFREE60';
 
@@ -246,6 +247,8 @@ export function Home() {
         uid: user.uid, email, name, lastName, cuil, phone, company,
         plan, billingCycle, discountCode: appliedCoupon ?? null,
         trialDays: isFreeTrial ? 60 : null, role: 'USER', status: 'pending',
+        instagram: instagramUser || null,
+        avatarUrl: instagramUser ? `https://unavatar.io/instagram/${instagramUser}` : null,
         createdAt: serverTimestamp(),
       });
       setIsAdmissionOpen(false);
@@ -772,6 +775,23 @@ export function Home() {
                   <div className="space-y-2">
                     <Label htmlFor="pop-pass" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Contraseña</Label>
                     <Input id="pop-pass" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4" />
+                  </div>
+                </div>
+
+                {/* Optional Instagram for photo */}
+                <div className="space-y-2">
+                  <Label htmlFor="pop-insta" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">
+                    Usuario de Instagram <span className="text-muted-foreground/50 normal-case tracking-normal font-medium">(opcional — para importar tu foto de perfil)</span>
+                  </Label>
+                  <div className="relative">
+                    <Instagram className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="pop-insta"
+                      value={instagramUser}
+                      onChange={(e) => setInstagramUser(e.target.value.replace('@', ''))}
+                      placeholder="tu_usuario"
+                      className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm pl-10 pr-4"
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
