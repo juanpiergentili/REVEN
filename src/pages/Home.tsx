@@ -76,6 +76,19 @@ function getInitials(name: string) {
   return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
 }
 
+const WheelIcon = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+    {/* Outer tire tread (dashed) */}
+    <circle cx="50" cy="50" r="45" stroke="currentColor" strokeWidth="8" strokeDasharray="12 6" />
+    {/* Inner rim border */}
+    <circle cx="50" cy="50" r="35" stroke="currentColor" strokeWidth="4" />
+    {/* Center hub */}
+    <circle cx="50" cy="50" r="10" stroke="currentColor" strokeWidth="4" />
+    {/* Spokes */}
+    <path d="M50 15 L50 40 M85 50 L60 50 M50 85 L50 60 M15 50 L40 50 M75 25 L57 43 M25 75 L43 57 M75 75 L57 57 M25 25 L43 43" stroke="currentColor" strokeWidth="4" strokeLinecap="round"/>
+  </svg>
+);
+
 function HomeCarCard({ vehicle }: { vehicle: Vehicle }) {
   return (
     <div className="rounded-3xl overflow-hidden bg-[#111] border border-white/5 flex flex-col group hover:border-primary/30 transition-all duration-300">
@@ -293,13 +306,25 @@ export function Home() {
             <motion.div
               animate={{ opacity: [0.5, 1, 0.5] }}
               transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
-              className="mb-8"
+              className="mb-10"
             >
               <Logo className="text-6xl" variant="auto" />
             </motion.div>
-            <div className="flex items-center gap-3 text-primary">
-              <Loader className="h-6 w-6 animate-[spin_1.5s_linear_infinite]" />
-              <span className="font-black uppercase tracking-widest text-sm">Arrancando motores...</span>
+            <div className="flex flex-col items-center gap-6">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ repeat: Infinity, duration: 0.5, ease: "linear" }}
+                className="text-primary drop-shadow-[0_0_15px_rgba(34,197,94,0.5)]"
+              >
+                <WheelIcon className="h-16 w-16" />
+              </motion.div>
+              <motion.span 
+                animate={{ opacity: [0.6, 1, 0.6] }}
+                transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+                className="font-black italic uppercase tracking-[0.2em] text-lg md:text-xl text-primary drop-shadow-[0_0_10px_rgba(34,197,94,0.3)]"
+              >
+                ARRANCANDO MOTORES...
+              </motion.span>
             </div>
           </motion.div>
         )}
