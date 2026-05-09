@@ -1,16 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ChevronLeft, Eye, MessageSquare, Clock, BarChart3, TrendingUp, Award,
   MapPin, Building2, Phone, Mail, Loader2, ShoppingBag, Plus, Settings,
-  Save, Pause, Play, CheckCircle2, Package, Lock,
+  Save, Pause, Play, CheckCircle2, Package, Lock, Camera, Upload, Globe,
+  Instagram, Facebook, ExternalLink,
 } from 'lucide-react';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '@/src/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { motion } from 'motion/react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -65,7 +68,14 @@ export function Profile() {
   const [editLoading, setEditLoading] = useState(false);
   const [editForm, setEditForm] = useState({
     company: '', province: '', city: '', phone: '', name: '', lastName: '',
+    cuit: '', instagram: '', facebook: '', whatsapp: '', avatarUrl: '', logoUrl: '',
   });
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState('');
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState('');
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   const targetUid = uid || user?.uid;
   const isOwnProfile = !uid || uid === user?.uid;
@@ -89,6 +99,12 @@ export function Profile() {
             phone: data.phone || '',
             name: data.name || '',
             lastName: data.lastName || '',
+            cuit: data.cuit || '',
+            instagram: data.instagram || '',
+            facebook: data.facebook || '',
+            whatsapp: data.whatsapp || '',
+            avatarUrl: data.avatarUrl || '',
+            logoUrl: data.logoUrl || '',
           });
         }
         let vehicles = await getVehiclesBySeller(targetUid);
@@ -111,8 +127,26 @@ export function Profile() {
     if (!user) return;
     setEditLoading(true);
     try {
-      await updateDoc(doc(db, 'users', user.uid), { ...editForm, updatedAt: new Date() });
-      setProfileData((prev: any) => ({ ...prev, ...editForm }));
+      let avatarUrl = editForm.avatarUrl;
+      let logoUrl = editForm.logoUrl;
+
+      if (avatarFile) {
+        const storageRef = ref(storage, `users/${user.uid}/avatar_${Date.now()}`);
+        await uploadBytes(storageRef, avatarFile);
+        avatarUrl = await getDownloadURL(storageRef);
+      }
+
+      if (logoFile) {
+        const storageRef = ref(storage, `users/${user.uid}/logo_${Date.now()}`);
+        await uploadBytes(storageRef, logoFile);
+        logoUrl = await getDownloadURL(storageRef);
+      }
+
+      const updateData = { ...editForm, avatarUrl, logoUrl, updatedAt: new Date() };
+      await updateDoc(doc(db, 'users', user.uid), updateData);
+      setProfileData((prev: any) => ({ ...prev, ...updateData }));
+      setAvatarFile(null);
+      setLogoFile(null);
       setIsEditDialogOpen(false);
     } catch (err) {
       console.error('Error updating profile:', err);
@@ -268,7 +302,35 @@ export function Profile() {
             <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground pt-2 min-w-0">
               <span className="flex items-center gap-1.5 min-w-0"><Mail className="h-3.5 w-3.5 shrink-0" /> <span className="truncate">{profileData.email}</span></span>
               <span className="flex items-center gap-1.5 shrink-0"><Phone className="h-3.5 w-3.5" /> {profileData.phone || 'No especificado'}</span>
+              {profileData.cuit && (
+                <span className="flex items-center gap-1.5 shrink-0 font-bold text-foreground">
+                  CUIT: {profileData.cuit}
+                </span>
+              )}
             </div>
+
+            {(profileData.instagram || profileData.facebook || profileData.whatsapp) && (
+              <div className="flex flex-wrap items-center gap-3 pt-1">
+                {profileData.instagram && (
+                  <a href={`https://instagram.com/${profileData.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors font-bold">
+                    <Instagram className="h-3.5 w-3.5" /> @{profileData.instagram.replace('@', '')}
+                  </a>
+                )}
+                {profileData.facebook && (
+                  <a href={`https://facebook.com/${profileData.facebook}`} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors font-bold">
+                    <Facebook className="h-3.5 w-3.5" /> {profileData.facebook}
+                  </a>
+                )}
+                {profileData.whatsapp && (
+                  <a href={`https://wa.me/${profileData.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors font-bold">
+                    <Phone className="h-3.5 w-3.5" /> WhatsApp
+                  </a>
+                )}
+              </div>
+            )}
 
             {isOwnProfile && (
               <div className="pt-4 flex gap-3 w-full">
@@ -401,82 +463,220 @@ export function Profile() {
       </main>
 
       {/* Edit Dialog */}
+      {/* Hidden file inputs */}
+      <input
+        ref={avatarInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={e => {
+          const f = e.target.files?.[0];
+          if (f) { setAvatarFile(f); setAvatarPreview(URL.createObjectURL(f)); }
+        }}
+      />
+      <input
+        ref={logoInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={e => {
+          const f = e.target.files?.[0];
+          if (f) { setLogoFile(f); setLogoPreview(URL.createObjectURL(f)); }
+        }}
+      />
+
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl rounded-[3rem] border-border bg-card/95 backdrop-blur-2xl p-10">
-          <DialogHeader>
+        <DialogContent className="max-w-2xl rounded-[3rem] border-border bg-card/95 backdrop-blur-2xl p-0 overflow-hidden max-h-[90vh]">
+          <div className="p-10 pb-6 border-b border-border">
             <DialogTitle className="text-3xl font-bold tracking-tighter uppercase">Configuración de Concesionaria</DialogTitle>
-            <DialogDescription className="font-medium text-muted-foreground">Vinculá los datos de tu agencia para que se reflejen en tus publicaciones.</DialogDescription>
-          </DialogHeader>
+            <DialogDescription className="font-medium text-muted-foreground mt-1">Vinculá los datos de tu agencia para que se reflejen en tus publicaciones.</DialogDescription>
+          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6">
-            <div className="space-y-3 col-span-1 md:col-span-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-primary">Nombre de la Agencia / Concesionaria</Label>
-              <Input
-                value={editForm.company}
-                onChange={e => setEditForm(prev => ({ ...prev, company: e.target.value }))}
-                placeholder="Automotores Reven S.A."
-                className="h-14 rounded-[2.5rem] bg-muted border-border font-bold px-6"
-              />
+          <div className="overflow-y-auto px-10 py-6 space-y-8">
+
+            {/* Foto de perfil */}
+            <div className="space-y-4">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-primary">Foto de Perfil</Label>
+              <div className="flex items-center gap-6">
+                <div className="relative shrink-0">
+                  <div className="h-20 w-20 rounded-full border-4 border-primary/20 overflow-hidden bg-muted flex items-center justify-center">
+                    {avatarPreview || editForm.avatarUrl ? (
+                      <img src={avatarPreview || editForm.avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-2xl font-bold text-primary">{profileData?.name?.[0]}{profileData?.lastName?.[0]}</span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => avatarInputRef.current?.click()}
+                    className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground rounded-full w-7 h-7 flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
+                  >
+                    <Camera className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <div className="flex-1 space-y-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => avatarInputRef.current?.click()}
+                    className="rounded-full font-bold uppercase tracking-widest text-[10px] gap-2 border-border h-9"
+                  >
+                    <Upload className="h-3.5 w-3.5" /> Subir foto
+                  </Button>
+                  <p className="text-[10px] text-muted-foreground font-medium">JPG, PNG o WEBP. También podés tomar una foto con la cámara.</p>
+                  <div className="flex items-center gap-2">
+                    <Instagram className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <Input
+                      placeholder="Tu usuario de Instagram"
+                      className="h-8 rounded-xl bg-muted border-border text-xs font-bold"
+                      onChange={e => {
+                        const u = e.target.value.replace('@', '');
+                        if (u) setEditForm(prev => ({ ...prev, avatarUrl: `https://unavatar.io/instagram/${u}` }));
+                      }}
+                    />
+                    <span className="text-[10px] text-muted-foreground whitespace-nowrap">Importar foto</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-3">
-              <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-primary">Provincia</Label>
-              <Select value={editForm.province} onValueChange={v => setEditForm(prev => ({ ...prev, province: v, city: '' }))} disabled={loadingProvincias}>
-                <SelectTrigger className="h-14 rounded-[2.5rem] bg-muted border-border font-bold px-6">
-                  <SelectValue>{loadingProvincias ? 'Cargando...' : (provincias.find(p => p.id === editForm.province)?.nombre || 'Seleccionar')}</SelectValue>
-                </SelectTrigger>
-                <SelectContent className="rounded-[2.5rem]">
-                  {provincias.map(p => (
-                    <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {/* Logo de Agencia */}
+            <div className="space-y-4">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-primary">Logo de Agencia</Label>
+              <div className="flex items-center gap-6">
+                <div className="h-16 w-16 rounded-2xl border-2 border-border overflow-hidden bg-muted flex items-center justify-center shrink-0">
+                  {logoPreview || editForm.logoUrl ? (
+                    <img src={logoPreview || editForm.logoUrl} alt="logo" className="w-full h-full object-contain p-1" />
+                  ) : (
+                    <Building2 className="h-6 w-6 text-muted-foreground" />
+                  )}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => logoInputRef.current?.click()}
+                  className="rounded-full font-bold uppercase tracking-widest text-[10px] gap-2 border-border h-9"
+                >
+                  <Upload className="h-3.5 w-3.5" /> Subir logo
+                </Button>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Localidad</Label>
-              <Select value={editForm.city} onValueChange={v => setEditForm(prev => ({ ...prev, city: v }))} disabled={!editForm.province || loadingLocalidades}>
-                <SelectTrigger className="h-14 rounded-[2.5rem] bg-muted border-border font-bold px-6">
-                  <SelectValue>{loadingLocalidades ? 'Cargando...' : (localidades.find(l => l.id === editForm.city)?.nombre || 'Seleccionar')}</SelectValue>
-                </SelectTrigger>
-                <SelectContent className="rounded-[2.5rem]">
-                  {localidades.map(l => (
-                    <SelectItem key={l.id} value={l.id}>{l.nombre}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {/* Datos principales */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3 col-span-1 md:col-span-2">
+                <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-primary">Nombre de la Agencia / Concesionaria</Label>
+                <Input
+                  value={editForm.company}
+                  onChange={e => setEditForm(prev => ({ ...prev, company: e.target.value }))}
+                  placeholder="Automotores Reven S.A."
+                  className="h-14 rounded-[2.5rem] bg-muted border-border font-bold px-6"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-primary">Provincia</Label>
+                <Select value={editForm.province} onValueChange={v => setEditForm(prev => ({ ...prev, province: v, city: '' }))} disabled={loadingProvincias}>
+                  <SelectTrigger className="h-14 rounded-[2.5rem] bg-muted border-border font-bold px-6">
+                    <SelectValue>{loadingProvincias ? 'Cargando...' : (provincias.find(p => p.id === editForm.province)?.nombre || 'Seleccionar')}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="rounded-[2.5rem]">
+                    {provincias.map(p => (
+                      <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Localidad</Label>
+                <Select value={editForm.city} onValueChange={v => setEditForm(prev => ({ ...prev, city: v }))} disabled={!editForm.province || loadingLocalidades}>
+                  <SelectTrigger className="h-14 rounded-[2.5rem] bg-muted border-border font-bold px-6">
+                    <SelectValue>{loadingLocalidades ? 'Cargando...' : (localidades.find(l => l.id === editForm.city)?.nombre || 'Seleccionar')}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="rounded-[2.5rem]">
+                    {localidades.map(l => (
+                      <SelectItem key={l.id} value={l.id}>{l.nombre}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Nombre de Contacto</Label>
+                <Input
+                  value={editForm.name}
+                  onChange={e => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Nombre"
+                  className="h-12 rounded-xl bg-muted border-border font-bold"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Teléfono Público</Label>
+                <Input
+                  value={editForm.phone}
+                  onChange={e => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="+54 9 11 ..."
+                  className="h-12 rounded-xl bg-muted border-border font-bold"
+                />
+              </div>
+
+              <div className="space-y-2 col-span-1 md:col-span-2">
+                <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-primary">CUIT</Label>
+                <Input
+                  value={editForm.cuit}
+                  onChange={e => setEditForm(prev => ({ ...prev, cuit: e.target.value }))}
+                  placeholder="20-12345678-9"
+                  className="h-12 rounded-xl bg-muted border-border font-bold"
+                />
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Teléfono Público</Label>
-              <Input
-                value={editForm.phone}
-                onChange={e => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
-                placeholder="+54 9 11 ..."
-                className="h-12 rounded-xl bg-muted border-border font-bold"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Tu Nombre de Contacto</Label>
-              <Input
-                value={editForm.name}
-                onChange={e => setEditForm(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Nombre"
-                className="h-12 rounded-xl bg-muted border-border font-bold"
-              />
+            {/* Redes Sociales */}
+            <div className="space-y-4">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-primary">Redes Sociales</Label>
+              <div className="grid grid-cols-1 gap-4">
+                <div className="relative">
+                  <Instagram className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={editForm.instagram}
+                    onChange={e => setEditForm(prev => ({ ...prev, instagram: e.target.value.replace('@', '') }))}
+                    placeholder="usuario de Instagram"
+                    className="h-12 rounded-xl bg-muted border-border font-bold pl-10"
+                  />
+                </div>
+                <div className="relative">
+                  <Facebook className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={editForm.facebook}
+                    onChange={e => setEditForm(prev => ({ ...prev, facebook: e.target.value }))}
+                    placeholder="Página de Facebook"
+                    className="h-12 rounded-xl bg-muted border-border font-bold pl-10"
+                  />
+                </div>
+                <div className="relative">
+                  <Globe className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={editForm.whatsapp}
+                    onChange={e => setEditForm(prev => ({ ...prev, whatsapp: e.target.value }))}
+                    placeholder="WhatsApp (ej: 5491112345678)"
+                    className="h-12 rounded-xl bg-muted border-border font-bold pl-10"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
-          <DialogFooter className="pt-4">
+          <div className="px-10 py-6 border-t border-border flex justify-between gap-4">
             <Button variant="ghost" onClick={() => setIsEditDialogOpen(false)} className="rounded-xl font-bold uppercase tracking-widest text-xs">
               Cancelar
             </Button>
-            <Button onClick={handleUpdateProfile} disabled={editLoading} className="rounded-xl font-bold uppercase tracking-widest text-xs gap-2 min-w-[140px]">
+            <Button onClick={handleUpdateProfile} disabled={editLoading} className="rounded-xl font-bold uppercase tracking-widest text-xs gap-2 min-w-[160px]">
               {editLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Guardar Cambios
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

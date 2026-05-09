@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Camera, ArrowRight, ArrowLeft, CheckCircle2, X, Loader2, AlertCircle, ImageOff, Lock, Clock, Save, DollarSign, TrendingUp, Info } from 'lucide-react';
+import { Camera, ArrowRight, ArrowLeft, CheckCircle2, X, Loader2, AlertCircle, ImageOff, Lock, Clock, Save, DollarSign, TrendingUp, Info, Upload, Car, SkipForward } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'motion/react';
@@ -53,6 +53,8 @@ export function Publish() {
   const [showNoPhotosDialog, setShowNoPhotosDialog] = useState(false);
   const [activeListingCount, setActiveListingCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const [skipCotizacion, setSkipCotizacion] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
   const photoUpload = usePhotoUpload();
@@ -634,6 +636,15 @@ export function Publish() {
                     className="hidden"
                     onChange={e => addPhotos(e.target.files)}
                   />
+                  {/* Camera input for mobile - capture from device camera */}
+                  <input
+                    ref={cameraInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={e => addPhotos(e.target.files)}
+                  />
 
                   <div
                     className={`border-4 border-dashed rounded-[2rem] p-12 text-center space-y-6 cursor-pointer transition-all group ${
@@ -656,9 +667,14 @@ export function Publish() {
                       </p>
                     </div>
                     {photos.length < 15 && (
-                      <Button variant="outline" className="rounded-full px-8 border-border font-bold uppercase tracking-widest text-xs" onClick={e => { e.stopPropagation(); fileInputRef.current?.click(); }}>
-                        Seleccionar archivos
-                      </Button>
+                      <div className="flex flex-wrap gap-3 justify-center">
+                        <Button variant="outline" className="rounded-full px-8 border-border font-bold uppercase tracking-widest text-xs gap-2" onClick={e => { e.stopPropagation(); fileInputRef.current?.click(); }}>
+                          <Upload className="h-4 w-4" /> Seleccionar archivos
+                        </Button>
+                        <Button variant="outline" className="rounded-full px-8 border-border font-bold uppercase tracking-widest text-xs gap-2 md:hidden" onClick={e => { e.stopPropagation(); cameraInputRef.current?.click(); }}>
+                          <Camera className="h-4 w-4" /> Usar cámara
+                        </Button>
+                      </div>
                     )}
                   </div>
 
@@ -777,18 +793,40 @@ export function Publish() {
 
               {step === 5 && (
                 <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-8">
-                  <div className="text-center space-y-3">
-                    <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto">
-                      <TrendingUp className="h-8 w-8 text-primary" />
+                  {/* Vehicle summary */}
+                  <div className="flex items-center justify-between gap-4 p-5 rounded-2xl bg-muted/50 border border-border">
+                    <div className="flex items-center gap-4">
+                      <div className="bg-primary/10 w-12 h-12 rounded-xl flex items-center justify-center shrink-0">
+                        <Car className="h-6 w-6 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-black uppercase tracking-tighter text-lg leading-none">
+                          {formData.brand} {formData.model}
+                        </p>
+                        <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest mt-0.5">
+                          {formData.year} · {formData.version || 'Sin versión'}
+                        </p>
+                      </div>
                     </div>
-                    <h3 className="text-xl font-bold tracking-tighter uppercase">Cotización ACARA</h3>
-                    <p className="text-sm text-muted-foreground font-medium max-w-md mx-auto">
-                      Valores de referencia del mercado para la versión seleccionada según ACARA (Asociación de Concesionarios de Automotores).
-                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => { setSkipCotizacion(true); setStep(s => s + 1); }}
+                      className="shrink-0 rounded-full font-bold uppercase tracking-widest text-[10px] gap-2 border-border hover:border-primary/30 h-9 px-4"
+                    >
+                      <SkipForward className="h-3.5 w-3.5" /> Omitir cotización
+                    </Button>
                   </div>
 
-                  {valuations.length > 0 ? (
-                    <div className="space-y-4">
+                  <div>
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="bg-primary/10 w-10 h-10 rounded-full flex items-center justify-center">
+                        <TrendingUp className="h-5 w-5 text-primary" />
+                      </div>
+                      <h3 className="text-xl font-bold tracking-tighter uppercase">Cotización ACARA</h3>
+                    </div>
+
+                    {valuations.length > 0 ? (
                       <div className="rounded-2xl border border-border overflow-hidden">
                         <div className="grid grid-cols-3 bg-muted/50 px-6 py-3 border-b border-border">
                           <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Año</span>
@@ -804,9 +842,7 @@ export function Publish() {
                                 : 'hover:bg-muted/30'
                             }`}
                           >
-                            <span className={`font-bold tracking-tighter ${
-                              val.year.toString() === formData.year ? 'text-primary' : ''
-                            }`}>
+                            <span className={`font-bold tracking-tighter ${val.year.toString() === formData.year ? 'text-primary' : ''}`}>
                               {val.year}
                               {val.year.toString() === formData.year && (
                                 <Badge className="ml-2 bg-primary/15 text-primary border-none text-[8px] font-black px-2 py-0 rounded-full">TU AÑO</Badge>
@@ -821,28 +857,63 @@ export function Publish() {
                           </div>
                         ))}
                       </div>
-                      <div className="flex items-start gap-3 p-4 rounded-xl bg-primary/5 border border-primary/20">
-                        <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                        <p className="text-xs text-muted-foreground font-medium leading-relaxed">
-                          Estos valores son referenciales del mercado argentino. El precio final lo definís vos en el próximo paso.
-                        </p>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-10 text-center space-y-4 rounded-2xl bg-muted/30 border border-border">
+                        <div className="bg-muted w-14 h-14 rounded-full flex items-center justify-center">
+                          <DollarSign className="h-7 w-7 text-muted-foreground" />
+                        </div>
+                        <div className="space-y-1 max-w-sm">
+                          <p className="font-bold uppercase tracking-tighter">Sin cotización ACARA disponible</p>
+                          <p className="text-xs text-muted-foreground font-medium">
+                            {!formData.version
+                              ? 'Seleccioná una versión en el paso 1 para consultar cotizaciones.'
+                              : 'Esta versión aún no tiene cotización ACARA. Podés definir tu precio a continuación.'}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Price entry directly in cotización step */}
+                  <div className="space-y-4 pt-2 border-t border-border">
+                    <h4 className="text-sm font-bold uppercase tracking-widest text-primary">Definir precio de venta</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Moneda</Label>
+                        <Select value={formData.currency} onValueChange={v => update('currency', v as 'USD' | 'ARS')}>
+                          <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl">
+                            <SelectItem value="ARS">Pesos (ARS)</SelectItem>
+                            <SelectItem value="USD">Dólares (USD)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-3">
+                        <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Precio</Label>
+                        <div className="relative">
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-lg">
+                            {formData.currency === 'USD' ? 'U$D' : '$'}
+                          </span>
+                          <Input
+                            type="text"
+                            inputMode="numeric"
+                            value={formatArgentineNumber(formData.price)}
+                            onChange={e => update('price', parseArgentineNumber(e.target.value))}
+                            placeholder="0"
+                            className="h-14 rounded-xl bg-muted border-border font-bold text-2xl text-primary tracking-tighter pl-14"
+                          />
+                        </div>
                       </div>
                     </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-12 text-center space-y-4 rounded-2xl bg-muted/30 border border-border">
-                      <div className="bg-muted w-16 h-16 rounded-full flex items-center justify-center">
-                        <DollarSign className="h-8 w-8 text-muted-foreground" />
-                      </div>
-                      <div className="space-y-2 max-w-sm">
-                        <p className="font-bold uppercase tracking-tighter">Sin cotización ACARA disponible</p>
-                        <p className="text-xs text-muted-foreground font-medium">
-                          {!formData.version
-                            ? 'Seleccioná una versión en el paso 1 para consultar cotizaciones.'
-                            : 'Esta versión aún no cuenta con cotización de ACARA. Podés definir tu precio manualmente en el siguiente paso.'}
-                        </p>
-                      </div>
+                    <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/50 border border-border">
+                      <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                      <p className="text-xs text-muted-foreground font-medium leading-relaxed">
+                        Valores de referencia del mercado para la versión seleccionada según ACARA (Asociación de Concesionarios de Automotores). El precio final lo definís vos.
+                      </p>
                     </div>
-                  )}
+                  </div>
 
                   <div className="flex flex-col-reverse sm:flex-row justify-between pt-4 gap-4">
                     <Button variant="ghost" onClick={prevStep} className="w-full sm:w-auto h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-muted">
@@ -886,13 +957,6 @@ export function Publish() {
                           className="h-14 rounded-xl bg-muted border-border font-bold text-2xl text-primary tracking-tighter pl-14"
                         />
                       </div>
-                      {valuations.find(v => v.year.toString() === formData.year) && (
-                        <p className="text-[10px] font-medium text-muted-foreground ml-2">
-                          Valor estimado: ARS ${formatArgentineNumber(valuations.find(v => v.year.toString() === formData.year)?.price || '')}
-                          <br/>
-                          <span className="text-[8px] opacity-60 uppercase tracking-widest">Cotización en tiempo real según ACARA</span>
-                        </p>
-                      )}
                     </div>
                   </div>
                   <div className="flex flex-col-reverse sm:flex-row justify-between pt-4 gap-4">

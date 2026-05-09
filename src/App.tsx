@@ -8,6 +8,7 @@ import { Login } from '@/src/pages/Login';
 import { Messages } from '@/src/pages/Messages';
 import { Profile } from '@/src/pages/Profile';
 import { Admin } from '@/src/pages/Admin';
+import { Agencies } from '@/src/pages/Agencies';
 import { ProtectedRoute } from '@/src/components/auth/ProtectedRoute';
 import { useEffect } from 'react';
 
@@ -48,6 +49,11 @@ function AppContent() {
           <Route path="/messages" element={
             <ProtectedRoute>
               <Messages />
+            </ProtectedRoute>
+          } />
+          <Route path="/agencies" element={
+            <ProtectedRoute>
+              <Agencies />
             </ProtectedRoute>
           } />
           <Route path="/profile" element={

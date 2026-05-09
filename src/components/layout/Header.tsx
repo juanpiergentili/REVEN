@@ -1,4 +1,4 @@
-import React, { useState, useEffect, MouseEvent } from 'react';
+import React, { useState, useEffect, useRef, MouseEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Car, 
@@ -24,13 +24,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogDescription 
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { signInWithEmailAndPassword, onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
@@ -60,6 +54,9 @@ export function Header() {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showMsgToast, setShowMsgToast] = useState(false);
+  const prevUnread = useRef(0);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -88,6 +85,12 @@ export function Header() {
       return;
     }
     const unsub = subscribeToUnreadCount(user.uid, (count) => {
+      if (count > prevUnread.current && prevUnread.current >= 0) {
+        setShowMsgToast(true);
+        if (toastTimer.current) clearTimeout(toastTimer.current);
+        toastTimer.current = setTimeout(() => setShowMsgToast(false), 4000);
+      }
+      prevUnread.current = count;
       setUnreadCount(count);
     });
     return unsub;
@@ -424,6 +427,28 @@ export function Header() {
                   </div>
                 )}
               </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* New message toast */}
+      <AnimatePresence>
+        {showMsgToast && (
+          <motion.div
+            initial={{ opacity: 0, y: -12, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -12, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="absolute top-20 right-4 md:right-8 z-50 flex items-center gap-3 bg-card border border-primary/30 shadow-2xl shadow-primary/10 rounded-2xl px-5 py-3 cursor-pointer"
+            onClick={() => { setShowMsgToast(false); navigate('/messages'); }}
+          >
+            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+              <MessageSquare className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <p className="text-xs font-black uppercase tracking-widest leading-none">Nuevo mensaje</p>
+              <p className="text-[10px] text-muted-foreground font-medium mt-0.5">{unreadCount} sin leer · Clic para abrir</p>
             </div>
           </motion.div>
         )}
