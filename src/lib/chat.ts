@@ -65,6 +65,10 @@ export async function findOrCreateConversation(params: {
     const isMatch = data.participants.includes(params.sellerId);
     const vehicleMatch = params.vehicleId ? data.vehicleId === params.vehicleId : !data.vehicleId;
     if (isMatch && vehicleMatch) {
+      // Back-fill vehicleInfo if conversation was created before this feature
+      if (!data.vehicleInfo && params.vehicleInfo) {
+        await updateDoc(doc(conversationsRef, docSnap.id), { vehicleInfo: params.vehicleInfo });
+      }
       return docSnap.id;
     }
   }

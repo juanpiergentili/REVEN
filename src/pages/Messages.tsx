@@ -61,6 +61,12 @@ export function Messages() {
         try {
           setIsInitializing(true);
 
+          // Fetch buyer's real company name from Firestore
+          const buyerDoc = await getDoc(doc(db, 'users', currentUserId));
+          const buyerCompanyName = buyerDoc.exists()
+            ? (buyerDoc.data().company || currentUserName)
+            : currentUserName;
+
           // Fetch vehicle info if vehicleId is provided
           let vehicleInfoData: ConversationData['vehicleInfo'] | undefined;
           if (vehicleId) {
@@ -82,7 +88,7 @@ export function Messages() {
             sellerId: targetUserId,
             buyerName: currentUserName,
             sellerName: targetUserName,
-            buyerCompany: currentUserName,
+            buyerCompany: buyerCompanyName,
             sellerCompany: targetCompany || targetUserName,
             vehicleId: vehicleId || undefined,
             vehicleInfo: vehicleInfoData,
@@ -169,7 +175,7 @@ export function Messages() {
   });
 
   return (
-    <div className="h-dvh flex flex-col bg-background">
+    <div className="fixed inset-x-0 bottom-0 top-24 z-40 flex flex-col bg-background overflow-hidden">
       <div className={`border-b border-border bg-background/80 backdrop-blur-xl px-6 py-4 flex items-center gap-4 ${selectedConvoId ? 'hidden md:flex' : 'flex'}`}>
         <Button variant="ghost" size="icon" className="rounded-full" onClick={() => navigate(-1)}>
           <ArrowLeft className="h-5 w-5" />
@@ -282,29 +288,41 @@ export function Messages() {
             </div>
           ) : selectedConvo || isDeepLinkCreating ? (
             <>
-              <div className="p-4 border-b border-border bg-background/50 backdrop-blur-xl flex items-center gap-4">
-                <Button variant="ghost" size="icon" className="rounded-full md:hidden" onClick={() => setSelectedConvoId(null)}>
-                  <ChevronLeft className="h-5 w-5" />
-                </Button>
-                <Avatar className="h-10 w-10 border-2 border-primary/20">
-                  <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
-                    {(selectedConvo ? getDisplayName(selectedConvo) : targetCompany || targetUserName || '...').split(' ').map(n => n[0]).join('').slice(0, 2)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold uppercase tracking-tighter text-sm truncate">{selectedConvo ? getDisplayName(selectedConvo) : targetCompany || targetUserName}</h3>
-                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{selectedConvo ? getDisplayCompany(selectedConvo) : (targetCompany ? targetUserName : '')}</p>
-                </div>
-                {selectedConvo?.vehicleInfo && (
-                  <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-muted/60 rounded-2xl border border-border shrink-0">
-                    {selectedConvo.vehicleInfo.photo && (
-                      <img src={selectedConvo.vehicleInfo.photo} alt="" className="w-12 h-8 object-cover rounded-lg shrink-0" />
+              {/* Conversation header */}
+              <div className="border-b border-border bg-background/80 backdrop-blur-xl shrink-0">
+                {/* Row 1: back + agency name */}
+                <div className="px-4 pt-3 pb-2 flex items-center gap-3">
+                  <Button variant="ghost" size="icon" className="rounded-full md:hidden shrink-0" onClick={() => setSelectedConvoId(null)}>
+                    <ChevronLeft className="h-5 w-5" />
+                  </Button>
+                  <Avatar className="h-9 w-9 border-2 border-primary/20 shrink-0">
+                    <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
+                      {(selectedConvo ? getDisplayName(selectedConvo) : targetCompany || targetUserName || '...').split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-black uppercase tracking-tighter text-base leading-none truncate">{selectedConvo ? getDisplayName(selectedConvo) : targetCompany || targetUserName}</h3>
+                    {(selectedConvo ? getDisplayCompany(selectedConvo) : (targetCompany ? targetUserName : '')) && (
+                      <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-0.5">{selectedConvo ? getDisplayCompany(selectedConvo) : (targetCompany ? targetUserName : '')}</p>
                     )}
-                    <div className="min-w-0">
-                      <p className="text-[10px] font-black uppercase tracking-tighter leading-none truncate">
-                        {selectedConvo.vehicleInfo.brand} {selectedConvo.vehicleInfo.model}
+                  </div>
+                </div>
+                {/* Row 2: vehicle card (if available) */}
+                {selectedConvo?.vehicleInfo && (
+                  <div className="px-4 pb-3 flex items-center gap-3 border-t border-border/50 pt-2">
+                    {selectedConvo.vehicleInfo.photo && (
+                      <img src={selectedConvo.vehicleInfo.photo} alt="" className="w-16 h-11 object-cover rounded-xl shrink-0 border border-border" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-primary/70 leading-none mb-0.5">Publicación consultada</p>
+                      <p className="font-black uppercase tracking-tighter text-sm leading-tight truncate">
+                        {selectedConvo.vehicleInfo.brand} {selectedConvo.vehicleInfo.model} {selectedConvo.vehicleInfo.year}
                       </p>
-                      <p className="text-[8px] text-muted-foreground font-bold mt-0.5">{selectedConvo.vehicleInfo.year}</p>
+                      {selectedConvo.vehicleInfo.price && (
+                        <p className="text-[10px] text-muted-foreground font-bold mt-0.5">
+                          ${selectedConvo.vehicleInfo.price.toLocaleString('es-AR')}
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
@@ -312,25 +330,6 @@ export function Messages() {
 
               <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-6 min-h-0">
                 <div className="max-w-3xl mx-auto space-y-4">
-                  {/* Vehicle context card */}
-                  {selectedConvo?.vehicleInfo && (
-                    <div className="flex items-center gap-4 p-4 rounded-2xl bg-muted/40 border border-border mb-2">
-                      {selectedConvo.vehicleInfo.photo && (
-                        <img src={selectedConvo.vehicleInfo.photo} alt="" className="w-20 h-14 object-cover rounded-xl shrink-0" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-primary mb-0.5">Consulta sobre</p>
-                        <p className="font-black uppercase tracking-tighter text-sm leading-tight">
-                          {selectedConvo.vehicleInfo.brand} {selectedConvo.vehicleInfo.model} {selectedConvo.vehicleInfo.year}
-                        </p>
-                        {selectedConvo.vehicleInfo.price && (
-                          <p className="text-xs text-muted-foreground font-bold mt-0.5">
-                            ${selectedConvo.vehicleInfo.price.toLocaleString('es-AR')}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
                   {!selectedConvo && isInitializing ? (
                     <div className="flex flex-col items-center justify-center py-20 text-muted-foreground animate-pulse">
                       <Clock className="h-8 w-8 mb-4 animate-spin" />
