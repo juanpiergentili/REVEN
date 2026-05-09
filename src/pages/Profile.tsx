@@ -70,19 +70,14 @@ export function Profile() {
   const [isAddingPoints, setIsAddingPoints] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({
     company: '', province: '', city: '', phone: '', name: '', lastName: '',
     cuit: '', instagram: '', facebook: '', whatsapp: '', avatarUrl: '', logoUrl: '',
     showEmail: true, showPhone: true, showName: true,
   });
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState('');
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState('');
-  const [instaHandle, setInstaHandle] = useState('');
-  const [instaVerifying, setInstaVerifying] = useState(false);
-  const [instaVerified, setInstaVerified] = useState<boolean | null>(null);
-  const avatarInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
   const targetUid = uid || user?.uid;
@@ -137,32 +132,26 @@ export function Profile() {
   const handleUpdateProfile = async () => {
     if (!user) return;
     setEditLoading(true);
+    setEditError(null);
     try {
-      let avatarUrl = editForm.avatarUrl;
       let logoUrl = editForm.logoUrl;
 
-      if (avatarFile) {
-        const storageRef = ref(storage, `users/${user.uid}/avatar_${Date.now()}`);
-        await uploadBytes(storageRef, avatarFile);
-        avatarUrl = await getDownloadURL(storageRef);
-      }
-
-      // Logo always takes priority over Instagram avatar
       if (logoFile) {
         const logoRef = ref(storage, `users/${user.uid}/logo_${Date.now()}`);
         await uploadBytes(logoRef, logoFile);
         logoUrl = await getDownloadURL(logoRef);
-        // If there's a logo and avatar is an Instagram import, keep it but logo becomes the main visual
       }
 
-      const updateData = { ...editForm, avatarUrl, logoUrl, updatedAt: new Date() };
+      // Logo IS the universal image (avatarUrl = logoUrl so old references still work)
+      const updateData = { ...editForm, avatarUrl: logoUrl, logoUrl, updatedAt: new Date() };
       await updateDoc(doc(db, 'users', user.uid), updateData);
       setProfileData((prev: any) => ({ ...prev, ...updateData }));
-      setAvatarFile(null);
       setLogoFile(null);
+      setLogoPreview('');
       setIsEditDialogOpen(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error updating profile:', err);
+      setEditError(err?.message || 'Error al guardar. Verificá tu conexión e intentá de nuevo.');
     } finally {
       setEditLoading(false);
     }
@@ -540,17 +529,6 @@ export function Profile() {
         </Dialog>
   
         {/* Edit Dialog */}
-      {/* Hidden file inputs */}
-      <input
-        ref={avatarInputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        className="hidden"
-        onChange={e => {
-          const f = e.target.files?.[0];
-          if (f) { setAvatarFile(f); setAvatarPreview(URL.createObjectURL(f)); }
-        }}
-      />
       <input
         ref={logoInputRef}
         type="file"
@@ -570,32 +548,6 @@ export function Profile() {
           </div>
 
           <div className="flex-1 overflow-y-auto px-8 py-6 space-y-8">
-
-            {/* Foto de perfil */}
-            <div className="space-y-4">
-              <Label className="text-[10px] font-bold uppercase tracking-widest text-primary">Foto de Perfil</Label>
-              <div className="flex items-center gap-5">
-                <div
-                  className="relative cursor-pointer group shrink-0"
-                  onClick={() => avatarInputRef.current?.click()}
-                  title="Clic para cambiar foto"
-                >
-                  <Avatar className="h-20 w-20 border-4 border-primary/20">
-                    <AvatarImage src={avatarPreview || editForm.avatarUrl || ''} />
-                    <AvatarFallback className="bg-primary/10 text-primary font-bold text-2xl">
-                      {profileData?.name?.[0]}{profileData?.lastName?.[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <Camera className="h-6 w-6 text-white" />
-                  </div>
-                </div>
-                <div className="flex-1 space-y-1">
-                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Foto de perfil</p>
-                  <p className="text-[10px] text-muted-foreground/60 font-medium">Hacé clic en la imagen para subir una foto desde tu galería. JPG, PNG o WEBP.</p>
-                </div>
-              </div>
-            </div>
 
             {/* Logo de Agencia */}
             <div className="space-y-4">
@@ -759,14 +711,19 @@ export function Profile() {
             </div>
           </div>
 
-          <div className="px-8 py-5 border-t border-border flex justify-between gap-4 shrink-0">
-            <Button variant="ghost" onClick={() => setIsEditDialogOpen(false)} className="rounded-xl font-bold uppercase tracking-widest text-xs">
-              Cancelar
-            </Button>
-            <Button onClick={handleUpdateProfile} disabled={editLoading} className="rounded-xl font-bold uppercase tracking-widest text-xs gap-2 min-w-[160px]">
-              {editLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              Guardar Cambios
-            </Button>
+          <div className="px-8 py-5 border-t border-border flex flex-col gap-3 shrink-0">
+            {editError && (
+              <p className="text-xs text-destructive font-bold text-center bg-destructive/10 rounded-xl px-4 py-2">{editError}</p>
+            )}
+            <div className="flex justify-between gap-4">
+              <Button variant="ghost" onClick={() => { setIsEditDialogOpen(false); setEditError(null); }} className="rounded-xl font-bold uppercase tracking-widest text-xs">
+                Cancelar
+              </Button>
+              <Button onClick={handleUpdateProfile} disabled={editLoading} className="rounded-xl font-bold uppercase tracking-widest text-xs gap-2 min-w-[160px]">
+                {editLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                Guardar Cambios
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

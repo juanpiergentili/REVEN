@@ -11,7 +11,7 @@ import {
   sendMessage, findOrCreateConversation, markMessagesAsRead,
   ConversationData, MessageData,
 } from '@/src/lib/chat';
-import { Timestamp, collection, getDocs } from 'firebase/firestore';
+import { Timestamp, collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'motion/react';
 
 function formatTime(ts: Timestamp | undefined): string {
@@ -60,6 +60,23 @@ export function Messages() {
       const initConvo = async () => {
         try {
           setIsInitializing(true);
+
+          // Fetch vehicle info if vehicleId is provided
+          let vehicleInfoData: ConversationData['vehicleInfo'] | undefined;
+          if (vehicleId) {
+            const vDoc = await getDoc(doc(db, 'vehicles', vehicleId));
+            if (vDoc.exists()) {
+              const v = vDoc.data();
+              vehicleInfoData = {
+                brand: v.brand || '',
+                model: v.model || '',
+                year: v.year || 0,
+                photo: v.photos?.[0] || v.photo || '',
+                price: v.price,
+              };
+            }
+          }
+
           const id = await findOrCreateConversation({
             buyerId: currentUserId,
             sellerId: targetUserId,
@@ -68,6 +85,7 @@ export function Messages() {
             buyerCompany: currentUserName,
             sellerCompany: targetCompany || targetUserName,
             vehicleId: vehicleId || undefined,
+            vehicleInfo: vehicleInfoData,
           });
           setSelectedConvoId(id);
 
@@ -230,6 +248,16 @@ export function Messages() {
                           <span className="text-[10px] text-muted-foreground font-bold shrink-0 ml-2">{formatTime(convo.lastMessageAt)}</span>
                         </div>
                         <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-1">{getDisplayCompany(convo)}</p>
+                        {convo.vehicleInfo && (
+                          <div className="flex items-center gap-1.5 mb-1">
+                            {convo.vehicleInfo.photo && (
+                              <img src={convo.vehicleInfo.photo} alt="" className="w-7 h-5 object-cover rounded shrink-0" />
+                            )}
+                            <span className="text-[10px] text-primary/80 font-bold truncate">
+                              {convo.vehicleInfo.brand} {convo.vehicleInfo.model} {convo.vehicleInfo.year}
+                            </span>
+                          </div>
+                        )}
                         <p className={`text-xs truncate ${hasUnread ? 'text-foreground font-bold' : 'text-muted-foreground'}`}>{convo.lastMessage || 'Conversación nueva'}</p>
                       </div>
                     </button>
@@ -267,15 +295,42 @@ export function Messages() {
                   <h3 className="font-bold uppercase tracking-tighter text-sm truncate">{selectedConvo ? getDisplayName(selectedConvo) : targetCompany || targetUserName}</h3>
                   <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{selectedConvo ? getDisplayCompany(selectedConvo) : (targetCompany ? targetUserName : '')}</p>
                 </div>
-                {(selectedConvo?.vehicleInfo || (vehicleId && !selectedConvo)) && (
-                  <Badge className="bg-muted border-border text-xs font-bold rounded-full px-3 py-1 hidden sm:flex">
-                    {selectedConvo?.vehicleInfo?.brand || 'Consulta de Vehículo'} {selectedConvo?.vehicleInfo?.model || ''}
-                  </Badge>
+                {selectedConvo?.vehicleInfo && (
+                  <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-muted/60 rounded-2xl border border-border shrink-0">
+                    {selectedConvo.vehicleInfo.photo && (
+                      <img src={selectedConvo.vehicleInfo.photo} alt="" className="w-12 h-8 object-cover rounded-lg shrink-0" />
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-black uppercase tracking-tighter leading-none truncate">
+                        {selectedConvo.vehicleInfo.brand} {selectedConvo.vehicleInfo.model}
+                      </p>
+                      <p className="text-[8px] text-muted-foreground font-bold mt-0.5">{selectedConvo.vehicleInfo.year}</p>
+                    </div>
+                  </div>
                 )}
               </div>
 
               <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-6 min-h-0">
                 <div className="max-w-3xl mx-auto space-y-4">
+                  {/* Vehicle context card */}
+                  {selectedConvo?.vehicleInfo && (
+                    <div className="flex items-center gap-4 p-4 rounded-2xl bg-muted/40 border border-border mb-2">
+                      {selectedConvo.vehicleInfo.photo && (
+                        <img src={selectedConvo.vehicleInfo.photo} alt="" className="w-20 h-14 object-cover rounded-xl shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-primary mb-0.5">Consulta sobre</p>
+                        <p className="font-black uppercase tracking-tighter text-sm leading-tight">
+                          {selectedConvo.vehicleInfo.brand} {selectedConvo.vehicleInfo.model} {selectedConvo.vehicleInfo.year}
+                        </p>
+                        {selectedConvo.vehicleInfo.price && (
+                          <p className="text-xs text-muted-foreground font-bold mt-0.5">
+                            ${selectedConvo.vehicleInfo.price.toLocaleString('es-AR')}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
                   {!selectedConvo && isInitializing ? (
                     <div className="flex flex-col items-center justify-center py-20 text-muted-foreground animate-pulse">
                       <Clock className="h-8 w-8 mb-4 animate-spin" />
