@@ -81,20 +81,52 @@ const WheelIcon = ({ className }: { className?: string }) => (
     <defs>
       <radialGradient id="rim-gradient" cx="50%" cy="50%" r="50%">
         <stop offset="60%" stopColor="currentColor" stopOpacity="0.1" />
-        <stop offset="90%" stopColor="currentColor" stopOpacity="0.6" />
+        <stop offset="85%" stopColor="currentColor" stopOpacity="0.5" />
+        <stop offset="95%" stopColor="currentColor" stopOpacity="0.8" />
         <stop offset="100%" stopColor="currentColor" stopOpacity="1" />
       </radialGradient>
+      <radialGradient id="hub" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stopColor="currentColor" stopOpacity="1" />
+        <stop offset="100%" stopColor="currentColor" stopOpacity="0.2" />
+      </radialGradient>
+      <filter id="motion-blur" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="0.5" />
+      </filter>
     </defs>
-    {/* Outer tire tread (dashed) */}
-    <circle cx="50" cy="50" r="45" stroke="currentColor" strokeWidth="8" strokeOpacity="0.3" />
-    <circle cx="50" cy="50" r="45" stroke="currentColor" strokeWidth="8" strokeDasharray="10 6" />
-    {/* Inner rim border */}
-    <circle cx="50" cy="50" r="36" fill="url(#rim-gradient)" stroke="currentColor" strokeWidth="2" />
+    
+    {/* Outer tire tread */}
+    <circle cx="50" cy="50" r="46" stroke="currentColor" strokeWidth="8" strokeOpacity="0.2" />
+    <circle cx="50" cy="50" r="46" stroke="currentColor" strokeWidth="8" strokeDasharray="6 4" filter="url(#motion-blur)" />
+    
+    {/* Inner metallic rim border */}
+    <circle cx="50" cy="50" r="37" fill="url(#rim-gradient)" stroke="currentColor" strokeWidth="2" />
+    
+    {/* Brake disc (behind spokes) */}
+    <circle cx="50" cy="50" r="28" stroke="currentColor" strokeWidth="6" strokeOpacity="0.15" strokeDasharray="2 4" />
+    
+    {/* 5-Spoke Star Design */}
+    <path d="M50 50 L50 15 L55 25 Z" fill="currentColor" opacity="0.9"/>
+    <path d="M50 50 L83 39 L73 45 Z" fill="currentColor" opacity="0.9"/>
+    <path d="M50 50 L70 79 L60 74 Z" fill="currentColor" opacity="0.9"/>
+    <path d="M50 50 L30 79 L40 74 Z" fill="currentColor" opacity="0.9"/>
+    <path d="M50 50 L17 39 L27 45 Z" fill="currentColor" opacity="0.9"/>
+
+    <path d="M50 50 L50 15 L45 25 Z" fill="currentColor" opacity="0.6"/>
+    <path d="M50 50 L83 39 L78 33 Z" fill="currentColor" opacity="0.6"/>
+    <path d="M50 50 L70 79 L76 72 Z" fill="currentColor" opacity="0.6"/>
+    <path d="M50 50 L30 79 L24 72 Z" fill="currentColor" opacity="0.6"/>
+    <path d="M50 50 L17 39 L22 33 Z" fill="currentColor" opacity="0.6"/>
+
     {/* Center hub */}
-    <circle cx="50" cy="50" r="10" fill="currentColor" stroke="currentColor" strokeWidth="2" />
-    {/* Spokes */}
-    <path d="M50 15 L53 40 L47 40 Z M85 50 L60 53 L60 47 Z M50 85 L53 60 L47 60 Z M15 50 L40 53 L40 47 Z" fill="currentColor" opacity="0.9"/>
-    <path d="M75 25 L58 42 L53 37 Z M25 75 L42 58 L47 63 Z M75 75 L58 58 L63 53 Z M25 25 L42 42 L37 47 Z" fill="currentColor" opacity="0.9"/>
+    <circle cx="50" cy="50" r="8" fill="url(#hub)" stroke="currentColor" strokeWidth="1.5" />
+    <circle cx="50" cy="50" r="2" fill="#000" />
+    
+    {/* Lug nuts */}
+    <circle cx="50" cy="45" r="1.5" fill="currentColor" />
+    <circle cx="55" cy="48" r="1.5" fill="currentColor" />
+    <circle cx="53" cy="54" r="1.5" fill="currentColor" />
+    <circle cx="47" cy="54" r="1.5" fill="currentColor" />
+    <circle cx="45" cy="48" r="1.5" fill="currentColor" />
   </svg>
 );
 
@@ -325,11 +357,13 @@ export function Home() {
               <div style={{ perspective: '800px' }} className="relative flex items-center justify-center">
                 {/* Tire floor mark */}
                 <motion.div
-                  animate={{ x: [20, -100], opacity: [0, 1, 0] }}
-                  transition={{ repeat: Infinity, duration: 0.3, ease: "linear" }}
-                  className="absolute bottom-4 right-1/2 w-24 h-1.5 bg-gradient-to-l from-primary to-transparent blur-[1px] rounded-full z-0"
+                  animate={{ x: [50, -100], opacity: [0, 0.8, 0] }}
+                  transition={{ repeat: Infinity, duration: 0.25, ease: "linear" }}
+                  className="absolute bottom-2 right-1/2 w-48 h-4 flex z-0 blur-[1px]"
                   style={{ transform: 'rotateX(50deg) rotateY(15deg)' }}
-                />
+                >
+                  <div className="w-full h-full bg-[repeating-linear-gradient(90deg,transparent,transparent_4px,rgba(34,197,94,0.4)_4px,rgba(34,197,94,0.4)_8px)] rounded-full" />
+                </motion.div>
 
                 <motion.div
                   style={{ rotateX: '50deg', rotateY: '15deg' }}
@@ -337,22 +371,20 @@ export function Home() {
                 >
                   <motion.div
                     animate={{ rotate: 360 }}
-                    transition={{ repeat: Infinity, duration: 0.25, ease: "linear" }}
+                    transition={{ repeat: Infinity, duration: 0.2, ease: "linear" }}
                     className="text-primary"
                   >
                     <WheelIcon className="h-28 w-28 md:h-32 md:w-32" />
                   </motion.div>
                 </motion.div>
               </div>
-              <motion.div 
+              <motion.span 
                 animate={{ opacity: [0.6, 1, 0.6] }}
                 transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-                className="mt-2"
+                className="font-black italic uppercase tracking-[0.2em] text-lg md:text-xl text-primary drop-shadow-[0_0_10px_rgba(34,197,94,0.3)] mt-2"
               >
-                <span className="font-bold uppercase tracking-[0.2em] text-sm md:text-base text-primary drop-shadow-[0_0_8px_rgba(34,197,94,0.3)]">
-                  ARRANCANDO MOTORES
-                </span>
-              </motion.div>
+                ARRANCANDO MOTORES...
+              </motion.span>
             </div>
           </motion.div>
         )}
