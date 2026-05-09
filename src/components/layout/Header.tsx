@@ -124,7 +124,7 @@ export function Header() {
   const navItems = [
     { name: 'Inicio', path: '/', icon: LayoutDashboard },
     { name: 'Marketplace', path: '/marketplace', icon: Car },
-    { name: 'Mensajes', path: '/messages', icon: MessageSquare, badge: unreadCount },
+    { name: 'Agencias', path: '/agencies', icon: Building2 },
   ];
 
   const handleNavClick = (path: string, e: MouseEvent) => {
@@ -172,9 +172,9 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/90 dark:supports-[backdrop-filter]:bg-background/60 transition-colors duration-300">
-      <div className="container mx-auto flex h-20 items-center justify-between px-4 md:px-8">
-        <div className="flex items-center gap-12">
+    <header className="fixed top-4 left-0 right-0 z-50 px-4 md:px-6">
+      <div className="max-w-screen-xl mx-auto flex h-16 items-center justify-between px-5 md:px-8 rounded-2xl border border-border bg-background/95 backdrop-blur-xl shadow-xl transition-colors duration-300">
+        <div className="flex items-center gap-8">
           <Link to="/" className="flex items-center space-x-2 group">
             <Logo className="text-4xl" variant="auto" />
             <Badge variant="outline" className="hidden lg:flex border-primary/20 bg-primary/5 text-primary font-black text-[8px] px-2 py-0 rounded-full tracking-tighter opacity-60 ml-2">
@@ -194,17 +194,32 @@ export function Header() {
               >
                 <item.icon className="h-4 w-4" />
                 {item.name}
-                {item.badge > 0 && !isLanding && (
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground font-black">
-                    {item.badge}
-                  </span>
-                )}
               </Link>
             ))}
           </nav>
         </div>
 
         <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative rounded-full w-10 h-10 border border-border"
+            onClick={() => {
+              if (isLanding) {
+                setIsLoginOpen(true);
+              } else {
+                navigate('/messages');
+              }
+            }}
+          >
+            <MessageSquare className="h-5 w-5" />
+            {unreadCount > 0 && !isLanding && (
+              <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] text-primary-foreground font-black">
+                {unreadCount}
+              </span>
+            )}
+          </Button>
+
           <Button
             variant="ghost"
             size="icon"
@@ -217,15 +232,6 @@ export function Header() {
           <div className="hidden md:flex items-center gap-4">
             {user ? (
               <>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="rounded-full h-11 w-11 hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
-                  onClick={() => navigate('/messages')}
-                >
-                  <MessageSquare className="h-5 w-5" />
-                </Button>
-                
                 <DropdownMenu>
                   <DropdownMenuTrigger className="relative h-11 flex items-center gap-3 px-2 rounded-2xl hover:bg-primary/5 border border-transparent hover:border-primary/20 transition-all bg-transparent outline-none cursor-pointer">
                       <Avatar className="h-8 w-8 border-2 border-primary/20">

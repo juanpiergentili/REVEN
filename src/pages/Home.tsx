@@ -1,9 +1,12 @@
-import { motion, useScroll, useTransform } from 'motion/react';
-import { Shield, Zap, Star, Users, Check, ArrowRight, Quote, Star as StarIcon, X, Mail, Lock, Building2, User, Phone, Fingerprint, CreditCard, ShieldCheck, FileText, Loader2, MapPin, MessageCircle } from 'lucide-react';
+import { motion } from 'motion/react';
+import {
+  Zap, Check, ArrowRight, ShieldCheck, FileText, Loader2,
+  Users, Shield, CreditCard, Plus, MapPin
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Logo } from '../components/layout/Logo';
 import { Footer } from '../components/layout/Footer';
 import { Input } from '@/components/ui/input';
@@ -30,104 +33,154 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { subscribeToVehicles } from '@/src/lib/vehicles';
 import { Vehicle } from '@/src/types';
-import { VehicleCard } from '@/src/components/marketplace/VehicleCard';
+import { MOCK_VEHICLES_FALLBACK } from '@/src/data/mock-vehicles';
 
-const REVIEWS = [
-  { name: "Carlos Benítez", role: "Dueño de Automotores del Sur", comment: "Excelente plataforma. He cerrado más negocios en un mes que en todo el semestre pasado. La atención es cálida y profesional.", photo: "https://picsum.photos/seed/user1/100/100" },
-  { name: "Marina Soler", role: "Gerente de Ventas - LuxCars", comment: "La exclusividad B2B es lo que necesitábamos. Sin curiosos, solo gente del rubro. Muy contenta con los resultados.", photo: "https://picsum.photos/seed/user2/100/100" },
-  { name: "Juan Pablo Domínguez", role: "Representante de Agencias Unidas", comment: "REVEN cambió nuestra forma de rotar stock. El historial de inspecciones por concesionaria nos da una tranquilidad que no existe en otros sitios.", photo: "https://picsum.photos/seed/user3/100/100" },
-  { name: "Ricardo Valenzuela", role: "Director de Plaza Motors", comment: "Atención rápida y eficiente. Los precios mayoristas son reales y competitivos. Recomiendo 100% la plataforma.", photo: "https://picsum.photos/seed/user4/100/100" },
-  { name: "Sofía Navarro", role: "Ventas Premium - Elite Auto", comment: "Hacer negocios entre colegas nunca fue tan fácil. La interfaz es moderna y muy intuitiva. ¡Gracias REVEN!", photo: "https://picsum.photos/seed/user5/100/100" },
-  { name: "Diego Herrera", role: "Concesionaria Herrera Hnos", comment: "La mejor inversión del año. La calidad de los leads es superior. Se nota que hay un filtro real de admisión.", photo: "https://picsum.photos/seed/user6/100/100" },
-  { name: "Lucía Morales", role: "Broker Independiente", comment: "Me encanta la rapidez de la plataforma. Publico y en minutos ya tengo consultas de colegas interesados.", photo: "https://picsum.photos/seed/user7/100/100" },
-  { name: "Gabriel Vaca", role: "Gerente General - Nordelta Cars", comment: "Un entorno seguro para operar. La gestoría interna nos ahorra muchísimo tiempo administrativo.", photo: "https://picsum.photos/seed/user8/100/100" },
-  { name: "Valeria Ortiz", role: "Dueña de Ortiz Automotores", comment: "Estamos haciendo más y mejores negocios. La comunidad es muy activa y profesional. Excelente soporte.", photo: "https://picsum.photos/seed/user9/100/100" },
-  { name: "Marcos Galarza", role: "Ventas - Galarza Trucks", comment: "El sistema de inspecciones verificadas es impecable. Compro con confianza sabiendo el historial de cada concesionaria.", photo: "https://picsum.photos/seed/user10/100/100" },
-  { name: "Ana Belén Castro", role: "Directora - BA Motors", comment: "La plataforma es impecable. El diseño y las animaciones le dan un toque premium que el sector necesitaba.", photo: "https://picsum.photos/seed/user11/100/100" },
-  { name: "Fernando Silveira", role: "Agencia Silveira", comment: "Muy satisfecho con la membresía Platinum. La rotación de stock es constante. Gran herramienta de trabajo.", photo: "https://picsum.photos/seed/user12/100/100" },
-  { name: "Patricia Méndez", role: "Ventas Corporativas", comment: "La calidez en la atención marca la diferencia. Siempre dispuestos a ayudar a que el negocio crezca.", photo: "https://picsum.photos/seed/user13/100/100" },
-  { name: "Esteban Cardozo", role: "Cardozo Automotores", comment: "Precios diferenciales que realmente sirven. He mejorado mis márgenes operativos desde que uso REVEN.", photo: "https://picsum.photos/seed/user14/100/100" },
-  { name: "Mónica Peralta", role: "Gerente - Peralta Autos", comment: "Excelente comunidad. El marketplace cerrado evita perder tiempo con ofertas poco serias.", photo: "https://picsum.photos/seed/user15/100/100" },
-  { name: "Roberto Giménez", role: "Giménez & Co", comment: "La mejor plataforma B2B de Argentina. Sin dudas. Todo funciona a la perfección.", photo: "https://picsum.photos/seed/user16/100/100" },
-  { name: "Claudio Rivas", role: "Rivas Automotores", comment: "Muy contento con los resultados. La plataforma es rápida y los colegas son muy profesionales.", photo: "https://picsum.photos/seed/user17/100/100" },
-  { name: "Sandra Quiroga", role: "Ventas - SQ Cars", comment: "REVEN nos permitió expandir nuestra red de contactos en todo el país. Muy recomendable.", photo: "https://picsum.photos/seed/user18/100/100" },
-  { name: "Jorge Blanco", role: "Blanco Motors", comment: "La atención es de primera. Siempre están atentos a cualquier duda. Los negocios fluyen.", photo: "https://picsum.photos/seed/user19/100/100" },
-  { name: "Mirtha Villalba", role: "Villalba Luxury", comment: "Una joya de plataforma. Exclusividad y buen gusto en cada detalle. Los mejores autos están acá.", photo: "https://picsum.photos/seed/user20/100/100" },
-  { name: "Susana Duarte", role: "Duarte Cars", comment: "¡Me encanta! Es súper fácil de usar y los resultados son inmediatos. ¡Hagan negocios con REVEN!", photo: "https://picsum.photos/seed/user21/100/100" },
-  { name: "Marcelo Ibarra", role: "Ibarra Motors", comment: "Innovación pura para el sector automotor. Hacía falta algo así en Argentina. Gran trabajo.", photo: "https://picsum.photos/seed/user22/100/100" },
-  { name: "Adrián Vera", role: "Vera Cars", comment: "Dinámica, rápida y efectiva. La plataforma ideal para el revendedor moderno.", photo: "https://picsum.photos/seed/user23/100/100" },
-  { name: "Guillermo Ríos", role: "Ríos Automotores", comment: "¡A comerla! Los mejores negocios se hacen acá. La comunidad es de fierro.", photo: "https://picsum.photos/seed/user24/100/100" },
-  { name: "Ricardo Luna", role: "Luna Premium", comment: "Seriedad y compromiso. REVEN es el socio que toda agencia debería tener.", photo: "https://picsum.photos/seed/user25/100/100" },
-  { name: "Lionel Paredes", role: "Rosario Cars", comment: "La mejor del mundo. Hacemos negocios en equipo y siempre ganamos. ¡Vamos REVEN!", photo: "https://picsum.photos/seed/user26/100/100" },
-  { name: "Ángel Romero", role: "Romero Motors", comment: "Goles de media cancha con cada venta. La plataforma es una maravilla.", photo: "https://picsum.photos/seed/user27/100/100" },
-  { name: "Rodrigo Sosa", role: "Sosa Motors", comment: "Intensidad y buenos negocios. REVEN no para nunca. Muy contento.", photo: "https://picsum.photos/seed/user28/100/100" },
-  { name: "Emiliano Martínez", role: "Martínez Cars", comment: "Atajamos las mejores oportunidades. La seguridad de la plataforma es total.", photo: "https://picsum.photos/seed/user29/100/100" },
-  { name: "Julián Fernández", role: "Fernández Motors", comment: "Picamos en punta con REVEN. La rotación de stock es increíble.", photo: "https://picsum.photos/seed/user30/100/100" },
+const PAIN_POINTS_LEFT = [
+  { icon: Zap, title: 'RUIDO CONSTANTE', desc: 'Grupos de WhatsApp con 500 mensajes al día que no llevan a nada.' },
+  { icon: CreditCard, title: 'FALTA DE TIEMPO', desc: 'Llamar una por una para consultar stock y precios que nunca coinciden.' },
+  { icon: Shield, title: 'INSEGURIDAD TOTAL', desc: 'Operar sin referencias de colegas verificados es un riesgo innecesario.' },
 ];
 
-const REVIEWS_ROW_1 = REVIEWS.slice(0, 15);
-const REVIEWS_ROW_2 = REVIEWS.slice(15, 30);
+const PAIN_POINTS_RIGHT = [
+  { icon: Users, title: 'POCA TRANSPARENCIA', desc: 'No saber a qué valores se opera realmente el mercado mayorista.' },
+  { icon: Zap, title: 'CAPITAL PARADO', desc: 'Autos parados 90+ días sin comprador por falta de un canal B2B ágil.' },
+  { icon: FileText, title: 'FALTA DE RESPALDO', desc: 'Cerrar tratos de palabra sin un entorno profesional que te cuide.' },
+];
 
 const STEPS = [
-  { number: "01", title: "Solicitá Admisión", desc: "Completá el formulario con tus datos profesionales y de tu concesionaria." },
-  { number: "02", title: "Verificación", desc: "Auditamos tu perfil para asegurar que sos un profesional real del sector." },
-  { number: "03", title: "Operá en la Red", desc: "Accedé al stock exclusivo, comprá y vendé con máxima rentabilidad." },
+  { number: '01', title: 'Solicitá Admisión', desc: 'Completá el formulario con tus datos profesionales y de tu concesionaria.' },
+  { number: '02', title: 'Verificación', desc: 'Auditamos tu perfil para asegurar que sos un profesional real del sector.' },
+  { number: '03', title: 'Trading Activo', desc: 'Ya podés publicar, comprar y permutar con la red privada más grande de Argentina.' },
 ];
 
-function ReviewCard({ review }: { review: typeof REVIEWS[0] }) {
-  return (
-    <div className="flex-shrink-0 w-[350px] p-6 rounded-[2rem] bg-card/40 backdrop-blur-md border border-border hover:border-primary/20 transition-all mx-3">
-      <div className="flex items-center gap-4 mb-4">
-        <img src={review.photo} alt={review.name} className="h-12 w-12 rounded-full border-2 border-primary/20" />
-        <div>
-          <h5 className="font-bold text-sm uppercase tracking-tighter">{review.name}</h5>
-          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{review.role}</p>
-        </div>
-      </div>
-      <div className="flex gap-1 mb-4">
-        {[...Array(5)].map((_, i) => (
-          <StarIcon key={i} className="h-3 w-3 fill-primary text-primary" />
-        ))}
-      </div>
-      <div className="relative">
-        <Quote className="absolute -top-2 -left-2 h-8 w-8 text-primary/10 -z-10" />
-        <p className="text-sm text-foreground/80 font-medium leading-relaxed italic line-clamp-3">"{review.comment}"</p>
-      </div>
-    </div>
-  );
-}
-
-function InfiniteSlider({ reviews, direction = "left" }: { reviews: typeof REVIEWS, direction?: "left" | "right" }) {
-  return (
-    <div className="overflow-hidden py-4">
-      <motion.div
-        className="flex"
-        animate={{
-          x: direction === "left" ? ["0%", "-50%"] : ["-50%", "0%"]
-        }}
-        transition={{
-          duration: 28,
-          repeat: Infinity,
-          ease: "linear"
-        }}
-      >
-        {[...reviews, ...reviews].map((review, i) => (
-          <ReviewCard key={i} review={review} />
-        ))}
-      </motion.div>
-    </div>
-  );
-}
+const FAQ_ITEMS = [
+  { q: '¿Por qué REVEN no es gratis?', a: 'Porque la exclusividad tiene un costo. El filtro de pago garantiza que todos los miembros son profesionales serios. Sin ruido, sin curiosos.' },
+  { q: '¿Puedo probar antes de pagar?', a: 'Sí. Usá el código REVENFREE60 al registrarte para obtener 60 días de acceso gratuito sin compromisos.' },
+  { q: '¿Hay permanencia mínima?', a: 'No. Podés cancelar cuando quieras sin penalidades. Tu acceso se mantiene activo hasta el fin del período facturado.' },
+  { q: '¿Qué pasa si mi competencia directa está en REVEN?', a: 'El mercado B2B es colaborativo. Las mejores agencias operan con todas las fuentes disponibles. Tu ventaja está en la velocidad y el acceso a precios reales.' },
+  { q: '¿Quién puede ver mis precios?', a: 'Solo miembros verificados de la red. Tus precios B2B son estrictamente confidenciales para el público general.' },
+  { q: '¿Cómo cargo mi stock?', a: 'Desde tu perfil de agencia podés publicar unidades con fotos, descripción, precio y condición. El proceso tarda menos de 3 minutos por unidad.' },
+  { q: '¿Puedo usar REVEN si ya uso otro sistema de gestión?', a: 'Sí. REVEN funciona como canal de venta adicional, complementario a cualquier sistema de gestión que ya uses.' },
+];
 
 const PLAN_PRICES = {
-  plata: { monthly: 120, annual: 999 },
-  oro: { monthly: 180, annual: 1500 },
-  platinum: { monthly: 300, annual: 2500 }
+  plata: { monthly: 200000, annual: 1920000 },
+  oro: { monthly: 350000, annual: 3360000 },
+  platinum: { monthly: 500000, annual: 4800000 },
 };
 
+function formatARS(amount: number) {
+  return `A$ ${amount.toLocaleString('es-AR')}`;
+}
+
+function getInitials(name: string) {
+  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+}
+
+function HomeCarCard({ vehicle }: { vehicle: Vehicle }) {
+  return (
+    <div className="rounded-3xl overflow-hidden bg-[#111] border border-white/5 flex flex-col group hover:border-primary/30 transition-all duration-300">
+      {/* Photo */}
+      <div className="relative aspect-[4/3] overflow-hidden">
+        {vehicle.photos?.[0] ? (
+          <img
+            src={vehicle.photos[0]}
+            alt={`${vehicle.brand} ${vehicle.model}`}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+        ) : (
+          <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground text-sm">Sin foto</div>
+        )}
+        <div className="absolute top-3 left-3">
+          <span className="bg-black/60 backdrop-blur-sm text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full">
+            {vehicle.condition === '0KM' ? '0 KM' : 'USADO'}
+          </span>
+        </div>
+        {/* Car name overlay */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+          <h4 className="text-white font-black tracking-tighter uppercase text-xl leading-none">
+            {vehicle.brand} {vehicle.model}
+          </h4>
+          <p className="text-white/60 text-xs font-bold uppercase tracking-widest mt-0.5">{vehicle.version}</p>
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className="p-4 flex flex-col gap-3 flex-1">
+        {/* Concesionaria */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0">
+              <span className="text-primary text-[9px] font-black">{getInitials(vehicle.sellerCompany || vehicle.sellerName)}</span>
+            </div>
+            <div>
+              <p className="text-white text-[10px] font-black uppercase tracking-tight leading-none">{vehicle.sellerCompany || vehicle.sellerName}</p>
+              <p className="text-white/40 text-[8px] font-bold uppercase tracking-widest mt-0.5">Miembro REVEN</p>
+            </div>
+          </div>
+          {vehicle.city && (
+            <div className="flex items-center gap-1 text-white/40">
+              <MapPin className="h-3 w-3" />
+              <span className="text-[9px] font-bold uppercase">{vehicle.city}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Price button */}
+        <div className="w-full bg-white/5 border border-white/10 rounded-full py-2.5 text-center">
+          <span className="text-white text-[10px] font-black uppercase tracking-widest">PRECIO EXCLUSIVO B2B</span>
+        </div>
+
+        {/* Stats */}
+        <div className="flex gap-2">
+          {[
+            vehicle.year?.toString(),
+            vehicle.km === 0 ? '0 KM' : `${vehicle.km?.toLocaleString('es-AR')} KM`,
+            vehicle.fuelType,
+          ].map((stat, i) => stat && (
+            <div key={i} className="flex-1 bg-white/5 border border-white/10 rounded-full py-1.5 text-center">
+              <span className="text-white/60 text-[9px] font-bold uppercase tracking-wide">{stat}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* CTA */}
+        <Button
+          className="w-full rounded-full h-10 font-black text-xs uppercase tracking-widest bg-primary text-primary-foreground hover:bg-primary/90"
+          onClick={() => {}}
+        >
+          VER DETALLE
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function FAQItem({ item }: { item: { q: string; a: string } }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div
+      className="bg-white/5 border border-white/10 rounded-2xl px-6 py-5 cursor-pointer hover:border-primary/30 transition-colors"
+      onClick={() => setOpen(!open)}
+    >
+      <div className="flex items-center justify-between gap-4">
+        <span className="font-bold uppercase tracking-tight text-sm text-white">{item.q}</span>
+        <Plus className={`h-4 w-4 text-primary shrink-0 transition-transform duration-300 ${open ? 'rotate-45' : ''}`} />
+      </div>
+      {open && (
+        <motion.p
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-3 text-sm text-white/50 font-medium leading-relaxed"
+        >
+          {item.a}
+        </motion.p>
+      )}
+    </div>
+  );
+}
+
 export function Home() {
-  const parallaxRef = useRef(null);
-  const socioRef = useRef(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [isAdmissionOpen, setIsAdmissionOpen] = useState(false);
@@ -138,12 +191,11 @@ export function Home() {
 
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [latestVehicles, setLatestVehicles] = useState<Vehicle[]>([]);
+  const [latestVehicles, setLatestVehicles] = useState<Vehicle[]>(MOCK_VEHICLES_FALLBACK.slice(0, 4));
 
-  // Form States
   const [name, setName] = useState('');
   const [lastName, setLastName] = useState('');
   const [cuil, setCuil] = useState('');
@@ -160,185 +212,227 @@ export function Home() {
   useEffect(() => {
     const unsub = subscribeToVehicles(
       (data) => setLatestVehicles(data.slice(0, 4)),
-      (err) => console.error("Error fetching latest vehicles:", err)
+      (err) => console.error('Error fetching latest vehicles:', err)
     );
     return unsub;
   }, []);
 
   const handleApplyDiscount = () => {
     const code = discountCode.toUpperCase().trim();
-    if (code === 'REVEN20') {
-      setAppliedCoupon('REVEN20');
-      setError(null);
-    } else if (code === 'REVENFREE60') {
-      setAppliedCoupon('REVENFREE60');
-      setError(null);
-    } else {
-      setError('Código de descuento inválido');
-    }
+    if (code === 'REVEN20') { setAppliedCoupon('REVEN20'); setError(null); }
+    else if (code === 'REVENFREE60') { setAppliedCoupon('REVENFREE60'); setError(null); }
+    else setError('Código de descuento inválido');
   };
 
   const handleAdmissionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!acceptedTerms) return;
-
     setLoading(true);
     setError(null);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-
-      await updateProfile(user, {
-        displayName: `${name} ${lastName}`
-      });
-
+      await updateProfile(user, { displayName: `${name} ${lastName}` });
       await setDoc(doc(db, 'users', user.uid), {
-        uid: user.uid,
-        email: email,
-        name: name,
-        lastName: lastName,
-        cuil: cuil,
-        phone: phone,
-        company: company,
-        plan: plan,
-        billingCycle: billingCycle,
-        discountCode: appliedCoupon ?? null,
-        trialDays: isFreeTrial ? 60 : null,
-        role: 'USER',
-        status: 'pending',
-        createdAt: serverTimestamp()
+        uid: user.uid, email, name, lastName, cuil, phone, company,
+        plan, billingCycle, discountCode: appliedCoupon ?? null,
+        trialDays: isFreeTrial ? 60 : null, role: 'USER', status: 'pending',
+        createdAt: serverTimestamp(),
       });
-
       setIsAdmissionOpen(false);
       navigate('/login');
     } catch (err: any) {
-      console.error('Auth Error:', err);
-      if (err.code === 'auth/email-already-in-use') {
-        setError('El email ya se encuentra registrado. Intentá iniciar sesión.');
-      } else if (err.code === 'auth/weak-password') {
-        setError('La contraseña debe tener al menos 6 caracteres.');
-      } else {
-        setError(handleFirestoreError(err, OperationType.SET, 'users'));
+      if (err.code === 'auth/email-already-in-use') setError('El email ya se encuentra registrado. Intentá iniciar sesión.');
+      else if (err.code === 'auth/weak-password') setError('La contraseña debe tener al menos 6 caracteres.');
+      else {
+        handleFirestoreError(err, OperationType.WRITE, 'users');
+        setError('Error al crear la cuenta. Intentá de nuevo.');
       }
     } finally {
       setLoading(false);
     }
   };
 
-  const { scrollYProgress } = useScroll({
-    target: parallaxRef,
-    offset: ["start end", "end start"]
-  });
+  const currentPlanPrices = PLAN_PRICES[plan as keyof typeof PLAN_PRICES];
 
-  const y = useTransform(scrollYProgress, [0, 1], ["-20%", "20%"]);
-
-  const { scrollYProgress: socioScroll } = useScroll({
-    target: socioRef,
-    offset: ["start end", "end start"]
-  });
-
-  const socioY = useTransform(socioScroll, [0, 1], ["-10%", "10%"]);
+  const PLANS = [
+    {
+      key: 'plata', displayName: 'PROFESIONAL', ...PLAN_PRICES.plata, popular: false,
+      features: ['Hasta 5 autos publicados', 'Agencias hasta 2 sucursales', '3 destacados por mes', 'Datos de mercado básicos', '1 usuario por cuenta', 'Contacto directo B2B'],
+      cta: 'SOLICITÀ TU ACCESO',
+    },
+    {
+      key: 'oro', displayName: 'BUSINESS', ...PLAN_PRICES.oro, popular: true,
+      features: ['Hasta 15 autos publicados', 'Concesionarias medianas', '15 destacados por mes', 'Datos completos', 'Alertas personalizadas', '3 usuarios', 'Contacto directo B2B'],
+      cta: 'SOLICITÀ TU ACCESO',
+    },
+    {
+      key: 'platinum', displayName: 'ENTERPRISE', ...PLAN_PRICES.platinum, popular: false,
+      features: ['Autos ilimitados', 'Grupos automotrices', 'Destacados ilimitados', 'Acceso API', 'Alertas personalizadas', 'Usuarios ilimitados', 'Account manager'],
+      cta: 'CONTACTAR VENTAS',
+    },
+  ];
 
   return (
     <div className="flex flex-col min-h-screen bg-background transition-colors duration-300 overflow-x-hidden">
-      {/* Hero Section */}
-      <section className="relative min-h-[90vh] flex items-center overflow-hidden py-20 lg:py-0">
+
+      {/* ── Hero ─────────────────────────────────────────────────────────── */}
+      <section className="relative min-h-screen flex items-center overflow-hidden -mt-24">
         <div className="absolute inset-0 z-0">
-          <img
-            src="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&q=80&w=1920"
-            alt="Hero Background"
-            className="w-full h-full object-cover opacity-40"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-transparent" />
+          <video autoPlay muted loop playsInline className="w-full h-full object-cover opacity-50">
+            <source src="/hero1.mp4" type="video/mp4" />
+            {/* fallback */}
+            <img
+              src="https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&q=80&w=1920"
+              alt="Hero"
+              className="w-full h-full object-cover"
+            />
+          </video>
+          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
         </div>
 
-        <div className="container mx-auto relative z-10 px-6 md:px-12">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-              className="max-w-3xl space-y-6 md:space-y-8 text-center lg:text-left"
-            >
-              <Badge className="bg-primary/20 text-primary border-primary/20 font-semibold tracking-tighter px-6 py-2 rounded-full text-sm inline-flex">
-                COMUNIDAD EXCLUSIVA B2B
-              </Badge>
-              <h1 className="text-4xl sm:text-6xl md:text-8xl font-bold tracking-tighter uppercase leading-[0.9] text-foreground">
-                EL FUTURO DEL <br />
-                NEGOCIO <br />
-                AUTOMOTOR
-              </h1>
-              <p className="text-lg md:text-xl text-muted-foreground font-medium max-w-xl leading-relaxed mx-auto lg:mx-0">
-                La plataforma privada donde los profesionales de Argentina compran y venden stock verificado con máxima rentabilidad.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 pt-4 justify-center lg:justify-start">
-                <Button
-                  size="lg"
-                  className="h-12 md:h-16 px-6 md:px-10 rounded-xl font-bold text-base md:text-lg shadow-xl shadow-primary/20 group uppercase tracking-tighter w-full sm:w-auto"
-                  onClick={() => setIsAdmissionOpen(true)}
-                >
-                  SOLICITAR ADMISIÓN
-                  <ArrowRight className="ml-2 h-5 md:h-6 w-5 md:w-6 group-hover:translate-x-1 transition-transform" />
-                </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="h-12 md:h-16 px-6 md:px-10 rounded-xl font-bold text-base md:text-lg border-border hover:bg-primary/5 uppercase tracking-tighter w-full sm:w-auto"
-                  onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
-                >
-                  VER PLANES
-                </Button>
-              </div>
-            </motion.div>
+        <div className="container mx-auto relative z-10 px-6 md:px-12 py-32 pt-40">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="max-w-3xl space-y-8"
+          >
+            <Badge className="bg-primary text-primary-foreground font-black tracking-widest px-5 py-2 rounded-full text-xs uppercase border-0">
+              LA RED DE TRADING B2B N°1 DE ARGENTINA
+            </Badge>
 
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8, rotate: 5 }}
-              animate={{ opacity: 1, scale: 1, rotate: 0 }}
-              transition={{ duration: 1, delay: 0.2 }}
-              className="hidden lg:block relative"
-            >
-              <div className="absolute inset-0 bg-primary/20 blur-[120px] rounded-full" />
+            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-black tracking-tighter uppercase leading-[0.9] text-white">
+              EL <span className="text-primary">FUTURO</span> DEL <br />
+              NEGOCIO <br />
+              AUTOMOTOR
+            </h1>
+
+            <p className="text-base md:text-lg text-white/60 font-medium max-w-lg leading-relaxed">
+              Marketplace exclusivo B2B, solo para profesionales verificados.<br />
+              Sin intermediarios. Sin público final. Solo negocios reales.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4 pt-2">
+              <Button
+                size="lg"
+                className="h-14 px-10 rounded-full font-black text-sm uppercase tracking-widest shadow-2xl shadow-primary/30 group bg-primary text-primary-foreground hover:bg-primary/90"
+                onClick={() => setIsAdmissionOpen(true)}
+              >
+                SOLICITÀ TU ACCESO
+                <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-14 px-10 rounded-full font-bold text-sm uppercase tracking-widest border-white/20 bg-white/5 text-white hover:bg-white/10"
+              >
+                VER VIDEO DEMO
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── Pain Points ──────────────────────────────────────────────────── */}
+      <section className="py-24 md:py-32 bg-[#0a0a0a]">
+        <div className="container mx-auto px-6 md:px-12">
+          <div className="mb-16 max-w-2xl">
+            <h2 className="text-4xl md:text-6xl font-black tracking-tighter uppercase leading-none text-white mb-4">
+              HACER NEGOCIOS B2B <br />
+              <span className="text-primary italic">HOY ES UN CAOS.</span>
+            </h2>
+            <p className="text-sm font-bold uppercase tracking-widest text-white/40 leading-relaxed max-w-sm">
+              El mercado informal y los grupos de WhatsApp están matando tu rentabilidad y tiempo.
+            </p>
+          </div>
+
+          <div className="relative grid grid-cols-1 lg:grid-cols-[1fr_1fr_1fr] items-stretch min-h-[480px]">
+            {/* Left column */}
+            <div className="space-y-10 py-8 pr-8 z-10">
+              {PAIN_POINTS_LEFT.map((point, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  viewport={{ once: true }}
+                  className="flex flex-col gap-3"
+                >
+                  <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
+                    <point.icon className="h-5 w-5 text-primary" />
+                  </div>
+                  <h3 className="font-black uppercase tracking-widest text-sm text-white">{point.title}</h3>
+                  <p className="text-xs font-bold uppercase tracking-wider text-white/40 leading-relaxed">{point.desc}</p>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Center phone — absolute, spans full column height */}
+            <div className="hidden lg:block relative">
               <img
-                src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=1000"
-                alt="Car"
-                className="relative z-10 w-full h-auto rounded-[3rem] shadow-2xl border border-white/20"
+                src="/celular.jpeg"
+                alt="App REVEN"
+                className="absolute inset-0 w-full h-full object-cover object-top"
+                style={{ maskImage: 'linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%), linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)', maskComposite: 'intersect', WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%), linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)', WebkitMaskComposite: 'source-in' }}
               />
-            </motion.div>
+            </div>
+
+            {/* Right column */}
+            <div className="space-y-10 py-8 pl-8 z-10">
+              {PAIN_POINTS_RIGHT.map((point, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: 20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  viewport={{ once: true }}
+                  className="flex flex-col gap-3"
+                >
+                  <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
+                    <point.icon className="h-5 w-5 text-primary" />
+                  </div>
+                  <h3 className="font-black uppercase tracking-widest text-sm text-white">{point.title}</h3>
+                  <p className="text-xs font-bold uppercase tracking-wider text-white/40 leading-relaxed">{point.desc}</p>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* StepsSection */}
-      <section className="py-24 md:py-32 bg-foreground text-background dark:bg-muted/20 dark:text-foreground relative overflow-hidden">
-        <div className="container mx-auto px-6 md:px-12 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            <div className="space-y-12">
+      {/* ── Steps ────────────────────────────────────────────────────────── */}
+      <section className="py-24 md:py-32 bg-[#0a0a0a] border-t border-white/5">
+        <div className="container mx-auto px-6 md:px-12">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+            <div className="space-y-12 order-2 lg:order-1">
               <div className="space-y-4">
-                <Badge className="bg-primary/20 text-primary border-none font-bold tracking-tighter px-4 py-1 rounded-full text-xs">
+                <Badge className="bg-primary/10 text-primary border border-primary/30 font-black tracking-widest px-4 py-1.5 rounded-full text-[10px] uppercase">
                   PROCESO DE INGRESO
                 </Badge>
-                <h2 className="text-5xl md:text-6xl font-bold tracking-tighter uppercase leading-none text-background dark:text-foreground">
-                  Operá en la red en <br />
-                  <span className="text-primary">3 simples pasos</span>
+                <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase leading-none text-white">
+                  OPERÁ EN LA RED EN <br />
+                  <span className="text-primary italic">3 SIMPLES PASOS</span>
                 </h2>
               </div>
 
-              <div className="space-y-8">
+              <div className="space-y-10">
                 {STEPS.map((step, i) => (
                   <motion.div
                     key={i}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.2 }}
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.15 }}
                     viewport={{ once: true }}
-                    className="flex gap-6 items-start group"
+                    className="flex gap-6 items-start"
                   >
-                    <div className="flex-shrink-0 w-14 h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
+                    <div className="shrink-0 w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-base font-black shadow-lg shadow-primary/20">
                       {step.number}
                     </div>
-                    <div className="space-y-2">
-                      <h3 className="text-2xl font-bold tracking-tighter uppercase text-background dark:text-foreground">{step.title}</h3>
-                      <p className="text-muted-foreground font-medium leading-relaxed max-w-md">{step.desc}</p>
+                    <div className="space-y-1.5 pt-1">
+                      <h3 className="text-base font-black tracking-widest uppercase text-white">{step.title}</h3>
+                      <p className="text-xs font-bold uppercase tracking-wider text-white/40 leading-relaxed">{step.desc}</p>
                     </div>
                   </motion.div>
                 ))}
@@ -346,11 +440,11 @@ export function Home() {
 
               <Button
                 size="lg"
-                className="h-16 px-10 rounded-2xl font-bold text-lg shadow-xl shadow-primary/20 group uppercase tracking-tighter"
+                className="h-14 px-10 rounded-full font-black uppercase tracking-widest bg-primary text-primary-foreground hover:bg-primary/90 shadow-xl shadow-primary/20 group"
                 onClick={() => setIsAdmissionOpen(true)}
               >
                 COMENZAR AHORA
-                <ArrowRight className="ml-2 h-6 w-6 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </Button>
             </div>
 
@@ -359,145 +453,145 @@ export function Home() {
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8 }}
               viewport={{ once: true }}
-              className="relative aspect-video rounded-[3rem] overflow-hidden shadow-2xl border border-white/10"
+              className="order-1 lg:order-2 relative flex justify-center lg:justify-end"
             >
-              <div className="w-full h-full relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-secondary/20 to-primary/10 animate-pulse" />
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-white/90 space-y-4">
-                  <div className="h-20 w-20 rounded-full bg-white/10 backdrop-blur-xl flex items-center justify-center border border-white/20">
-                    <ShieldCheck className="h-10 w-10 text-primary" />
-                  </div>
-                  <p className="text-2xl font-bold tracking-tighter uppercase">Red Verificada</p>
-                  <p className="text-sm text-white/60 font-medium">+500 operaciones mensuales</p>
-                </div>
+              <div className="relative">
+                <img
+                  src="/hombre-polo-reven.png"
+                  alt="Profesional REVEN"
+                  className="max-h-[560px] w-auto object-contain object-top"
+                  onError={(e) => {
+                    const img = e.target as HTMLImageElement;
+                    img.src = 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=600';
+                  }}
+                />
+                {/* Funde el corte inferior con el fondo */}
+                <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/60 to-transparent pointer-events-none" />
+                {/* Funde el lateral izquierdo */}
+                <div className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-[#0a0a0a] to-transparent pointer-events-none" />
               </div>
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* Latest Units */}
-      <section className="py-24 bg-foreground text-background dark:bg-muted/20 dark:text-foreground">
-        <div className="container mx-auto px-6 md:px-12">
-          <div className="flex flex-col sm:flex-row items-center sm:items-end justify-between gap-6 mb-12 text-center sm:text-left">
-            <div className="space-y-2">
-              <Badge className="bg-primary/20 text-primary border-none font-bold tracking-tighter px-4 py-1 rounded-full text-xs inline-flex">
-                RECIÉN INGRESADOS
-              </Badge>
-              <h2 className="text-4xl md:text-5xl font-bold tracking-tighter uppercase text-background dark:text-foreground">Ultimos Ingresos</h2>
+      {/* ── Latest Vehicles ───────────────────────────────────────────────── */}
+      <section className="py-24 bg-[#0a0a0a] border-t border-white/5">
+          <div className="container mx-auto px-6 md:px-12">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-12">
+              <div>
+                <h2 className="text-5xl md:text-6xl font-black tracking-tighter uppercase text-white leading-none">
+                  ÚLTIMOS <br /><span className="text-primary">INGRESOS.</span>
+                </h2>
+              </div>
+              <Button
+                variant="outline"
+                className="rounded-full h-12 px-8 font-black text-xs uppercase tracking-widest border-white/20 text-white bg-transparent hover:bg-white/5"
+                asChild
+              >
+                <Link to="/login">VER CATÁLOGO COMPLETO</Link>
+              </Button>
             </div>
-            <Button variant="link" className="text-primary font-bold uppercase tracking-widest text-xs group" asChild>
-              <Link to="/login">
-                VER TODO EL STOCK
-                <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </Button>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {latestVehicles.map((car) => (
-              <VehicleCard key={car.id} vehicle={car} />
-            ))}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {latestVehicles.map((car) => (
+                <HomeCarCard key={car.id} vehicle={car} />
+              ))}
+            </div>
           </div>
+        </section>
+
+      {/* ── Pricing ───────────────────────────────────────────────────────── */}
+      <section id="pricing" className="py-24 md:py-32 bg-[#0a0a0a] border-t border-white/5 relative overflow-hidden">
+        <div className="absolute inset-0 z-0 opacity-10">
+          <img src="/asfalto.jpeg" alt="" className="w-full h-full object-cover" onError={() => {}} />
         </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section id="pricing" className="py-24 md:py-32 bg-foreground text-background dark:bg-muted/20 dark:text-foreground relative overflow-hidden">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 blur-[120px] rounded-full -z-0" />
         <div className="container mx-auto px-6 md:px-12 relative z-10">
-          <div className="text-center mb-12">
-            <h2 className="text-5xl md:text-7xl font-bold tracking-tighter uppercase mb-6 text-background dark:text-foreground">Planes de Membresía</h2>
-            <p className="text-muted-foreground text-xl max-w-2xl mx-auto font-medium">Elegí el nivel de acceso que mejor se adapte al volumen de tu negocio.</p>
+          <div className="text-center mb-12 space-y-3">
+            <h2 className="text-4xl md:text-6xl font-black tracking-tighter uppercase text-white leading-none">
+              INVERTÍ EN TU <br />
+              <span className="text-primary italic">MAYOR CANAL</span> DE VENTAS.
+            </h2>
           </div>
 
-          {/* Billing cycle toggle */}
-          <div className="flex items-center justify-center gap-4 mb-16">
-            <span className={`text-sm font-bold uppercase tracking-widest transition-colors ${billingCycle === 'monthly' ? 'text-background dark:text-foreground' : 'text-muted-foreground'}`}>Mensual</span>
+          {/* Toggle */}
+          <div className="flex items-center justify-center gap-5 mb-16">
+            <button
+              onClick={() => setBillingCycle('monthly')}
+              className={`text-xs font-black uppercase tracking-widest transition-colors ${billingCycle === 'monthly' ? 'text-white' : 'text-white/30'}`}
+            >
+              MENSUAL
+            </button>
             <button
               onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'annual' : 'monthly')}
-              className={`relative w-16 h-8 rounded-full transition-colors duration-300 focus:outline-none ${billingCycle === 'annual' ? 'bg-primary' : 'bg-muted-foreground/40'}`}
+              className={`relative w-14 h-7 rounded-full transition-colors duration-300 focus:outline-none ${billingCycle === 'annual' ? 'bg-primary' : 'bg-white/20'}`}
             >
-              <span className={`absolute top-1 left-1 w-6 h-6 rounded-full bg-white shadow-md transition-transform duration-300 ${billingCycle === 'annual' ? 'translate-x-8' : 'translate-x-0'}`} />
+              <span className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-transform duration-300 ${billingCycle === 'annual' ? 'translate-x-7' : 'translate-x-0'}`} />
             </button>
-            <span className={`text-sm font-bold uppercase tracking-widest transition-colors ${billingCycle === 'annual' ? 'text-background dark:text-foreground' : 'text-muted-foreground'}`}>
-              Anual
-              <Badge className="ml-2 bg-primary text-primary-foreground text-[10px] font-black tracking-tighter px-2 py-0.5 rounded-full">AHORRÁ HASTA 31%</Badge>
-            </span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setBillingCycle('annual')}
+                className={`text-xs font-black uppercase tracking-widest transition-colors ${billingCycle === 'annual' ? 'text-white' : 'text-white/30'}`}
+              >
+                ANUAL
+              </button>
+              <span className="bg-primary/20 text-primary border border-primary/30 font-black text-[9px] tracking-wider px-2 py-0.5 rounded-full uppercase">
+                HOT OFF
+              </span>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 max-w-7xl mx-auto items-center">
-            {[
-              {
-                name: 'Plata',
-                ...PLAN_PRICES.plata,
-                features: ['Hasta 5 autos publicados', 'Acceso al Marketplace B2B', 'Mensajería directa', 'Soporte estándar'],
-                popular: false,
-                color: 'border-border'
-              },
-              {
-                name: 'Oro',
-                ...PLAN_PRICES.oro,
-                features: ['Hasta 25 autos publicados', 'Acceso al Marketplace B2B', 'Mensajería prioritaria', 'Soporte 24/7', 'Badge de Verificado'],
-                popular: true,
-                color: 'border-primary shadow-primary/20'
-              },
-              {
-                name: 'Platinum',
-                ...PLAN_PRICES.platinum,
-                features: ['Hasta 150 autos publicados', 'Acceso al Marketplace B2B', 'Gestoría preferencial', 'Destacados ilimitados', 'Account Manager dedicado'],
-                popular: false,
-                color: 'border-secondary shadow-secondary/20'
-              }
-            ].map((plan, i) => (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto items-stretch">
+            {PLANS.map((p, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
                 viewport={{ once: true }}
-                className={`relative p-12 rounded-[3.5rem] border-2 ${plan.popular ? 'bg-primary/5 scale-110 z-10' : 'bg-card/50 scale-100'} ${plan.color} flex flex-col transition-all duration-500 hover:shadow-2xl`}
+                className={`relative p-8 rounded-3xl border flex flex-col transition-all duration-300
+                  ${p.popular
+                    ? 'bg-primary border-primary text-primary-foreground'
+                    : 'bg-white/5 border-white/10 text-white hover:border-white/20'
+                  }`}
               >
-                {plan.popular && (
-                  <Badge className="absolute -top-5 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground font-black tracking-tighter px-8 py-2.5 rounded-full text-sm shadow-xl shadow-primary/40">
-                    MÁS ELEGIDO
-                  </Badge>
-                )}
-                <div className="mb-10 text-background dark:text-foreground text-center">
-                  <h3 className={`text-4xl font-black tracking-tighter uppercase mb-3 ${plan.popular ? 'text-primary' : ''}`}>{plan.name}</h3>
-                  <div className="flex items-baseline justify-center gap-2">
-                    <span className="text-7xl font-black tracking-tighter">
-                      U$D {billingCycle === 'annual' ? plan.annual : plan.monthly}
+                <div className="mb-8">
+                  <p className={`text-[10px] font-black uppercase tracking-[0.3em] mb-4 ${p.popular ? 'text-primary-foreground/70' : 'text-white/40'}`}>
+                    {p.displayName}
+                  </p>
+                  <div className="flex items-baseline gap-1">
+                    <span className={`text-3xl md:text-4xl font-black tracking-tighter ${p.popular ? 'text-primary-foreground' : 'text-white'}`}>
+                      {formatARS(billingCycle === 'annual' ? p.annual : p.monthly)}
                     </span>
-                    <span className="text-muted-foreground font-bold uppercase tracking-widest text-sm">/ {billingCycle === 'annual' ? 'año' : 'mes'}</span>
+                    <span className={`text-xs font-bold uppercase ${p.popular ? 'text-primary-foreground/60' : 'text-white/40'}`}>
+                      / {billingCycle === 'annual' ? 'año' : 'mes'}
+                    </span>
                   </div>
-                  {billingCycle === 'annual' ? (
-                    <p className="text-primary font-black text-base mt-5 tracking-tighter uppercase bg-primary/10 inline-block px-4 py-1 rounded-full">
-                      AHORRÁS U$D {plan.monthly * 12 - plan.annual}
-                    </p>
-                  ) : (
-                    <p className="text-muted-foreground font-bold text-base mt-5 tracking-tighter uppercase inline-block px-4 py-1">
-                      U$D {plan.annual} / año
+                  {billingCycle === 'annual' && (
+                    <p className={`text-[10px] font-black uppercase tracking-wider mt-2 ${p.popular ? 'text-primary-foreground/70' : 'text-primary'}`}>
+                      AHORRÁS {formatARS(p.monthly * 12 - p.annual)}
                     </p>
                   )}
                 </div>
 
-                <ul className="space-y-6 mb-14 flex-1">
-                  {plan.features.map((feature, j) => (
-                    <li key={j} className="flex items-center gap-5 text-base font-bold text-background/90 dark:text-foreground/90">
-                      <div className={`h-7 w-7 rounded-full flex items-center justify-center shrink-0 ${plan.popular ? 'bg-primary text-primary-foreground' : 'bg-primary/10 text-primary'}`}>
-                        <Check className="h-4 w-4 stroke-[3]" />
-                      </div>
+                <ul className="space-y-4 mb-8 flex-1">
+                  {p.features.map((feature, j) => (
+                    <li key={j} className={`flex items-center gap-3 text-xs font-bold uppercase tracking-wide ${p.popular ? 'text-primary-foreground/90' : 'text-white/60'}`}>
+                      <Check className={`h-3.5 w-3.5 shrink-0 stroke-[3] ${p.popular ? 'text-primary-foreground' : 'text-primary'}`} />
                       {feature}
                     </li>
                   ))}
                 </ul>
 
                 <Button
-                  className={`w-full h-16 rounded-2xl font-black text-xl uppercase tracking-tighter transition-all ${plan.popular ? 'bg-primary text-primary-foreground shadow-xl shadow-primary/30 hover:scale-105' : 'variant-outline border-border hover:bg-primary/10'}`}
+                  className={`w-full h-12 rounded-full font-black text-xs uppercase tracking-widest transition-all
+                    ${p.popular
+                      ? 'bg-primary-foreground text-primary hover:bg-primary-foreground/90'
+                      : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                    }`}
                   onClick={() => setIsAdmissionOpen(true)}
                 >
-                  SOLICITAR ADMISIÓN
+                  {p.cta}
                 </Button>
               </motion.div>
             ))}
@@ -505,45 +599,113 @@ export function Home() {
         </div>
       </section>
 
-      {/* Admission Dialog */}
+      {/* ── FAQ ───────────────────────────────────────────────────────────── */}
+      <section className="py-24 md:py-32 bg-[#0a0a0a] border-t border-white/5">
+        <div className="container mx-auto px-6 md:px-12">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.4fr] gap-16 items-start">
+            {/* Left */}
+            <div className="space-y-8 lg:sticky lg:top-32">
+              <div>
+                <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase text-white leading-none">
+                  PREGUNTAS <br /><span className="text-primary italic">FRECUENTES.</span>
+                </h2>
+                <p className="mt-6 text-xs font-bold uppercase tracking-widest text-white/40 leading-relaxed max-w-xs">
+                  Explorá las dudas más comunes sobre el ecosistema REVEN y maximizá tu experiencia B2B.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/30">SOPORTE TÉCNICO 24/7</p>
+                <p className="text-sm font-bold text-white">¿Necesitás hablar con un gestor?</p>
+                <button
+                  className="text-sm font-black uppercase tracking-widest text-primary hover:underline"
+                  onClick={() => setIsAdmissionOpen(true)}
+                >
+                  CHAT EN VIVO AHORA.
+                </button>
+              </div>
+            </div>
+
+            {/* Right */}
+            <div className="space-y-3">
+              {FAQ_ITEMS.map((item, i) => (
+                <FAQItem key={i} item={item} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA ───────────────────────────────────────────────────────────── */}
+      <section className="relative py-40 md:py-56 overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          {/* Static image base — always visible */}
+          <img
+            src="/aparcadero.jpg"
+            alt="Car lot"
+            className="w-full h-full object-cover opacity-40"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&q=80&w=1920';
+            }}
+          />
+          {/* Video overlay — plays on top if available */}
+          <video autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover opacity-40">
+            <source src="/video3.mp4" type="video/mp4" />
+          </video>
+          <div className="absolute inset-0 bg-black/50" />
+        </div>
+        <div className="container mx-auto px-6 md:px-12 relative z-10 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="space-y-8"
+          >
+            <h2 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter uppercase text-white leading-[1]">
+              ¿VAS A SEGUIR <br />
+              QUEDÁNDOTE <br />
+              AFUERA?
+            </h2>
+            <Button
+              size="lg"
+              className="h-16 px-14 rounded-full font-black text-sm uppercase tracking-widest bg-primary text-primary-foreground hover:bg-primary/90 shadow-2xl shadow-primary/30"
+              onClick={() => setIsAdmissionOpen(true)}
+            >
+              SOLICITÀ TU ACCESO AHORA
+            </Button>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── Admission Dialog ─────────────────────────────────────────────── */}
       <Dialog open={isAdmissionOpen} onOpenChange={setIsAdmissionOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-4xl p-0 rounded-[2.5rem] border-border bg-card/95 backdrop-blur-2xl shadow-2xl overflow-y-auto max-h-[90dvh]">
           <div className="grid grid-cols-1 md:grid-cols-12 md:min-h-[600px]">
-            {/* Sidebar */}
             <div className="hidden md:flex md:col-span-4 lg:col-span-3 bg-primary p-10 flex-col justify-between text-primary-foreground relative overflow-hidden">
               <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-white/10 blur-3xl rounded-full" />
               <div className="z-10">
                 <Logo variant="mono-white" className="text-4xl mb-6" />
-                <h3 className="text-3xl md:text-4xl font-bold tracking-tighter uppercase leading-[0.9] mb-6 text-primary-foreground">Unite a <br />la Elite</h3>
-                <p className="text-sm md:text-base font-medium opacity-90 leading-relaxed">Accedé al stock más exclusivo de Argentina y potenciá tu rentabilidad B2B.</p>
+                <h3 className="text-3xl font-black tracking-tighter uppercase leading-[0.9] mb-6">Unite a <br />la Elite</h3>
+                <p className="text-sm font-medium opacity-90 leading-relaxed">Accedé al stock más exclusivo de Argentina y potenciá tu rentabilidad B2B.</p>
               </div>
               <div className="z-10 space-y-4">
                 <div className="flex items-center gap-4 bg-white/10 backdrop-blur-xl p-4 rounded-2xl border border-white/20">
                   <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
                     <ShieldCheck className="h-6 w-6" />
                   </div>
-                  <span className="text-[10px] font-bold uppercase tracking-widest">100% Verificado</span>
-                </div>
-                <div className="flex items-center gap-4 bg-white/10 backdrop-blur-xl p-4 rounded-2xl border border-white/20">
-                  <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-                    <Zap className="h-6 w-6" />
-                  </div>
-                  <span className="text-[10px] font-bold uppercase tracking-widest">Operaciones Rápidas</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest">100% Verificado</span>
                 </div>
               </div>
             </div>
 
-            {/* Form */}
             <div className="md:col-span-8 lg:col-span-9 p-8 md:p-12 bg-background/50">
               <DialogHeader className="mb-10 text-left">
                 <DialogTitle className="text-3xl md:text-5xl font-black tracking-tighter uppercase leading-none">Solicitud de Admisión</DialogTitle>
-                <DialogDescription className="font-medium text-sm md:text-base mt-3 text-muted-foreground/80">Completá tus datos profesionales para iniciar el proceso de verificación.</DialogDescription>
+                <DialogDescription className="font-medium text-sm mt-3 text-muted-foreground/80">Completá tus datos profesionales para iniciar el proceso de verificación.</DialogDescription>
               </DialogHeader>
 
               {error && (
-                <div className="p-4 rounded-xl bg-destructive/10 text-destructive text-[10px] font-black uppercase tracking-widest text-center mb-6">
-                  {error}
-                </div>
+                <div className="p-4 rounded-xl bg-destructive/10 text-destructive text-[10px] font-black uppercase tracking-widest text-center mb-6">{error}</div>
               )}
 
               <form className="space-y-6" onSubmit={handleAdmissionSubmit}>
@@ -557,7 +719,6 @@ export function Home() {
                     <Input id="pop-lastname" required value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Pérez" className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4" />
                   </div>
                 </div>
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="pop-cuil" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">CUIL / CUIT</Label>
@@ -568,12 +729,10 @@ export function Home() {
                     <Input id="pop-phone" required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+54 9 11 ..." className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4" />
                   </div>
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="pop-company" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Concesionaria</Label>
                   <Input id="pop-company" required value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Automotores Reven S.A." className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4" />
                 </div>
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="pop-email" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Email Corporativo</Label>
@@ -584,23 +743,22 @@ export function Home() {
                     <Input id="pop-pass" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4" />
                   </div>
                 </div>
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Plan de Membresía</Label>
+                    <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Plan</Label>
                     <Select value={plan} onValueChange={setPlan}>
                       <SelectTrigger className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4">
                         <SelectValue placeholder="Seleccionar plan" />
                       </SelectTrigger>
                       <SelectContent className="rounded-xl">
-                        <SelectItem value="plata">PLAN PLATA (Hasta 5 autos)</SelectItem>
-                        <SelectItem value="oro">PLAN ORO (Hasta 25 autos)</SelectItem>
-                        <SelectItem value="platinum">PLAN PLATINUM (Hasta 150 autos)</SelectItem>
+                        <SelectItem value="plata">PLAN PROFESIONAL</SelectItem>
+                        <SelectItem value="oro">PLAN BUSINESS</SelectItem>
+                        <SelectItem value="platinum">PLAN ENTERPRISE</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Ciclo de Facturación</Label>
+                    <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Facturación</Label>
                     <Tabs value={billingCycle} onValueChange={(v) => setBillingCycle(v as any)} className="w-full">
                       <TabsList className="grid w-full grid-cols-2 h-12 rounded-xl bg-background/50 border border-border p-1">
                         <TabsTrigger value="monthly" className="rounded-lg font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Mensual</TabsTrigger>
@@ -615,15 +773,13 @@ export function Home() {
                     <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Total a pagar</p>
                     {isFreeTrial ? (
                       <div className="flex items-baseline gap-2">
-                        <span className="text-sm text-muted-foreground line-through">
-                          U$D {billingCycle === 'monthly' ? PLAN_PRICES[plan as keyof typeof PLAN_PRICES].monthly : PLAN_PRICES[plan as keyof typeof PLAN_PRICES].annual}
-                        </span>
-                        <span className="text-2xl font-black tracking-tighter text-emerald-400">U$D 0</span>
+                        <span className="text-sm text-muted-foreground line-through">{formatARS(billingCycle === 'monthly' ? currentPlanPrices.monthly : currentPlanPrices.annual)}</span>
+                        <span className="text-2xl font-black tracking-tighter text-emerald-400">A$0</span>
                         <span className="text-xs text-muted-foreground">/ 60 días</span>
                       </div>
                     ) : (
                       <p className="text-xl font-bold tracking-tighter text-primary">
-                        U$D {billingCycle === 'monthly' ? PLAN_PRICES[plan as keyof typeof PLAN_PRICES].monthly : PLAN_PRICES[plan as keyof typeof PLAN_PRICES].annual}
+                        {formatARS(billingCycle === 'monthly' ? currentPlanPrices.monthly : currentPlanPrices.annual)}
                         <span className="text-xs text-muted-foreground ml-1">/ {billingCycle === 'monthly' ? 'mes' : 'año'}</span>
                       </p>
                     )}
@@ -632,7 +788,7 @@ export function Home() {
                     <Badge className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold tracking-tighter px-3 py-1 rounded-full text-[10px]">60 DÍAS GRATIS</Badge>
                   ) : billingCycle === 'annual' && (
                     <Badge className="bg-primary text-primary-foreground font-bold tracking-tighter px-3 py-1 rounded-full text-[10px]">
-                      AHORRÁ U$D {PLAN_PRICES[plan as keyof typeof PLAN_PRICES].monthly * 12 - PLAN_PRICES[plan as keyof typeof PLAN_PRICES].annual}
+                      AHORRÁS {formatARS(currentPlanPrices.monthly * 12 - currentPlanPrices.annual)}
                     </Badge>
                   )}
                 </div>
@@ -643,14 +799,17 @@ export function Home() {
                     <Input id="pop-discount" value={discountCode} onChange={(e) => setDiscountCode(e.target.value)} placeholder="REVEN20" className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4 flex-1" />
                     <Button type="button" variant="secondary" onClick={handleApplyDiscount} className="h-12 rounded-xl font-bold px-6">APLICAR</Button>
                   </div>
-                  {appliedCoupon === 'REVENFREE60' && <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest ml-1">🎉 60 días gratis aplicados</p>}
-                  {appliedCoupon === 'REVEN20' && <p className="text-[10px] font-bold text-primary uppercase tracking-widest ml-1">¡Descuento aplicado!</p>}
+                  {appliedCoupon === 'REVENFREE60' && <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest ml-1">60 días gratis aplicados</p>}
+                  {appliedCoupon === 'REVEN20' && <p className="text-[10px] font-bold text-primary uppercase tracking-widest ml-1">Descuento aplicado</p>}
                 </div>
 
                 <div className="flex items-start space-x-4 pt-2">
                   <Checkbox id="terms" checked={acceptedTerms} onCheckedChange={(checked) => setAcceptedTerms(checked === true)} className="mt-1 border-primary h-5 w-5 rounded-md" />
                   <div className="grid gap-1.5 leading-none">
-                    <label htmlFor="terms" className="text-[11px] font-bold uppercase tracking-wide leading-none cursor-pointer">Acepto las <button type="button" onClick={() => setShowTerms(true)} className="text-primary hover:underline">Bases y Condiciones</button></label>
+                    <label htmlFor="terms" className="text-[11px] font-bold uppercase tracking-wide leading-none cursor-pointer">
+                      Acepto las{' '}
+                      <button type="button" onClick={() => setShowTerms(true)} className="text-primary hover:underline">Bases y Condiciones</button>
+                    </label>
                     <p className="text-[10px] text-muted-foreground font-medium">Declaro que soy un profesional del sector automotor.</p>
                   </div>
                 </div>
@@ -664,7 +823,7 @@ export function Home() {
         </DialogContent>
       </Dialog>
 
-      {/* Terms Dialog */}
+      {/* ── Terms Dialog ─────────────────────────────────────────────────── */}
       <Dialog open={showTerms} onOpenChange={setShowTerms}>
         <DialogContent className="max-w-3xl rounded-[2rem] border-border bg-card/95 backdrop-blur-2xl">
           <DialogHeader>
@@ -676,10 +835,10 @@ export function Home() {
           <ScrollArea className="h-[400px] pr-4 mt-4 text-sm font-medium text-muted-foreground leading-relaxed">
             <section className="space-y-6">
               {[
-                { t: "1. Objeto", c: "REVEN es un ecosistema digital exclusivo para la compra y venta de vehículos entre concesionarias y revendedores profesionales (B2B)." },
-                { t: "2. Verificación", c: "Cada solicitud de admisión es auditada manualmente. El solicitante debe demostrar actividad comercial lícita mediante CUIT/CUIL." },
-                { t: "3. Transparencia", c: "Los vendedores se comprometen a declarar el estado real de las unidades." },
-                { t: "4. Confidencialidad", c: "Toda información de precios mayoristas es estrictamente confidencial." }
+                { t: '1. Objeto', c: 'REVEN es un ecosistema digital exclusivo para la compra y venta de vehículos entre concesionarias y revendedores profesionales (B2B).' },
+                { t: '2. Verificación', c: 'Cada solicitud de admisión es auditada manualmente. El solicitante debe demostrar actividad comercial lícita mediante CUIT/CUIL.' },
+                { t: '3. Transparencia', c: 'Los vendedores se comprometen a declarar el estado real de las unidades.' },
+                { t: '4. Confidencialidad', c: 'Toda información de precios mayoristas es estrictamente confidencial.' },
               ].map((s, i) => (
                 <div key={i}>
                   <h4 className="text-foreground font-bold uppercase tracking-widest text-xs mb-2">{s.t}</h4>
@@ -689,15 +848,12 @@ export function Home() {
             </section>
           </ScrollArea>
           <div className="flex justify-end mt-6">
-            <Button onClick={() => setShowTerms(false)} className="rounded-xl font-bold uppercase tracking-tighter font-black italic">Entendido</Button>
+            <Button onClick={() => setShowTerms(false)} className="rounded-xl font-black uppercase tracking-tighter italic">Entendido</Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      <Footer 
-        onAdmissionClick={() => setIsAdmissionOpen(true)} 
-        onTermsClick={() => setShowTerms(true)} 
-      />
+      <Footer onAdmissionClick={() => setIsAdmissionOpen(true)} onTermsClick={() => setShowTerms(true)} />
     </div>
   );
 }

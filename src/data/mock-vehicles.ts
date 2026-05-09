@@ -9,7 +9,7 @@ export const MOCK_VEHICLES_FALLBACK: Vehicle[] = [
     price: 48500, currency: 'USD', priceNegotiable: false, status: 'ACTIVE', isFeatured: true,
     photos: ['https://images.unsplash.com/photo-1559416523-140ddc3d238c?auto=format&fit=crop&q=80&w=800'],
     description: 'Impecable estado, único dueño.', createdAt: new Date().toISOString(),
-    isInspected: true, hasVTV: true, hasPatenteAlDay: true, viewCount: 245, contactCount: 12,
+    isInspected: true, hasVTV: true, viewCount: 245, contactCount: 12,
   },
   {
     id: '2', sellerId: 's2', sellerName: 'Sport Cars', sellerCompany: 'Sport Cars',
@@ -19,7 +19,7 @@ export const MOCK_VEHICLES_FALLBACK: Vehicle[] = [
     price: 58500, currency: 'USD', priceNegotiable: false, status: 'ACTIVE', isFeatured: true,
     photos: ['https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&q=80&w=800'],
     description: 'Entrega inmediata. Varios colores.', createdAt: new Date().toISOString(),
-    isInspected: true, hasVTV: true, hasPatenteAlDay: true, viewCount: 512, contactCount: 28,
+    isInspected: true, hasVTV: true, viewCount: 512, contactCount: 28,
   },
   {
     id: '3', sellerId: 's3', sellerName: 'Auto Premium', sellerCompany: 'Auto Premium',
@@ -29,7 +29,7 @@ export const MOCK_VEHICLES_FALLBACK: Vehicle[] = [
     price: 16500000, currency: 'ARS', priceNegotiable: true, status: 'ACTIVE', isFeatured: false,
     photos: ['https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?auto=format&fit=crop&q=80&w=800'],
     description: 'El más vendido del país.', createdAt: new Date().toISOString(),
-    isInspected: false, hasVTV: true, hasPatenteAlDay: true, viewCount: 89, contactCount: 5,
+    isInspected: false, hasVTV: true, viewCount: 89, contactCount: 5,
   },
   {
     id: '4', sellerId: 's1', sellerName: 'Concesionaria Norte', sellerCompany: 'Concesionaria Norte',
@@ -39,7 +39,7 @@ export const MOCK_VEHICLES_FALLBACK: Vehicle[] = [
     price: 19500, currency: 'USD', priceNegotiable: false, status: 'ACTIVE', isFeatured: false,
     photos: ['https://images.unsplash.com/photo-1609521263047-f8f205293f24?auto=format&fit=crop&q=80&w=800'],
     description: 'Service oficiales al día.', createdAt: new Date().toISOString(),
-    isInspected: false, hasVTV: true, hasPatenteAlDay: true, viewCount: 134, contactCount: 8,
+    isInspected: false, hasVTV: true, viewCount: 134, contactCount: 8,
   },
   {
     id: '5', sellerId: 's4', sellerName: 'Mundo Autos', sellerCompany: 'Mundo Autos',
@@ -49,7 +49,7 @@ export const MOCK_VEHICLES_FALLBACK: Vehicle[] = [
     price: 62000, currency: 'USD', priceNegotiable: false, status: 'ACTIVE', isFeatured: true,
     photos: ['https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=800'],
     description: 'Nueva generación, tope de gama.', createdAt: new Date().toISOString(),
-    isInspected: true, hasVTV: true, hasPatenteAlDay: true, viewCount: 678, contactCount: 35,
+    isInspected: true, hasVTV: true, viewCount: 678, contactCount: 35,
   },
   {
     id: '6', sellerId: 's2', sellerName: 'Sport Cars', sellerCompany: 'Sport Cars',
@@ -59,7 +59,7 @@ export const MOCK_VEHICLES_FALLBACK: Vehicle[] = [
     price: 32000, currency: 'USD', priceNegotiable: false, status: 'ACTIVE', isFeatured: false,
     photos: ['https://images.unsplash.com/photo-1494976388531-d1058494cdd8?auto=format&fit=crop&q=80&w=800'],
     description: 'Nuevo Duster, entrega inmediata.', createdAt: new Date().toISOString(),
-    isInspected: false, hasVTV: true, hasPatenteAlDay: true, viewCount: 321, contactCount: 18,
+    isInspected: false, hasVTV: true, viewCount: 321, contactCount: 18,
   },
   {
     id: '7', sellerId: 's3', sellerName: 'Auto Premium', sellerCompany: 'Auto Premium',
@@ -69,7 +69,7 @@ export const MOCK_VEHICLES_FALLBACK: Vehicle[] = [
     price: 38500, currency: 'USD', priceNegotiable: true, status: 'ACTIVE', isFeatured: true,
     photos: ['https://images.unsplash.com/photo-1611016186353-9af58c69a533?auto=format&fit=crop&q=80&w=800'],
     description: 'Tope de gama, impecable.', createdAt: new Date().toISOString(),
-    isInspected: false, hasVTV: true, hasPatenteAlDay: true, viewCount: 456, contactCount: 22,
+    isInspected: false, hasVTV: true, viewCount: 456, contactCount: 22,
   },
   {
     id: '8', sellerId: 's4', sellerName: 'Mundo Autos', sellerCompany: 'Mundo Autos',
@@ -79,7 +79,7 @@ export const MOCK_VEHICLES_FALLBACK: Vehicle[] = [
     price: 28900, currency: 'USD', priceNegotiable: false, status: 'ACTIVE', isFeatured: false,
     photos: ['https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&q=80&w=800'],
     description: 'Casi 0km, pocos kilómetros.', createdAt: new Date().toISOString(),
-    isInspected: false, hasVTV: true, hasPatenteAlDay: true, viewCount: 198, contactCount: 10,
+    isInspected: false, hasVTV: true, viewCount: 198, contactCount: 10,
   },
   {
     id: '9', sellerId: 's1', sellerName: 'Concesionaria Norte', sellerCompany: 'Concesionaria Norte',
@@ -89,6 +89,6 @@ export const MOCK_VEHICLES_FALLBACK: Vehicle[] = [
     price: 26500, currency: 'USD', priceNegotiable: false, status: 'ACTIVE', isFeatured: false,
     photos: ['https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&q=80&w=800'],
     description: 'Excelente estado general.', createdAt: new Date().toISOString(),
-    isInspected: false, hasVTV: true, hasPatenteAlDay: true, viewCount: 167, contactCount: 9,
+    isInspected: false, hasVTV: true, viewCount: 167, contactCount: 9,
   },
 ];

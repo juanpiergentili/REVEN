@@ -1,6 +1,6 @@
 import {
   collection, doc, addDoc, query, where, onSnapshot,
-  updateDoc, getDocs, limit, Timestamp
+  updateDoc, getDoc, getDocs, limit, Timestamp
 } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -25,6 +25,7 @@ export interface ConversationData {
   lastMessage?: string;
   lastMessageAt: Timestamp;
   createdAt: Timestamp;
+  unreadBy?: string[];
 }
 
 export interface MessageData {

@@ -109,15 +109,9 @@ function SortDropdown({ value, onChange }: { value: SortOption; onChange: (v: So
   const current = SORT_OPTIONS.find(o => o.value === value)!;
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-10 gap-2 font-bold tracking-tighter uppercase text-xs rounded-full hover:bg-muted border border-border"
-        >
-          {current.label}
-          <ChevronDown className="h-3.5 w-3.5 text-primary" />
-        </Button>
+      <DropdownMenuTrigger className="h-10 gap-2 font-bold tracking-tighter uppercase text-xs rounded-full hover:bg-muted border border-border inline-flex items-center px-3 cursor-pointer">
+        {current.label}
+        <ChevronDown className="h-3.5 w-3.5 text-primary" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="rounded-xl p-2 min-w-[200px]">
         {SORT_OPTIONS.map(opt => (
@@ -435,15 +429,9 @@ export function Marketplace() {
                   <div className="flex items-center gap-3 shrink-0">
                     {/* Items per page */}
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-10 gap-2 font-bold tracking-tighter uppercase text-xs rounded-full hover:bg-muted border border-border"
-                        >
-                          {itemsPerPage}/pág
-                          <ChevronDown className="h-3.5 w-3.5 text-primary" />
-                        </Button>
+                      <DropdownMenuTrigger className="h-10 gap-2 font-bold tracking-tighter uppercase text-xs rounded-full hover:bg-muted border border-border inline-flex items-center px-3 cursor-pointer">
+                        {itemsPerPage}/pág
+                        <ChevronDown className="h-3.5 w-3.5 text-primary" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="rounded-xl p-2 min-w-[140px]">
                         {ITEMS_PER_PAGE_OPTIONS.map(opt => (
