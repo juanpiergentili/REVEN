@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ChevronLeft, Eye, MessageSquare, Clock, BarChart3, TrendingUp, Award,
   MapPin, Building2, Phone, Mail, Loader2, ShoppingBag, Plus, Settings,
-  Instagram, Facebook, ExternalLink, Trash2,
+  Instagram, Facebook, ExternalLink, Trash2, User,
   Save, Pause, Play, CheckCircle2, Package, Lock, Camera, Upload, Globe,
 } from 'lucide-react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -73,11 +73,15 @@ export function Profile() {
   const [editForm, setEditForm] = useState({
     company: '', province: '', city: '', phone: '', name: '', lastName: '',
     cuit: '', instagram: '', facebook: '', whatsapp: '', avatarUrl: '', logoUrl: '',
+    showEmail: true, showPhone: true,
   });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState('');
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState('');
+  const [instaHandle, setInstaHandle] = useState('');
+  const [instaVerifying, setInstaVerifying] = useState(false);
+  const [instaVerified, setInstaVerified] = useState<boolean | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
@@ -109,6 +113,8 @@ export function Profile() {
             whatsapp: data.whatsapp || '',
             avatarUrl: data.avatarUrl || '',
             logoUrl: data.logoUrl || '',
+            showEmail: data.showEmail !== false,
+            showPhone: data.showPhone !== false,
           });
         }
         let vehicles = await getVehiclesBySeller(targetUid);
@@ -140,10 +146,12 @@ export function Profile() {
         avatarUrl = await getDownloadURL(storageRef);
       }
 
+      // Logo always takes priority over Instagram avatar
       if (logoFile) {
-        const storageRef = ref(storage, `users/${user.uid}/logo_${Date.now()}`);
-        await uploadBytes(storageRef, logoFile);
-        logoUrl = await getDownloadURL(storageRef);
+        const logoRef = ref(storage, `users/${user.uid}/logo_${Date.now()}`);
+        await uploadBytes(logoRef, logoFile);
+        logoUrl = await getDownloadURL(logoRef);
+        // If there's a logo and avatar is an Instagram import, keep it but logo becomes the main visual
       }
 
       const updateData = { ...editForm, avatarUrl, logoUrl, updatedAt: new Date() };
@@ -305,7 +313,9 @@ export function Profile() {
 
           <div className="flex-1 min-w-0 space-y-4">
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-3xl md:text-5xl font-bold tracking-tighter uppercase break-words">{profileData.name} {profileData.lastName}</h1>
+              <h1 className="text-3xl md:text-5xl font-bold tracking-tighter uppercase break-words">
+                {profileData.company || `${profileData.name} ${profileData.lastName}`}
+              </h1>
               <Badge className={`font-black text-[10px] rounded-full px-4 py-1 shadow-lg shadow-primary/20 uppercase tracking-widest border ${getTierColor(getAgencyTier(profileData.points || 0))}`}>
                 {getAgencyTier(profileData.points || 0)}
               </Badge>
@@ -315,8 +325,10 @@ export function Profile() {
             </div>
 
             <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
-              <span className="flex items-center gap-2 font-bold text-foreground">
-                <Building2 className="h-4 w-4 text-primary" /> {profileData.company || 'Agencia Independiente'}
+              <span className="flex items-center gap-2 font-medium text-foreground/80">
+                <User className="h-4 w-4 text-primary" />
+                <span>{profileData.name} {profileData.lastName}</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">· APODERADO</span>
               </span>
               <span className="flex items-center gap-2 font-bold text-foreground">
                 <MapPin className="h-4 w-4 text-primary" /> {cityName}{cityName ? ', ' : ''}{provinceName}
@@ -326,11 +338,15 @@ export function Profile() {
               </span>
             </div>
 
-            <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground pt-2 min-w-0">
-              <span className="flex items-center gap-1.5 min-w-0"><Mail className="h-3.5 w-3.5 shrink-0" /> <span className="truncate">{profileData.email}</span></span>
-              <span className="flex items-center gap-1.5 shrink-0"><Phone className="h-3.5 w-3.5" /> {profileData.phone || 'No especificado'}</span>
+            <div className="flex flex-wrap items-center gap-4 text-xs text-white/80 pt-2 min-w-0">
+              {(profileData.showEmail !== false) && (
+                <span className="flex items-center gap-1.5 min-w-0"><Mail className="h-3.5 w-3.5 shrink-0" /> <span className="truncate">{profileData.email}</span></span>
+              )}
+              {(profileData.showPhone !== false) && (
+                <span className="flex items-center gap-1.5 shrink-0"><Phone className="h-3.5 w-3.5" /> {profileData.phone || 'No especificado'}</span>
+              )}
               {profileData.cuit && (
-                <span className="flex items-center gap-1.5 shrink-0 font-bold text-foreground">
+                <span className="flex items-center gap-1.5 shrink-0 font-bold text-white">
                   CUIT: {profileData.cuit}
                 </span>
               )}
@@ -523,8 +539,7 @@ export function Profile() {
       <input
         ref={avatarInputRef}
         type="file"
-        accept="image/*"
-        capture="environment"
+        accept="image/jpeg,image/png,image/webp"
         className="hidden"
         onChange={e => {
           const f = e.target.files?.[0];
@@ -554,43 +569,87 @@ export function Profile() {
             {/* Foto de perfil */}
             <div className="space-y-4">
               <Label className="text-[10px] font-bold uppercase tracking-widest text-primary">Foto de Perfil</Label>
-              <div className="flex items-center gap-6">
+              <div className="flex items-start gap-6">
                 <div className="relative shrink-0">
-                  <div className="h-20 w-20 rounded-full border-4 border-primary/20 overflow-hidden bg-muted flex items-center justify-center">
-                    {avatarPreview || editForm.avatarUrl ? (
-                      <img src={avatarPreview || editForm.avatarUrl} alt="avatar" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-2xl font-bold text-primary">{profileData?.name?.[0]}{profileData?.lastName?.[0]}</span>
-                    )}
-                  </div>
+                  <Avatar className="h-20 w-20 border-4 border-primary/20">
+                    <AvatarImage src={avatarPreview || editForm.avatarUrl || ''} />
+                    <AvatarFallback className="bg-primary/10 text-primary font-bold text-2xl">
+                      {profileData?.name?.[0]}{profileData?.lastName?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
                   <button
+                    type="button"
                     onClick={() => avatarInputRef.current?.click()}
                     className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground rounded-full w-7 h-7 flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
                   >
-                    <Camera className="h-3.5 w-3.5" />
+                    <Upload className="h-3.5 w-3.5" />
                   </button>
                 </div>
-                <div className="flex-1 space-y-2">
+                <div className="flex-1 space-y-3">
                   <Button
+                    type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => avatarInputRef.current?.click()}
                     className="rounded-full font-bold uppercase tracking-widest text-[10px] gap-2 border-border h-9"
                   >
-                    <Upload className="h-3.5 w-3.5" /> Subir foto
+                    <Upload className="h-3.5 w-3.5" /> Subir imagen de galería
                   </Button>
-                  <p className="text-[10px] text-muted-foreground font-medium">JPG, PNG o WEBP. También podés tomar una foto con la cámara.</p>
-                  <div className="flex items-center gap-2">
-                    <Instagram className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <Input
-                      placeholder="Tu usuario de Instagram"
-                      className="h-8 rounded-xl bg-muted border-border text-xs font-bold"
-                      onChange={e => {
-                        const u = e.target.value.replace('@', '');
-                        if (u) setEditForm(prev => ({ ...prev, avatarUrl: `https://unavatar.io/instagram/${u}` }));
-                      }}
-                    />
-                    <span className="text-[10px] text-muted-foreground whitespace-nowrap">Importar foto</span>
+                  <p className="text-[10px] text-muted-foreground font-medium">JPG, PNG o WEBP. Tamaño máximo 5MB.</p>
+
+                  {/* Instagram import */}
+                  <div className="border border-border rounded-2xl p-3 space-y-2 bg-muted/30">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+                      <Instagram className="h-3 w-3" /> Importar imagen de perfil de Instagram
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs font-bold">@</span>
+                        <Input
+                          placeholder="usuario"
+                          value={instaHandle}
+                          onChange={e => {
+                            setInstaHandle(e.target.value.replace('@', ''));
+                            setInstaVerified(null);
+                          }}
+                          className="h-8 rounded-xl bg-background border-border text-xs font-bold pl-7"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={!instaHandle || instaVerifying}
+                        onClick={async () => {
+                          setInstaVerifying(true);
+                          setInstaVerified(null);
+                          const url = `https://unavatar.io/instagram/${instaHandle}`;
+                          try {
+                            const res = await fetch(url);
+                            if (res.ok && res.headers.get('content-type')?.startsWith('image')) {
+                              setInstaVerified(true);
+                              setEditForm(prev => ({ ...prev, avatarUrl: url }));
+                              setAvatarPreview(url);
+                            } else {
+                              setInstaVerified(false);
+                            }
+                          } catch {
+                            setInstaVerified(false);
+                          } finally {
+                            setInstaVerifying(false);
+                          }
+                        }}
+                        className="h-8 rounded-xl font-bold text-[10px] uppercase tracking-widest shrink-0"
+                      >
+                        {instaVerifying ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Verificar'}
+                      </Button>
+                    </div>
+                    {instaVerified === true && (
+                      <p className="text-[10px] text-emerald-500 font-bold flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Perfil encontrado. Imagen importada.</p>
+                    )}
+                    {instaVerified === false && (
+                      <p className="text-[10px] text-destructive font-bold">No se encontró el perfil de Instagram. Verificá el usuario.</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -659,7 +718,7 @@ export function Profile() {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Nombre de Contacto</Label>
+                <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-primary">Nombre del Dueño / Apoderado</Label>
                 <Input
                   value={editForm.name}
                   onChange={e => setEditForm(prev => ({ ...prev, name: e.target.value }))}
@@ -686,6 +745,31 @@ export function Profile() {
                   placeholder="20-12345678-9"
                   className="h-12 rounded-xl bg-muted border-border font-bold"
                 />
+              </div>
+            </div>
+
+            {/* Visibilidad de contacto */}
+            <div className="space-y-3">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-primary">Visibilidad en el Perfil Público</Label>
+              <div className="flex flex-col gap-3 p-4 rounded-xl bg-muted/40 border border-border">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={editForm.showEmail}
+                    onChange={e => setEditForm(prev => ({ ...prev, showEmail: e.target.checked }))}
+                    className="w-4 h-4 rounded accent-primary"
+                  />
+                  <span className="text-xs font-bold uppercase tracking-widest">Mostrar email en el perfil</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={editForm.showPhone}
+                    onChange={e => setEditForm(prev => ({ ...prev, showPhone: e.target.checked }))}
+                    className="w-4 h-4 rounded accent-primary"
+                  />
+                  <span className="text-xs font-bold uppercase tracking-widest">Mostrar teléfono en el perfil</span>
+                </label>
               </div>
             </div>
 

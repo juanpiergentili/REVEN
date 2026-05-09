@@ -745,7 +745,7 @@ export function Home() {
               <form className="space-y-6" onSubmit={handleAdmissionSubmit}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="pop-name" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Nombre</Label>
+                    <Label htmlFor="pop-name" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Nombre del Dueño / Apoderado</Label>
                     <Input id="pop-name" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Juan" className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4" />
                   </div>
                   <div className="space-y-2">
