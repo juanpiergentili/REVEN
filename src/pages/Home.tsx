@@ -33,7 +33,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { subscribeToVehicles } from '@/src/lib/vehicles';
 import { Vehicle } from '@/src/types';
-import { MOCK_VEHICLES_FALLBACK } from '@/src/data/mock-vehicles';
 
 const PAIN_POINTS_LEFT = [
   { icon: Zap, title: 'RUIDO CONSTANTE', desc: 'Grupos de WhatsApp con 500 mensajes al día que no llevan a nada.' },
@@ -92,7 +91,7 @@ function HomeCarCard({ vehicle }: { vehicle: Vehicle }) {
           <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground text-sm">Sin foto</div>
         )}
         <div className="absolute top-3 left-3">
-          <span className="bg-black/60 backdrop-blur-sm text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full">
+          <span className="bg-black/60 backdrop-blur-sm text-white text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full">
             {vehicle.condition === '0KM' ? '0 KM' : 'USADO'}
           </span>
         </div>
@@ -101,7 +100,7 @@ function HomeCarCard({ vehicle }: { vehicle: Vehicle }) {
           <h4 className="text-white font-black tracking-tighter uppercase text-xl leading-none">
             {vehicle.brand} {vehicle.model}
           </h4>
-          <p className="text-white/60 text-xs font-bold uppercase tracking-widest mt-0.5">{vehicle.version}</p>
+          <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest mt-0.5">{vehicle.version}</p>
         </div>
       </div>
 
@@ -111,24 +110,24 @@ function HomeCarCard({ vehicle }: { vehicle: Vehicle }) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0">
-              <span className="text-primary text-[9px] font-black">{getInitials(vehicle.sellerCompany || vehicle.sellerName)}</span>
+              <span className="text-primary text-[10px] font-black">{getInitials(vehicle.sellerCompany || vehicle.sellerName)}</span>
             </div>
             <div>
-              <p className="text-white text-[10px] font-black uppercase tracking-tight leading-none">{vehicle.sellerCompany || vehicle.sellerName}</p>
-              <p className="text-white/40 text-[8px] font-bold uppercase tracking-widest mt-0.5">Miembro REVEN</p>
+              <p className="text-white text-xs font-black uppercase tracking-tight leading-none">{vehicle.sellerCompany || vehicle.sellerName}</p>
+              <p className="text-white/40 text-[9px] font-bold uppercase tracking-widest mt-0.5">Miembro REVEN</p>
             </div>
           </div>
           {vehicle.city && (
             <div className="flex items-center gap-1 text-white/40">
               <MapPin className="h-3 w-3" />
-              <span className="text-[9px] font-bold uppercase">{vehicle.city}</span>
+              <span className="text-[10px] font-bold uppercase">{vehicle.city}</span>
             </div>
           )}
         </div>
 
         {/* Price button */}
         <div className="w-full bg-white/5 border border-white/10 rounded-full py-2.5 text-center">
-          <span className="text-white text-[10px] font-black uppercase tracking-widest">PRECIO EXCLUSIVO B2B</span>
+          <span className="text-white text-[11px] font-black uppercase tracking-widest">PRECIO EXCLUSIVO B2B</span>
         </div>
 
         {/* Stats */}
@@ -139,7 +138,7 @@ function HomeCarCard({ vehicle }: { vehicle: Vehicle }) {
             vehicle.fuelType,
           ].map((stat, i) => stat && (
             <div key={i} className="flex-1 bg-white/5 border border-white/10 rounded-full py-1.5 text-center">
-              <span className="text-white/60 text-[9px] font-bold uppercase tracking-wide">{stat}</span>
+              <span className="text-white/60 text-[10px] font-bold uppercase tracking-wide truncate px-1">{stat}</span>
             </div>
           ))}
         </div>
@@ -194,7 +193,7 @@ export function Home() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [latestVehicles, setLatestVehicles] = useState<Vehicle[]>(MOCK_VEHICLES_FALLBACK.slice(0, 4));
+  const [latestVehicles, setLatestVehicles] = useState<Vehicle[]>([]);
 
   const [name, setName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -279,31 +278,33 @@ export function Home() {
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <section className="relative min-h-screen flex items-center overflow-hidden -mt-24">
         <div className="absolute inset-0 z-0">
-          <video autoPlay muted loop playsInline className="w-full h-full object-cover opacity-50">
+          <video 
+            autoPlay 
+            muted 
+            loop 
+            playsInline 
+            preload="auto"
+            poster="https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&q=80&w=1920"
+            className="w-full h-full object-cover opacity-50 bg-[#111]"
+          >
             <source src="/hero1.mp4" type="video/mp4" />
-            {/* fallback */}
-            <img
-              src="https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&q=80&w=1920"
-              alt="Hero"
-              className="w-full h-full object-cover"
-            />
           </video>
           <div className="absolute inset-0 bg-gradient-to-r from-background via-background/60 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
         </div>
 
-        <div className="container mx-auto relative z-10 px-6 md:px-12 py-32 pt-40">
+        <div className="container mx-auto relative z-10 px-4 md:px-8 lg:px-12 py-32 pt-40">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             className="max-w-3xl space-y-8"
           >
-            <Badge className="bg-primary text-primary-foreground font-black tracking-widest px-5 py-2 rounded-full text-xs uppercase border-0">
+            <Badge className="bg-primary text-primary-foreground font-black tracking-widest px-5 py-2 rounded-full text-[10px] md:text-xs uppercase border-0">
               LA RED DE TRADING B2B N°1 DE ARGENTINA
             </Badge>
 
-            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-black tracking-tighter uppercase leading-[0.9] text-white">
+            <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-black tracking-tighter uppercase leading-[0.9] text-white break-words">
               EL <span className="text-primary">FUTURO</span> DEL <br />
               NEGOCIO <br />
               AUTOMOTOR
@@ -337,7 +338,7 @@ export function Home() {
 
       {/* ── Pain Points ──────────────────────────────────────────────────── */}
       <section className="py-24 md:py-32 bg-[#0a0a0a]">
-        <div className="container mx-auto px-6 md:px-12">
+        <div className="container mx-auto px-4 md:px-8 lg:px-12">
           <div className="mb-16 max-w-2xl">
             <h2 className="text-4xl md:text-6xl font-black tracking-tighter uppercase leading-none text-white mb-4">
               HACER NEGOCIOS B2B <br />
@@ -404,7 +405,7 @@ export function Home() {
 
       {/* ── Steps ────────────────────────────────────────────────────────── */}
       <section className="py-24 md:py-32 bg-[#0a0a0a] border-t border-white/5">
-        <div className="container mx-auto px-6 md:px-12">
+        <div className="container mx-auto px-4 md:px-8 lg:px-12">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
             <div className="space-y-12 order-2 lg:order-1">
               <div className="space-y-4">
@@ -477,7 +478,7 @@ export function Home() {
 
       {/* ── Latest Vehicles ───────────────────────────────────────────────── */}
       <section className="py-24 bg-[#0a0a0a] border-t border-white/5">
-          <div className="container mx-auto px-6 md:px-12">
+          <div className="container mx-auto px-4 md:px-8 lg:px-12">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-12">
               <div>
                 <h2 className="text-5xl md:text-6xl font-black tracking-tighter uppercase text-white leading-none">
@@ -506,7 +507,7 @@ export function Home() {
         <div className="absolute inset-0 z-0 opacity-10">
           <img src="/asfalto.jpeg" alt="" className="w-full h-full object-cover" onError={() => {}} />
         </div>
-        <div className="container mx-auto px-6 md:px-12 relative z-10">
+        <div className="container mx-auto px-4 md:px-8 lg:px-12 relative z-10">
           <div className="text-center mb-12 space-y-3">
             <h2 className="text-4xl md:text-6xl font-black tracking-tighter uppercase text-white leading-none">
               INVERTÍ EN TU <br />

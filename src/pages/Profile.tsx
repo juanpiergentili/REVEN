@@ -3,8 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ChevronLeft, Eye, MessageSquare, Clock, BarChart3, TrendingUp, Award,
   MapPin, Building2, Phone, Mail, Loader2, ShoppingBag, Plus, Settings,
-  Save, Pause, Play, CheckCircle2, Package, Lock, Camera, Upload, Globe,
-  Instagram, Facebook, ExternalLink,
+  Instagram, Facebook, ExternalLink, Trash2,
 } from 'lucide-react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '@/src/lib/firebase';
@@ -21,7 +20,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { getResponseBadge } from '@/src/lib/analytics';
 import { useAuth, db } from '@/src/lib/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { getVehiclesBySeller, updateVehicleStatus, pauseAllSellerListings } from '@/src/lib/vehicles';
+import { getVehiclesBySeller, updateVehicleStatus, pauseAllSellerListings, deleteVehicle } from '@/src/lib/vehicles';
+import { addPointsToAgency, getAgencyTier, getTierColor } from '@/src/lib/gamification';
 import { isTrialUser, isTrialExpired, getTrialDaysRemaining, getTrialEndDate, TRIAL_MAX_LISTINGS } from '@/src/lib/trial';
 import { useGeoRef } from '@/src/hooks/useGeoRef';
 import { getVehiclePath } from '@/src/lib/seo';
@@ -64,6 +64,9 @@ export function Profile() {
   const [allListings, setAllListings] = useState<Vehicle[]>([]);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [markingSoldId, setMarkingSoldId] = useState<string | null>(null);
+  const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
+  const [soldDialogVehicle, setSoldDialogVehicle] = useState<Vehicle | null>(null);
+  const [isAddingPoints, setIsAddingPoints] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -169,12 +172,35 @@ export function Profile() {
   };
 
   const handleMarkSold = async (vehicle: Vehicle) => {
-    setMarkingSoldId(vehicle.id);
+    setSoldDialogVehicle(vehicle);
+  };
+
+  const confirmMarkSold = async (soldViaReven: boolean) => {
+    if (!soldDialogVehicle || !user) return;
+    setMarkingSoldId(soldDialogVehicle.id);
+    setIsAddingPoints(true);
     try {
-      await updateVehicleStatus(vehicle.id, 'SOLD');
-      setAllListings(prev => prev.map(v => v.id === vehicle.id ? { ...v, status: 'SOLD' } : v));
+      await updateVehicleStatus(soldDialogVehicle.id, 'SOLD');
+      if (soldViaReven) {
+        await addPointsToAgency(user.uid, 50);
+        setProfileData((prev: any) => ({ ...prev, points: (prev.points || 0) + 50 }));
+      }
+      setAllListings(prev => prev.map(v => v.id === soldDialogVehicle.id ? { ...v, status: 'SOLD' } : v));
     } finally {
       setMarkingSoldId(null);
+      setIsAddingPoints(false);
+      setSoldDialogVehicle(null);
+    }
+  };
+
+  const handleDelete = async (vehicle: Vehicle) => {
+    if (!confirm('¿Estás seguro de que deseas eliminar este vehículo permanentemente?')) return;
+    setIsDeletingId(vehicle.id);
+    try {
+      await deleteVehicle(vehicle.id);
+      setAllListings(prev => prev.filter(v => v.id !== vehicle.id));
+    } finally {
+      setIsDeletingId(null);
     }
   };
 
@@ -279,8 +305,8 @@ export function Profile() {
           <div className="flex-1 min-w-0 space-y-4">
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="text-3xl md:text-5xl font-bold tracking-tighter uppercase break-words">{profileData.name} {profileData.lastName}</h1>
-              <Badge className="bg-primary text-primary-foreground font-black text-[10px] rounded-full px-4 py-1 shadow-lg shadow-primary/20 uppercase tracking-widest">
-                {profileData.plan || 'Standard'}
+              <Badge className={`font-black text-[10px] rounded-full px-4 py-1 shadow-lg shadow-primary/20 uppercase tracking-widest border ${getTierColor(getAgencyTier(profileData.points || 0))}`}>
+                {getAgencyTier(profileData.points || 0)}
               </Badge>
               <Badge className={`${responseBadge.color} text-white font-bold text-[10px] rounded-full px-4 py-1 uppercase tracking-widest`}>
                 {responseBadge.label}
@@ -435,34 +461,63 @@ export function Profile() {
                   : soldListings;
                 return (
                   <TabsContent key={tab} value={tab}>
-                    <VehicleGrid
-                      listings={list}
-                      isOwnProfile={isOwnProfile}
-                      trialExpired={trialExpired}
-                      togglingId={togglingId}
-                      markingSoldId={markingSoldId}
-                      onToggle={handleToggleStatus}
-                      onMarkSold={handleMarkSold}
-                      onNavigate={(id) => {
-                        const v = list.find(x => x.id === id);
-                        if (v) navigate(getVehiclePath(v.brand, v.model, v.version, v.year, id));
-                      }}
-                      onEdit={(id) => navigate(`/publish?edit=${id}`)}
-                    />
-                  </TabsContent>
-                );
-              })}
-            </Tabs>
-          ) : (
-            <VehicleGrid listings={visibleListings} isOwnProfile={false} togglingId={null} markingSoldId={null} onToggle={() => {}} onMarkSold={() => {}} onNavigate={(id) => {
-              const v = visibleListings.find(x => x.id === id);
-              if (v) navigate(getVehiclePath(v.brand, v.model, v.version, v.year, id));
-            }} onEdit={() => {}} />
-          )}
-        </div>
-      </main>
-
-      {/* Edit Dialog */}
+                      <VehicleGrid
+                        listings={list}
+                        isOwnProfile={isOwnProfile}
+                        trialExpired={trialExpired}
+                        togglingId={togglingId}
+                        markingSoldId={markingSoldId}
+                        isDeletingId={isDeletingId}
+                        onToggle={handleToggleStatus}
+                        onMarkSold={handleMarkSold}
+                        onDelete={handleDelete}
+                        onNavigate={(id) => {
+                          const v = list.find(x => x.id === id);
+                          if (v) navigate(getVehiclePath(v.brand, v.model, v.version, v.year, id));
+                        }}
+                        onEdit={(id) => navigate(`/publish?edit=${id}`)}
+                      />
+                    </TabsContent>
+                  );
+                })}
+              </Tabs>
+            ) : (
+              <VehicleGrid listings={visibleListings} isOwnProfile={false} togglingId={null} markingSoldId={null} isDeletingId={null} onToggle={() => {}} onMarkSold={() => {}} onDelete={() => {}} onNavigate={(id) => {
+                const v = visibleListings.find(x => x.id === id);
+                if (v) navigate(getVehiclePath(v.brand, v.model, v.version, v.year, id));
+              }} onEdit={() => {}} />
+            )}
+          </div>
+        </main>
+  
+        {/* Sold Dialog */}
+        <Dialog open={!!soldDialogVehicle} onOpenChange={() => setSoldDialogVehicle(null)}>
+          <DialogContent className="max-w-md rounded-3xl border-border bg-card p-6">
+            <DialogTitle className="text-xl font-bold tracking-tighter uppercase text-center mb-2">Marcar como Vendido</DialogTitle>
+            <DialogDescription className="text-center font-medium mb-6">
+              ¡Felicitaciones por la venta! ¿Realizaste esta venta a través de REVEN?
+            </DialogDescription>
+            <div className="flex flex-col gap-3">
+              <Button 
+                onClick={() => confirmMarkSold(true)} 
+                disabled={isAddingPoints}
+                className="rounded-xl font-bold uppercase tracking-widest text-xs h-12 shadow-lg shadow-primary/20"
+              >
+                {isAddingPoints ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Sí, lo vendí por la plataforma (+50 pts)'}
+              </Button>
+              <Button 
+                onClick={() => confirmMarkSold(false)} 
+                disabled={isAddingPoints}
+                variant="outline"
+                className="rounded-xl font-bold uppercase tracking-widest text-xs h-12 border-border"
+              >
+                {isAddingPoints ? <Loader2 className="h-4 w-4 animate-spin" /> : 'No, lo vendí por otro medio'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+  
+        {/* Edit Dialog */}
       {/* Hidden file inputs */}
       <input
         ref={avatarInputRef}
@@ -684,15 +739,17 @@ export function Profile() {
 }
 
 function VehicleGrid({
-  listings, isOwnProfile, trialExpired = false, togglingId, markingSoldId, onToggle, onMarkSold, onNavigate, onEdit,
+  listings, isOwnProfile, trialExpired = false, togglingId, markingSoldId, isDeletingId, onToggle, onMarkSold, onDelete, onNavigate, onEdit,
 }: {
   listings: Vehicle[];
   isOwnProfile: boolean;
   trialExpired?: boolean;
   togglingId: string | null;
   markingSoldId: string | null;
+  isDeletingId: string | null;
   onToggle: (v: Vehicle) => void;
   onMarkSold: (v: Vehicle) => void;
+  onDelete: (v: Vehicle) => void;
   onNavigate: (id: string) => void;
   onEdit: (id: string) => void;
 }) {
@@ -757,48 +814,66 @@ function VehicleGrid({
                 <span className="flex items-center gap-1.5"><MessageSquare className="h-3.5 w-3.5 text-primary" /> {listing.contactCount || 0} Consultas</span>
               </div>
 
+              {isOwnProfile && (
+                <div className="flex flex-wrap gap-2 pt-2 border-t border-border mt-2">
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => onEdit(listing.id)}
-                    className="rounded-full font-bold uppercase tracking-widest text-[9px] h-8 px-4 border-border hover:border-primary/30 gap-1.5"
+                    className="flex-1 rounded-full font-bold uppercase tracking-widest text-[9px] h-8 px-2 border-border hover:border-primary/30 gap-1.5"
                   >
-                    <Settings className="h-3.5 w-3.5" /> Editar
+                    <Settings className="h-3.5 w-3.5 shrink-0" /> Editar
                   </Button>
                   {listing.status !== 'SOLD' && (
                     <>
                       <Button
                         size="sm"
                         variant="outline"
-                        disabled={isToggling || isMarkingSold || (trialExpired && listing.status === 'PAUSED')}
+                        disabled={isToggling || isMarkingSold || (trialExpired && listing.status === 'PAUSED') || isDeletingId === listing.id}
                         onClick={() => onToggle(listing)}
-                        className="rounded-full font-bold uppercase tracking-widest text-[9px] h-8 px-4 border-border hover:border-primary/30 gap-1.5"
+                        className="flex-1 rounded-full font-bold uppercase tracking-widest text-[9px] h-8 px-2 border-border hover:border-primary/30 gap-1.5"
                       >
                         {isToggling ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
+                          <Loader2 className="h-3 w-3 animate-spin shrink-0" />
                         ) : trialExpired && listing.status === 'PAUSED' ? (
-                          <><Lock className="h-3 w-3" /> Requiere plan</>
+                          <><Lock className="h-3 w-3 shrink-0" /> Plan</>
                         ) : listing.status === 'ACTIVE' ? (
-                          <><Pause className="h-3 w-3" /> Pausar</>
+                          <><Pause className="h-3 w-3 shrink-0" /> Pausar</>
                         ) : (
-                          <><Play className="h-3 w-3" /> Activar</>
+                          <><Play className="h-3 w-3 shrink-0" /> Activar</>
                         )}
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
-                        disabled={isToggling || isMarkingSold}
+                        disabled={isToggling || isMarkingSold || isDeletingId === listing.id}
                         onClick={() => onMarkSold(listing)}
-                        className="rounded-full font-bold uppercase tracking-widest text-[9px] h-8 px-4 border-primary/40 text-primary hover:bg-primary/10 gap-1.5"
+                        className="flex-1 rounded-full font-bold uppercase tracking-widest text-[9px] h-8 px-2 border-primary/40 text-primary hover:bg-primary/10 gap-1.5"
                       >
                         {isMarkingSold ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
+                          <Loader2 className="h-3 w-3 animate-spin shrink-0" />
                         ) : (
-                          <><CheckCircle2 className="h-3 w-3" /> Vendido</>
+                          <><CheckCircle2 className="h-3 w-3 shrink-0" /> Vendido</>
                         )}
                       </Button>
                     </>
                   )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={isDeletingId === listing.id}
+                    onClick={() => onDelete(listing)}
+                    className="flex-none rounded-full h-8 w-8 p-0 border-red-500/30 text-red-500 hover:bg-red-500/10 flex items-center justify-center"
+                    title="Eliminar vehículo"
+                  >
+                    {isDeletingId === listing.id ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-3.5 w-3.5" />
+                    )}
+                  </Button>
+                </div>
+              )}
             </div>
           </motion.div>
         );

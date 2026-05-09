@@ -29,8 +29,8 @@ import {
   type PublishFormData, type InspectionFormData,
 } from '@/src/lib/publish-helpers';
 
-const TOTAL_STEPS = 7;
-const STEP_LABELS = ['Datos', 'Fotos', 'Legal', 'Estado', 'Cotización', 'Precio', 'Preview'];
+const TOTAL_STEPS = 6;
+const STEP_LABELS = ['Datos', 'Fotos', 'Legal', 'Estado', 'Cotización', 'Preview'];
 const currentYear = new Date().getFullYear();
 const YEARS = Array.from({ length: currentYear - 1989 }, (_, i) => String(currentYear + 1 - i));
 
@@ -54,7 +54,7 @@ export function Publish() {
   const [activeListingCount, setActiveListingCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
-  const [skipCotizacion, setSkipCotizacion] = useState(false);
+  const [showAcara, setShowAcara] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
   const photoUpload = usePhotoUpload();
@@ -62,6 +62,29 @@ export function Publish() {
   const { brands, models, versions, valuations, loadingBrands, loadingModels, loadingVersions } = useArgAutos(formData.brand, formData.model, formData.version);
   const [versionsForYear, setVersionsForYear] = useState<Version[]>([]);
   const [loadingVersionYear, setLoadingVersionYear] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchProfile = async () => {
+      try {
+        const docSnap = await getDoc(doc(db, 'users', user.uid));
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setUserProfile(data);
+          if (!editId) {
+            setFormData(prev => ({
+              ...prev,
+              province: prev.province || data.province || '',
+              city: prev.city || data.city || ''
+            }));
+          }
+        }
+      } catch (e) {
+        console.error('Error fetching profile', e);
+      }
+    };
+    fetchProfile();
+  }, [user, editId]);
 
   useEffect(() => {
     setVersionsForYear(versions);
@@ -808,74 +831,10 @@ export function Publish() {
                         </p>
                       </div>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => { setSkipCotizacion(true); setStep(s => s + 1); }}
-                      className="shrink-0 rounded-full font-bold uppercase tracking-widest text-[10px] gap-2 border-border hover:border-primary/30 h-9 px-4"
-                    >
-                      <SkipForward className="h-3.5 w-3.5" /> Omitir cotización
-                    </Button>
                   </div>
 
-                  <div>
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="bg-primary/10 w-10 h-10 rounded-full flex items-center justify-center">
-                        <TrendingUp className="h-5 w-5 text-primary" />
-                      </div>
-                      <h3 className="text-xl font-bold tracking-tighter uppercase">Cotización ACARA</h3>
-                    </div>
-
-                    {valuations.length > 0 ? (
-                      <div className="rounded-2xl border border-border overflow-hidden">
-                        <div className="grid grid-cols-3 bg-muted/50 px-6 py-3 border-b border-border">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Año</span>
-                          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-right">Valor ACARA</span>
-                          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-right">Moneda</span>
-                        </div>
-                        {valuations.map((val) => (
-                          <div
-                            key={val.id}
-                            className={`grid grid-cols-3 px-6 py-4 border-b border-border last:border-b-0 transition-colors ${
-                              val.year.toString() === formData.year
-                                ? 'bg-primary/5 border-l-4 border-l-primary'
-                                : 'hover:bg-muted/30'
-                            }`}
-                          >
-                            <span className={`font-bold tracking-tighter ${val.year.toString() === formData.year ? 'text-primary' : ''}`}>
-                              {val.year}
-                              {val.year.toString() === formData.year && (
-                                <Badge className="ml-2 bg-primary/15 text-primary border-none text-[8px] font-black px-2 py-0 rounded-full">TU AÑO</Badge>
-                              )}
-                            </span>
-                            <span className="font-bold text-right tracking-tighter text-lg">
-                              $ {val.acara_price ? formatArgentineNumber(val.acara_price) : formatArgentineNumber(val.price)}
-                            </span>
-                            <span className="text-right text-xs font-bold text-muted-foreground uppercase">
-                              {val.currency || 'ARS'}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center py-10 text-center space-y-4 rounded-2xl bg-muted/30 border border-border">
-                        <div className="bg-muted w-14 h-14 rounded-full flex items-center justify-center">
-                          <DollarSign className="h-7 w-7 text-muted-foreground" />
-                        </div>
-                        <div className="space-y-1 max-w-sm">
-                          <p className="font-bold uppercase tracking-tighter">Sin cotización ACARA disponible</p>
-                          <p className="text-xs text-muted-foreground font-medium">
-                            {!formData.version
-                              ? 'Seleccioná una versión en el paso 1 para consultar cotizaciones.'
-                              : 'Esta versión aún no tiene cotización ACARA. Podés definir tu precio a continuación.'}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Price entry directly in cotización step */}
-                  <div className="space-y-4 pt-2 border-t border-border">
+                  {/* Price Entry */}
+                  <div className="space-y-4">
                     <h4 className="text-sm font-bold uppercase tracking-widest text-primary">Definir precio de venta</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-3">
@@ -885,8 +844,8 @@ export function Publish() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent className="rounded-xl">
-                            <SelectItem value="ARS">Pesos (ARS)</SelectItem>
                             <SelectItem value="USD">Dólares (USD)</SelectItem>
+                            <SelectItem value="ARS">Pesos (ARS)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -915,6 +874,75 @@ export function Publish() {
                     </div>
                   </div>
 
+                  {/* ACARA Valuation Toggle */}
+                  <div className="border-t border-border pt-6">
+                    {!showAcara ? (
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowAcara(true)}
+                        className="w-full h-14 rounded-2xl font-bold uppercase tracking-widest text-xs border-border hover:border-primary/50 gap-2"
+                      >
+                        <TrendingUp className="h-4 w-4" /> Consultar cotización ACARA
+                      </Button>
+                    ) : (
+                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-4">
+                        <div className="flex items-center gap-3 mb-6">
+                          <div className="bg-primary/10 w-10 h-10 rounded-full flex items-center justify-center">
+                            <TrendingUp className="h-5 w-5 text-primary" />
+                          </div>
+                          <h3 className="text-xl font-bold tracking-tighter uppercase">Cotización ACARA</h3>
+                        </div>
+
+                        {valuations.length > 0 ? (
+                          <div className="rounded-2xl border border-border overflow-hidden">
+                            <div className="grid grid-cols-3 bg-muted/50 px-6 py-3 border-b border-border">
+                              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Año</span>
+                              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-right">Valor ACARA</span>
+                              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-right">Moneda</span>
+                            </div>
+                            {valuations.map((val) => (
+                              <div
+                                key={val.id}
+                                className={`grid grid-cols-3 px-6 py-4 border-b border-border last:border-b-0 transition-colors ${
+                                  val.year.toString() === formData.year
+                                    ? 'bg-primary/5 border-l-4 border-l-primary'
+                                    : 'hover:bg-muted/30'
+                                }`}
+                              >
+                                <span className={`font-bold tracking-tighter ${val.year.toString() === formData.year ? 'text-primary' : ''}`}>
+                                  {val.year}
+                                  {val.year.toString() === formData.year && (
+                                    <Badge className="ml-2 bg-primary/15 text-primary border-none text-[8px] font-black px-2 py-0 rounded-full">TU AÑO</Badge>
+                                  )}
+                                </span>
+                                <span className="font-bold text-right tracking-tighter text-lg">
+                                  $ {val.acara_price ? formatArgentineNumber(val.acara_price) : formatArgentineNumber(val.price)}
+                                </span>
+                                <span className="text-right text-xs font-bold text-muted-foreground uppercase">
+                                  {val.currency || 'ARS'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center py-10 text-center space-y-4 rounded-2xl bg-muted/30 border border-border">
+                            <div className="bg-muted w-14 h-14 rounded-full flex items-center justify-center">
+                              <DollarSign className="h-7 w-7 text-muted-foreground" />
+                            </div>
+                            <div className="space-y-1 max-w-sm">
+                              <p className="font-bold uppercase tracking-tighter">Sin cotización ACARA disponible</p>
+                              <p className="text-xs text-muted-foreground font-medium">
+                                {!formData.version
+                                  ? 'Seleccioná una versión en el paso 1 para consultar cotizaciones.'
+                                  : 'Esta versión aún no tiene cotización ACARA. Podés definir tu precio a continuación.'}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </motion.div>
+                    )}
+                  </div>
+
                   <div className="flex flex-col-reverse sm:flex-row justify-between pt-4 gap-4">
                     <Button variant="ghost" onClick={prevStep} className="w-full sm:w-auto h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-muted">
                       <ArrowLeft className="h-5 w-5 stroke-[3]" /> Anterior
@@ -927,50 +955,6 @@ export function Publish() {
               )}
 
               {step === 6 && (
-                <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-8">
-                  <h3 className="text-xl font-bold tracking-tighter uppercase">Precio y Condiciones de Venta</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-3">
-                      <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Moneda</Label>
-                      <Select value={formData.currency} onValueChange={v => update('currency', v as 'USD' | 'ARS')}>
-                        <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl">
-                          <SelectItem value="USD">Dólares (USD)</SelectItem>
-                          <SelectItem value="ARS">Pesos (ARS)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-3">
-                      <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Precio</Label>
-                      <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-lg">
-                          {formData.currency === 'USD' ? 'U$D' : '$'}
-                        </span>
-                        <Input
-                          type="text"
-                          inputMode="numeric"
-                          value={formatArgentineNumber(formData.price)}
-                          onChange={e => update('price', parseArgentineNumber(e.target.value))}
-                          placeholder="0"
-                          className="h-14 rounded-xl bg-muted border-border font-bold text-2xl text-primary tracking-tighter pl-14"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex flex-col-reverse sm:flex-row justify-between pt-4 gap-4">
-                    <Button variant="ghost" onClick={prevStep} className="w-full sm:w-auto h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-muted">
-                      <ArrowLeft className="h-5 w-5 stroke-[3]" /> Anterior
-                    </Button>
-                    <Button onClick={nextStep} className="w-full sm:w-auto h-14 px-10 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 shadow-lg shadow-primary/20">
-                      Siguiente <ArrowRight className="h-5 w-5 stroke-[3]" />
-                    </Button>
-                  </div>
-                </motion.div>
-              )}
-
-              {step === 7 && (
                 <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-8">
                   <StepPreview 
                     formData={formData} 

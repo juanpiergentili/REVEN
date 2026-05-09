@@ -14,7 +14,6 @@ import { db } from '@/src/lib/firebase';
 import type { Vehicle } from '@/src/types';
 import { extractIdFromSlug } from '@/src/lib/seo';
 
-import { MOCK_VEHICLES_FALLBACK } from '@/src/data/mock-vehicles';
 
 export function VehicleDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -41,23 +40,10 @@ export function VehicleDetail() {
           return;
         }
 
-        // Fallback to MOCK data
-        const mockVehicle = MOCK_VEHICLES_FALLBACK.find(v => v.id === id);
-        if (mockVehicle) {
-          setVehicle(mockVehicle);
-          setLoading(false);
-        } else {
-          setNotFound(true);
-          setLoading(false);
-        }
+        setNotFound(true);
+        setLoading(false);
       } catch (err) {
-        // Even if Firestore fails, try mock
-        const mockVehicle = MOCK_VEHICLES_FALLBACK.find(v => v.id === id);
-        if (mockVehicle) {
-          setVehicle(mockVehicle);
-        } else {
-          setNotFound(true);
-        }
+        setNotFound(true);
         setLoading(false);
       }
     }
@@ -526,7 +512,7 @@ export function VehicleDetail() {
                   size="lg"
                   className="w-full h-16 rounded-2xl font-bold text-lg shadow-xl shadow-primary/20 group uppercase tracking-tighter"
                   onClick={() => navigate(
-                    `/messages?userId=${vehicle.sellerId}&userName=${encodeURIComponent(vehicle.sellerName)}&company=${encodeURIComponent(vehicle.sellerName)}&vehicleId=${vehicle.id}`
+                    `/messages?userId=${vehicle.sellerId}&userName=${encodeURIComponent(vehicle.sellerName)}&company=${encodeURIComponent(vehicle.sellerCompany || vehicle.sellerName)}&vehicleId=${vehicle.id}`
                   )}
                 >
                   <MessageSquare className="mr-2 h-6 w-6" />

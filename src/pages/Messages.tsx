@@ -132,11 +132,15 @@ export function Messages() {
   const isDeepLinkCreating = !selectedConvo && selectedConvoId && (targetUserId || convoId);
 
   const getDisplayName = (convo: ConversationData) => {
-    return convo.buyerId === currentUserId ? convo.sellerName : convo.buyerName;
+    const company = convo.buyerId === currentUserId ? convo.sellerCompany : convo.buyerCompany;
+    const name = convo.buyerId === currentUserId ? convo.sellerName : convo.buyerName;
+    return company || name || 'Usuario';
   };
 
   const getDisplayCompany = (convo: ConversationData) => {
-    return convo.buyerId === currentUserId ? convo.sellerCompany : convo.buyerCompany;
+    const company = convo.buyerId === currentUserId ? convo.sellerCompany : convo.buyerCompany;
+    const name = convo.buyerId === currentUserId ? convo.sellerName : convo.buyerName;
+    return company ? name : '';
   };
 
   const filteredConversations = conversations.filter(c => {
@@ -148,7 +152,7 @@ export function Messages() {
 
   return (
     <div className="h-dvh flex flex-col bg-background">
-      <div className="border-b border-border bg-background/80 backdrop-blur-xl px-6 py-4 flex items-center gap-4">
+      <div className={`border-b border-border bg-background/80 backdrop-blur-xl px-6 py-4 flex items-center gap-4 ${selectedConvoId ? 'hidden md:flex' : 'flex'}`}>
         <Button variant="ghost" size="icon" className="rounded-full" onClick={() => navigate(-1)}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
@@ -256,12 +260,12 @@ export function Messages() {
                 </Button>
                 <Avatar className="h-10 w-10 border-2 border-primary/20">
                   <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
-                    {(selectedConvo ? getDisplayName(selectedConvo) : targetUserName || '...').split(' ').map(n => n[0]).join('').slice(0, 2)}
+                    {(selectedConvo ? getDisplayName(selectedConvo) : targetCompany || targetUserName || '...').split(' ').map(n => n[0]).join('').slice(0, 2)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-bold uppercase tracking-tighter text-sm truncate">{selectedConvo ? getDisplayName(selectedConvo) : targetUserName}</h3>
-                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{selectedConvo ? getDisplayCompany(selectedConvo) : targetCompany || targetUserName}</p>
+                  <h3 className="font-bold uppercase tracking-tighter text-sm truncate">{selectedConvo ? getDisplayName(selectedConvo) : targetCompany || targetUserName}</h3>
+                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{selectedConvo ? getDisplayCompany(selectedConvo) : (targetCompany ? targetUserName : '')}</p>
                 </div>
                 {(selectedConvo?.vehicleInfo || (vehicleId && !selectedConvo)) && (
                   <Badge className="bg-muted border-border text-xs font-bold rounded-full px-3 py-1 hidden sm:flex">
@@ -303,10 +307,22 @@ export function Messages() {
                 </div>
               </div>
 
-              <div className="p-4 border-t border-border bg-background/50 backdrop-blur-xl">
-                <div className="max-w-3xl mx-auto flex items-center gap-3">
+              <div className="p-4 border-t border-border bg-background/50 backdrop-blur-xl flex flex-col gap-3">
+                {/* Quick replies */}
+                <div className="flex gap-2 overflow-x-auto pb-1 max-w-3xl mx-auto w-full scrollbar-none">
+                  {['¿Sigue disponible?', '¿Me tomás permuta?', '¿Último precio?', 'Me interesa'].map((reply) => (
+                    <button
+                      key={reply}
+                      onClick={() => setNewMessage(reply)}
+                      className="shrink-0 px-4 py-1.5 rounded-full bg-muted hover:bg-muted/80 text-xs font-bold text-muted-foreground whitespace-nowrap transition-colors"
+                    >
+                      {reply}
+                    </button>
+                  ))}
+                </div>
+                <div className="max-w-3xl mx-auto flex items-center gap-3 w-full">
                   <Input value={newMessage} onChange={e => setNewMessage(e.target.value)} onKeyDown={handleKeyPress} placeholder="Escribí tu mensaje..." className="flex-1 h-12 rounded-2xl bg-muted border-border text-base" />
-                  <Button onClick={handleSend} disabled={!newMessage.trim()} size="lg" className="h-12 w-12 rounded-2xl shadow-lg shadow-primary/20"><Send className="h-5 w-5" /></Button>
+                  <Button onClick={handleSend} disabled={!newMessage.trim()} size="lg" className="h-12 w-12 rounded-2xl shadow-lg shadow-primary/20 shrink-0"><Send className="h-5 w-5" /></Button>
                 </div>
               </div>
             </>

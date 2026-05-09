@@ -1,6 +1,6 @@
 import { db, storage, convertTimestamp } from './firebase';
 import {
-  collection, addDoc, updateDoc, doc,
+  collection, addDoc, updateDoc, doc, deleteDoc,
   query, where, orderBy, limit, onSnapshot, serverTimestamp, getDocs,
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -67,6 +67,10 @@ export async function updateVehicleStatus(
   status: Vehicle['status'],
 ): Promise<void> {
   await updateDoc(doc(db, 'vehicles', vehicleId), { status });
+}
+
+export async function deleteVehicle(vehicleId: string): Promise<void> {
+  await deleteDoc(doc(db, 'vehicles', vehicleId));
 }
 
 export async function pauseAllSellerListings(sellerId: string): Promise<number> {

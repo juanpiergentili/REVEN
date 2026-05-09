@@ -1,4 +1,17 @@
+# ── Desactivar caché del servidor ─────────────────────
+<IfModule mod_headers.c>
+  # Anti-caché para TODO (forzar recarga)
+  Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
+  Header set Pragma "no-cache"
+  Header set Expires "Thu, 01 Jan 1970 00:00:00 GMT"
+  Header unset ETag
+</IfModule>
+
+FileETag None
+
+# ── SPA Routing ──────────────────────────────────────
 Options -MultiViews
+DirectoryIndex index.html
 RewriteEngine On
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d

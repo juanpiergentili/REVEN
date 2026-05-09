@@ -22,26 +22,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { Vehicle, WantedSearch } from '@/src/types';
 import { useMarketplaceFilters, SORT_OPTIONS, SortOption } from '@/src/hooks/useMarketplaceFilters';
-import { MOCK_VEHICLES_FALLBACK } from '@/src/data/mock-vehicles';
 
-// ─── Mock wanted searches (dev only — reemplazar con subscribeToWantedSearches real) ──
-const FUTURE = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-const MOCK_WANTED: WantedSearch[] = [
-  {
-    id: 'w1', userId: 'u1', userName: 'Marcos Galarza', companyName: 'Galarza Trucks',
-    brand: 'Toyota', model: 'Hilux', conditions: ['USADO'],
-    yearRange: { min: 2020, max: 2024 }, budgetRange: { min: 35000, max: 45000 },
-    currency: 'USD', description: 'Busco Hilux SRX 4x4, pocos km, color blanco o gris plata.',
-    status: 'active', expiresAt: FUTURE, createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'w2', userId: 'u2', userName: 'Marina Soler', companyName: 'LuxCars',
-    brand: 'Volkswagen', model: 'Amarok', conditions: ['0KM', 'USADO'],
-    yearRange: { min: 2022, max: 2024 }, budgetRange: { min: 40000, max: 55000 },
-    currency: 'USD', description: 'Necesito Amarok V6 para cliente directo. Pago contado.',
-    status: 'active', expiresAt: FUTURE, createdAt: new Date().toISOString(),
-  },
-];
 
 // ─── Empty State ──────────────────────────────────────────────────────────────
 
@@ -225,7 +206,7 @@ const ITEMS_PER_PAGE_OPTIONS = [12, 24, 48];
 
 export function Marketplace() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [wantedSearches, setWantedSearches] = useState<WantedSearch[]>(MOCK_WANTED);
+  const [wantedSearches, setWantedSearches] = useState<WantedSearch[]>([]);
   const [loadingVehicles, setLoadingVehicles] = useState(true);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showPublishWanted, setShowPublishWanted] = useState(false);
@@ -240,21 +221,15 @@ export function Marketplace() {
     activeFilterCount, hasActiveFilters,
   } = useMarketplaceFilters(vehicles);
 
-  // Vehicles subscription — mocks solo en DEV si no hay datos reales
+  // Vehicles subscription
   useEffect(() => {
     const unsub = subscribeToVehicles(
       (data) => {
-        if (data.length > 0) {
-          setVehicles(data);
-        } else if (import.meta.env.DEV) {
-          setVehicles(MOCK_VEHICLES_FALLBACK);
-        } else {
-          setVehicles([]);
-        }
+        setVehicles(data);
         setLoadingVehicles(false);
       },
       () => {
-        setVehicles(import.meta.env.DEV ? MOCK_VEHICLES_FALLBACK : []);
+        setVehicles([]);
         setLoadingVehicles(false);
       },
     );
@@ -265,7 +240,7 @@ export function Marketplace() {
   useEffect(() => {
     const unsub = subscribeToWantedSearches(
       (data) => {
-        setWantedSearches(data.length > 0 ? data : MOCK_WANTED);
+        setWantedSearches(data);
       },
     );
     return unsub;

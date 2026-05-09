@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Search, Building2, MapPin, ChevronRight, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { getAgencyTier, getTierColor } from '@/src/lib/gamification';
 
 export function Agencies() {
   const navigate = useNavigate();
@@ -115,11 +116,9 @@ export function Agencies() {
                 </div>
 
                 <div className="flex flex-col items-end gap-2 shrink-0">
-                  {agency.plan && (
-                    <Badge className="bg-primary text-primary-foreground font-black text-[9px] rounded-full px-3 py-0.5 uppercase tracking-widest shadow-md shadow-primary/20">
-                      {agency.plan}
-                    </Badge>
-                  )}
+                  <Badge className={`font-black text-[9px] rounded-full px-3 py-0.5 uppercase tracking-widest shadow-md border ${getTierColor(getAgencyTier(agency.points || 0))}`}>
+                    {getAgencyTier(agency.points || 0)}
+                  </Badge>
                   <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
                 </div>
               </motion.div>
