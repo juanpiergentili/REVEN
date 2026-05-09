@@ -78,14 +78,23 @@ function getInitials(name: string) {
 
 const WheelIcon = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <defs>
+      <radialGradient id="rim-gradient" cx="50%" cy="50%" r="50%">
+        <stop offset="60%" stopColor="currentColor" stopOpacity="0.1" />
+        <stop offset="90%" stopColor="currentColor" stopOpacity="0.6" />
+        <stop offset="100%" stopColor="currentColor" stopOpacity="1" />
+      </radialGradient>
+    </defs>
     {/* Outer tire tread (dashed) */}
-    <circle cx="50" cy="50" r="45" stroke="currentColor" strokeWidth="8" strokeDasharray="12 6" />
+    <circle cx="50" cy="50" r="45" stroke="currentColor" strokeWidth="8" strokeOpacity="0.3" />
+    <circle cx="50" cy="50" r="45" stroke="currentColor" strokeWidth="8" strokeDasharray="10 6" />
     {/* Inner rim border */}
-    <circle cx="50" cy="50" r="35" stroke="currentColor" strokeWidth="4" />
+    <circle cx="50" cy="50" r="36" fill="url(#rim-gradient)" stroke="currentColor" strokeWidth="2" />
     {/* Center hub */}
-    <circle cx="50" cy="50" r="10" stroke="currentColor" strokeWidth="4" />
+    <circle cx="50" cy="50" r="10" fill="currentColor" stroke="currentColor" strokeWidth="2" />
     {/* Spokes */}
-    <path d="M50 15 L50 40 M85 50 L60 50 M50 85 L50 60 M15 50 L40 50 M75 25 L57 43 M25 75 L43 57 M75 75 L57 57 M25 25 L43 43" stroke="currentColor" strokeWidth="4" strokeLinecap="round"/>
+    <path d="M50 15 L53 40 L47 40 Z M85 50 L60 53 L60 47 Z M50 85 L53 60 L47 60 Z M15 50 L40 53 L40 47 Z" fill="currentColor" opacity="0.9"/>
+    <path d="M75 25 L58 42 L53 37 Z M25 75 L42 58 L47 63 Z M75 75 L58 58 L63 53 Z M25 25 L42 42 L37 47 Z" fill="currentColor" opacity="0.9"/>
   </svg>
 );
 
@@ -310,21 +319,33 @@ export function Home() {
             >
               <Logo className="text-6xl" variant="auto" />
             </motion.div>
-            <div className="flex flex-col items-center gap-6">
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ repeat: Infinity, duration: 0.5, ease: "linear" }}
-                className="text-primary drop-shadow-[0_0_15px_rgba(34,197,94,0.5)]"
-              >
-                <WheelIcon className="h-16 w-16" />
-              </motion.div>
-              <motion.span 
-                animate={{ opacity: [0.6, 1, 0.6] }}
+            <div className="flex flex-col items-center gap-8">
+              <div style={{ perspective: '800px' }}>
+                <motion.div
+                  style={{ rotateX: '65deg', rotateY: '15deg' }}
+                  className="drop-shadow-[0_20px_20px_rgba(34,197,94,0.4)]"
+                >
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ repeat: Infinity, duration: 0.25, ease: "linear" }}
+                    className="text-primary"
+                  >
+                    <WheelIcon className="h-28 w-28 md:h-32 md:w-32" />
+                  </motion.div>
+                </motion.div>
+              </div>
+              <motion.div 
+                animate={{ opacity: [0.5, 1, 0.5] }}
                 transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-                className="font-black italic uppercase tracking-[0.2em] text-lg md:text-xl text-primary drop-shadow-[0_0_10px_rgba(34,197,94,0.3)]"
+                className="flex flex-col items-center gap-1 mt-2"
               >
-                ARRANCANDO MOTORES...
-              </motion.span>
+                <span className="font-semibold uppercase tracking-[0.3em] text-[10px] md:text-xs text-primary/70">
+                  SISTEMA REVEN
+                </span>
+                <span className="font-bold uppercase tracking-[0.15em] text-sm md:text-base text-primary drop-shadow-[0_0_8px_rgba(34,197,94,0.3)]">
+                  Arrancando motores
+                </span>
+              </motion.div>
             </div>
           </motion.div>
         )}
