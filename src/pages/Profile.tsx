@@ -73,7 +73,7 @@ export function Profile() {
   const [editForm, setEditForm] = useState({
     company: '', province: '', city: '', phone: '', name: '', lastName: '',
     cuit: '', instagram: '', facebook: '', whatsapp: '', avatarUrl: '', logoUrl: '',
-    showEmail: true, showPhone: true,
+    showEmail: true, showPhone: true, showName: true,
   });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState('');
@@ -115,6 +115,7 @@ export function Profile() {
             logoUrl: data.logoUrl || '',
             showEmail: data.showEmail !== false,
             showPhone: data.showPhone !== false,
+            showName: data.showName !== false,
           });
         }
         let vehicles = await getVehiclesBySeller(targetUid);
@@ -232,7 +233,7 @@ export function Profile() {
   }
 
   const responseBadge = getResponseBadge(profileData.responseTimestamps || [12, 15, 8, 20]);
-  const provinceName = provincias.find(p => p.id === profileData.province)?.nombre || profileData.province || 'No especificada';
+  const provinceName = provincias.find(p => p.id === profileData.province)?.nombre || profileData.province || '';
   const cityName = localidades.find(l => l.id === profileData.city)?.nombre || profileData.city || '';
 
   const trialExpired     = isTrialExpired(profileData);
@@ -325,25 +326,29 @@ export function Profile() {
             </div>
 
             <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
-              <span className="flex items-center gap-2 font-medium text-foreground/80">
-                <User className="h-4 w-4 text-primary" />
-                <span>{profileData.name} {profileData.lastName}</span>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">· APODERADO</span>
-              </span>
-              <span className="flex items-center gap-2 font-bold text-foreground">
-                <MapPin className="h-4 w-4 text-primary" /> {cityName}{cityName ? ', ' : ''}{provinceName}
-              </span>
+              {profileData.showName !== false && (
+                <span className="flex items-center gap-2 font-medium text-foreground/80">
+                  <User className="h-4 w-4 text-primary" />
+                  <span>{profileData.name} {profileData.lastName}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">· APODERADO</span>
+                </span>
+              )}
+              {(cityName || provinceName) && (
+                <span className="flex items-center gap-2 font-bold text-foreground">
+                  <MapPin className="h-4 w-4 text-primary" /> {[cityName, provinceName].filter(Boolean).join(', ')}
+                </span>
+              )}
               <span className="flex items-center gap-2 font-bold text-foreground">
                 <Clock className="h-4 w-4 text-primary" /> Activo ahora
               </span>
             </div>
 
             <div className="flex flex-wrap items-center gap-4 text-xs text-white/80 pt-2 min-w-0">
-              {(profileData.showEmail !== false) && (
+              {profileData.showEmail !== false && profileData.email && (
                 <span className="flex items-center gap-1.5 min-w-0"><Mail className="h-3.5 w-3.5 shrink-0" /> <span className="truncate">{profileData.email}</span></span>
               )}
-              {(profileData.showPhone !== false) && (
-                <span className="flex items-center gap-1.5 shrink-0"><Phone className="h-3.5 w-3.5" /> {profileData.phone || 'No especificado'}</span>
+              {profileData.showPhone !== false && profileData.phone && (
+                <span className="flex items-center gap-1.5 shrink-0"><Phone className="h-3.5 w-3.5" /> {profileData.phone}</span>
               )}
               {profileData.cuit && (
                 <span className="flex items-center gap-1.5 shrink-0 font-bold text-white">
@@ -689,6 +694,15 @@ export function Profile() {
             <div className="space-y-3">
               <Label className="text-[10px] font-bold uppercase tracking-widest text-primary">Visibilidad en el Perfil Público</Label>
               <div className="flex flex-col gap-3 p-4 rounded-xl bg-muted/40 border border-border">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={editForm.showName}
+                    onChange={e => setEditForm(prev => ({ ...prev, showName: e.target.checked }))}
+                    className="w-4 h-4 rounded accent-primary"
+                  />
+                  <span className="text-xs font-bold uppercase tracking-widest">Mostrar nombre del apoderado</span>
+                </label>
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"

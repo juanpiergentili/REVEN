@@ -35,6 +35,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { subscribeToVehicles } from '@/src/lib/vehicles';
 import { Vehicle } from '@/src/types';
+import { useGeoRef } from '@/src/hooks/useGeoRef';
 
 const SOLUTIONS_LEFT = [
   { icon: Zap, title: 'COMUNICACIÓN DIRECTA', desc: 'Chau grupos ruidosos. Chat interno directo con vendedores reales y stock activo.' },
@@ -218,9 +219,13 @@ export function Home() {
   const [discountCode, setDiscountCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<null | 'REVEN20' | 'REVENFREE60'>(null);
   const [instagramUser, setInstagramUser] = useState('');
+  const [regProvince, setRegProvince] = useState('');
+  const [regCity, setRegCity] = useState('');
   const [regLogoFile, setRegLogoFile] = useState<File | null>(null);
   const [regLogoPreview, setRegLogoPreview] = useState('');
   const regLogoInputRef = useRef<HTMLInputElement>(null);
+
+  const { provincias: regProvincias, localidades: regLocalidades, loadingProvincias: regLoadingProvincias, loadingLocalidades: regLoadingLocalidades } = useGeoRef(regProvince);
 
   const isFreeTrial = appliedCoupon === 'REVENFREE60';
 
@@ -242,6 +247,10 @@ export function Home() {
   const handleAdmissionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!acceptedTerms) return;
+    if (!regProvince || !regCity) {
+      setError('Seleccioná tu provincia y localidad.');
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -260,6 +269,7 @@ export function Home() {
         uid: user.uid, email, name, lastName, cuil, phone, company,
         plan, billingCycle, discountCode: appliedCoupon ?? null,
         trialDays: isFreeTrial ? 60 : null, role: 'USER', status: 'pending',
+        province: regProvince, city: regCity,
         instagram: instagramUser || null,
         avatarUrl: logoUrl,
         logoUrl,
@@ -780,6 +790,34 @@ export function Home() {
                 <div className="space-y-2">
                   <Label htmlFor="pop-company" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Concesionaria</Label>
                   <Input id="pop-company" required value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Automotores Reven S.A." className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4" />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Provincia <span className="text-primary">*</span></Label>
+                    <Select value={regProvince} onValueChange={v => { setRegProvince(v); setRegCity(''); }}>
+                      <SelectTrigger className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4">
+                        <SelectValue placeholder={regLoadingProvincias ? 'Cargando...' : 'Seleccionar'} />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        {regProvincias.map(p => (
+                          <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Localidad <span className="text-primary">*</span></Label>
+                    <Select value={regCity} onValueChange={setRegCity} disabled={!regProvince || regLoadingLocalidades}>
+                      <SelectTrigger className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4">
+                        <SelectValue placeholder={regLoadingLocalidades ? 'Cargando...' : 'Seleccionar'} />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        {regLocalidades.map(l => (
+                          <SelectItem key={l.id} value={l.id}>{l.nombre}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-2">
