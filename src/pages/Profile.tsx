@@ -4,6 +4,7 @@ import {
   ChevronLeft, Eye, MessageSquare, Clock, BarChart3, TrendingUp, Award,
   MapPin, Building2, Phone, Mail, Loader2, ShoppingBag, Plus, Settings,
   Instagram, Facebook, ExternalLink, Trash2,
+  Save, Pause, Play, CheckCircle2, Package, Lock, Camera, Upload, Globe,
 } from 'lucide-react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '@/src/lib/firebase';

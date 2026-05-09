@@ -1,12 +1,12 @@
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   Zap, Check, ArrowRight, ShieldCheck, FileText, Loader2,
-  Users, Shield, CreditCard, Plus, MapPin
+  Users, Shield, CreditCard, Plus, MapPin, Loader
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Logo } from '../components/layout/Logo';
 import { Footer } from '../components/layout/Footer';
 import { Input } from '@/components/ui/input';
@@ -34,16 +34,16 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { subscribeToVehicles } from '@/src/lib/vehicles';
 import { Vehicle } from '@/src/types';
 
-const PAIN_POINTS_LEFT = [
-  { icon: Zap, title: 'RUIDO CONSTANTE', desc: 'Grupos de WhatsApp con 500 mensajes al día que no llevan a nada.' },
-  { icon: CreditCard, title: 'FALTA DE TIEMPO', desc: 'Llamar una por una para consultar stock y precios que nunca coinciden.' },
-  { icon: Shield, title: 'INSEGURIDAD TOTAL', desc: 'Operar sin referencias de colegas verificados es un riesgo innecesario.' },
+const SOLUTIONS_LEFT = [
+  { icon: Zap, title: 'COMUNICACIÓN DIRECTA', desc: 'Chau grupos ruidosos. Chat interno directo con vendedores reales y stock activo.' },
+  { icon: CreditCard, title: 'OPTIMIZACIÓN DE TIEMPO', desc: 'Precios B2B y disponibilidad de stock actualizados en tiempo real al instante.' },
+  { icon: Shield, title: 'RED VERIFICADA', desc: 'Operá seguro. Cada concesionaria de REVEN fue validada estrictamente para tu tranquilidad.' },
 ];
 
-const PAIN_POINTS_RIGHT = [
-  { icon: Users, title: 'POCA TRANSPARENCIA', desc: 'No saber a qué valores se opera realmente el mercado mayorista.' },
-  { icon: Zap, title: 'CAPITAL PARADO', desc: 'Autos parados 90+ días sin comprador por falta de un canal B2B ágil.' },
-  { icon: FileText, title: 'FALTA DE RESPALDO', desc: 'Cerrar tratos de palabra sin un entorno profesional que te cuide.' },
+const SOLUTIONS_RIGHT = [
+  { icon: Users, title: 'PRECIOS TRANSPARENTES', desc: 'Conocé los valores reales a los que está operando el mercado mayorista en este momento.' },
+  { icon: Zap, title: 'LIQUIDEZ INMEDIATA', desc: 'Movilizá tu stock rápido y conectá con cientos de compradores profesionales.' },
+  { icon: FileText, title: 'ENTORNO PROFESIONAL', desc: 'Cerrá tratos B2B serios y con respaldo dentro de la plataforma líder en Argentina.' },
 ];
 
 const STEPS = [
@@ -183,10 +183,18 @@ export function Home() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [isAdmissionOpen, setIsAdmissionOpen] = useState(false);
+  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     if (searchParams.get('register') === 'true') setIsAdmissionOpen(true);
   }, [searchParams]);
+
+  useEffect(() => {
+    if (videoRef.current && videoRef.current.readyState >= 3) {
+      setIsVideoLoaded(true);
+    }
+  }, []);
 
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
@@ -274,17 +282,41 @@ export function Home() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background transition-colors duration-300 overflow-x-hidden">
+      <AnimatePresence>
+        {!isVideoLoaded && (
+          <motion.div
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8, ease: 'easeInOut' }}
+            className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background"
+          >
+            <motion.div
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
+              className="mb-8"
+            >
+              <Logo className="text-6xl" variant="auto" />
+            </motion.div>
+            <div className="flex items-center gap-3 text-primary">
+              <Loader className="h-6 w-6 animate-[spin_1.5s_linear_infinite]" />
+              <span className="font-black uppercase tracking-widest text-sm">Arrancando motores...</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <section className="relative min-h-screen flex items-center overflow-hidden -mt-24">
         <div className="absolute inset-0 z-0">
           <video 
+            ref={videoRef}
             autoPlay 
             muted 
             loop 
             playsInline 
             preload="auto"
-            poster="https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&q=80&w=1920"
+            onCanPlayThrough={() => setIsVideoLoaded(true)}
+            onLoadedData={() => setIsVideoLoaded(true)}
             className="w-full h-full object-cover opacity-50 bg-[#111]"
           >
             <source src="/hero1.mp4" type="video/mp4" />
@@ -336,23 +368,23 @@ export function Home() {
         </div>
       </section>
 
-      {/* ── Pain Points ──────────────────────────────────────────────────── */}
+      {/* ── Solutions ──────────────────────────────────────────────────── */}
       <section className="py-24 md:py-32 bg-[#0a0a0a]">
         <div className="container mx-auto px-4 md:px-8 lg:px-12">
-          <div className="mb-16 max-w-2xl">
+          <div className="mb-16 max-w-3xl">
             <h2 className="text-4xl md:text-6xl font-black tracking-tighter uppercase leading-none text-white mb-4">
-              HACER NEGOCIOS B2B <br />
-              <span className="text-primary italic">HOY ES UN CAOS.</span>
+              HACÉ NEGOCIOS B2B <br />
+              <span className="text-primary italic">RÁPIDOS, SEGUROS Y RENTABLES.</span>
             </h2>
             <p className="text-sm font-bold uppercase tracking-widest text-white/40 leading-relaxed max-w-sm">
-              El mercado informal y los grupos de WhatsApp están matando tu rentabilidad y tiempo.
+              Olvidate del mercado informal y los grupos ruidosos. Bienvenido al estándar profesional.
             </p>
           </div>
 
           <div className="relative grid grid-cols-1 lg:grid-cols-[1fr_1fr_1fr] items-stretch min-h-[480px]">
             {/* Left column */}
             <div className="space-y-10 py-8 pr-8 z-10">
-              {PAIN_POINTS_LEFT.map((point, i) => (
+              {SOLUTIONS_LEFT.map((point, i) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, x: -20 }}
@@ -382,7 +414,7 @@ export function Home() {
 
             {/* Right column */}
             <div className="space-y-10 py-8 pl-8 z-10">
-              {PAIN_POINTS_RIGHT.map((point, i) => (
+              {SOLUTIONS_RIGHT.map((point, i) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, x: 20 }}
