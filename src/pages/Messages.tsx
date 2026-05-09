@@ -308,8 +308,11 @@ export function Messages() {
                   </div>
                 </div>
                 {/* Row 2: vehicle card (if available) */}
-                {selectedConvo?.vehicleInfo && (
-                  <div className="px-4 pb-3 flex items-center gap-3 border-t border-border/50 pt-2">
+                {selectedConvo?.vehicleInfo && selectedConvo?.vehicleId && (
+                  <button
+                    onClick={() => navigate(`/marketplace/${selectedConvo.vehicleId}`)}
+                    className="w-full px-4 pb-3 flex items-center gap-3 border-t border-border/50 pt-2 hover:bg-primary/5 transition-colors text-left"
+                  >
                     {selectedConvo.vehicleInfo.photo && (
                       <img src={selectedConvo.vehicleInfo.photo} alt="" className="w-16 h-11 object-cover rounded-xl shrink-0 border border-border" />
                     )}
@@ -324,7 +327,7 @@ export function Messages() {
                         </p>
                       )}
                     </div>
-                  </div>
+                  </button>
                 )}
               </div>
 
