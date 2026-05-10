@@ -128,15 +128,15 @@ export function Messages() {
   }, [currentUserId]);
 
   useEffect(() => {
-    if (!selectedConvoId) return;
+    if (!selectedConvoId || !currentUserId) return;
     const unsub = subscribeToMessages(selectedConvoId, (msgs) => {
       setMessages(msgs);
       setTimeout(() => {
         const el = messagesContainerRef.current;
         if (el) el.scrollTop = el.scrollHeight;
       }, 100);
+      markMessagesAsRead(selectedConvoId, currentUserId);
     });
-    markMessagesAsRead(selectedConvoId, currentUserId);
     return unsub;
   }, [selectedConvoId, currentUserId]);
 

@@ -198,29 +198,32 @@ export async function markMessagesAsRead(
   conversationId: string,
   userId: string
 ): Promise<void> {
-  const messagesRef = collection(db, 'conversations', conversationId, 'messages');
-  const q = query(
-    messagesRef,
-    where('read', '==', false),
-    where('senderId', '!=', userId)
-  );
-  
-  const snapshot = await getDocs(q);
-  const updates = snapshot.docs.map(docSnap =>
-    updateDoc(doc(db, 'conversations', conversationId, 'messages', docSnap.id), { read: true })
-  );
-  await Promise.all(updates);
+  if (!userId) return;
 
-  // Clear unreadBy for this user in the conversation doc
+  // Clear unreadBy immediately — this drives the badge/dot UI
   const convoRef = doc(db, 'conversations', conversationId);
   const convoSnap = await getDoc(convoRef);
   if (convoSnap.exists()) {
-    const unreadBy = convoSnap.data().unreadBy || [];
+    const unreadBy: string[] = convoSnap.data().unreadBy || [];
     if (unreadBy.includes(userId)) {
       await updateDoc(convoRef, {
-        unreadBy: unreadBy.filter((id: string) => id !== userId)
+        unreadBy: unreadBy.filter((id: string) => id !== userId),
       });
     }
+  }
+
+  // Mark individual messages as read in the background (best-effort, needs composite index)
+  try {
+    const messagesRef = collection(db, 'conversations', conversationId, 'messages');
+    const q = query(messagesRef, where('read', '==', false), where('senderId', '!=', userId));
+    const snapshot = await getDocs(q);
+    await Promise.all(
+      snapshot.docs.map(docSnap =>
+        updateDoc(doc(db, 'conversations', conversationId, 'messages', docSnap.id), { read: true })
+      )
+    );
+  } catch {
+    // Composite index may not exist — unreadBy is already cleared above so UI is correct
   }
 }
 
