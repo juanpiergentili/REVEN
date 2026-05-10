@@ -4,13 +4,14 @@ import {
   ChevronLeft, ChevronRight, Share2, MapPin, Calendar, Gauge, Fuel,
   CheckCircle2, MessageSquare, Eye, ShieldCheck, Users, ArrowRight, Car, Loader2,
   AlertCircle, Wrench, PaintBucket, Settings, X, Expand,
+  Pencil, Pause, Play, CheckSquare, Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useState, useEffect, useCallback } from 'react';
-import { doc, getDoc, updateDoc, increment } from 'firebase/firestore';
-import { db } from '@/src/lib/firebase';
+import { doc, getDoc, updateDoc, deleteDoc, increment } from 'firebase/firestore';
+import { db, useAuth } from '@/src/lib/firebase';
 import type { Vehicle } from '@/src/types';
 import { extractIdFromSlug } from '@/src/lib/seo';
 
@@ -18,11 +19,14 @@ import { extractIdFromSlug } from '@/src/lib/seo';
 export function VehicleDetail() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [activePhoto, setActivePhoto] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [ownerActionLoading, setOwnerActionLoading] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const id = slug ? extractIdFromSlug(slug) : undefined;
 
@@ -50,6 +54,32 @@ export function VehicleDetail() {
 
     fetchVehicle();
   }, [id]);
+
+  const isOwner = !!user && !!vehicle && vehicle.sellerId === user.uid;
+
+  const handleStatusChange = async (status: Vehicle['status']) => {
+    if (!vehicle) return;
+    setOwnerActionLoading(true);
+    try {
+      await updateDoc(doc(db, 'vehicles', vehicle.id), { status });
+      setVehicle(v => v ? { ...v, status } : v);
+    } finally {
+      setOwnerActionLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!vehicle) return;
+    if (!confirmDelete) { setConfirmDelete(true); return; }
+    setOwnerActionLoading(true);
+    try {
+      await deleteDoc(doc(db, 'vehicles', vehicle.id));
+      navigate('/marketplace');
+    } finally {
+      setOwnerActionLoading(false);
+      setConfirmDelete(false);
+    }
+  };
 
   const photos = vehicle?.photos?.length > 0 ? vehicle.photos : [];
   const hasPhotos = photos.length > 0;
@@ -508,17 +538,68 @@ export function VehicleDetail() {
                   </div>
                 </div>
 
-                <Button
-                  size="lg"
-                  className="w-full h-16 rounded-2xl font-bold text-lg shadow-xl shadow-primary/20 group uppercase tracking-tighter"
-                  onClick={() => navigate(
-                    `/messages?userId=${vehicle.sellerId}&userName=${encodeURIComponent(vehicle.sellerName)}&company=${encodeURIComponent(vehicle.sellerCompany || vehicle.sellerName)}&vehicleId=${vehicle.id}`
-                  )}
-                >
-                  <MessageSquare className="mr-2 h-6 w-6" />
-                  CONTACTAR VENDEDOR
-                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </Button>
+                {isOwner ? (
+                  <div className="space-y-3">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-center">Tu publicación</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        variant="outline"
+                        className="h-12 rounded-2xl font-bold uppercase tracking-tighter text-xs gap-2"
+                        onClick={() => navigate(`/publish?edit=${vehicle.id}`)}
+                        disabled={ownerActionLoading}
+                      >
+                        <Pencil className="h-4 w-4" /> Editar
+                      </Button>
+                      {vehicle.status === 'ACTIVE' ? (
+                        <Button
+                          variant="outline"
+                          className="h-12 rounded-2xl font-bold uppercase tracking-tighter text-xs gap-2"
+                          onClick={() => handleStatusChange('PAUSED')}
+                          disabled={ownerActionLoading}
+                        >
+                          <Pause className="h-4 w-4" /> Pausar
+                        </Button>
+                      ) : vehicle.status === 'PAUSED' ? (
+                        <Button
+                          variant="outline"
+                          className="h-12 rounded-2xl font-bold uppercase tracking-tighter text-xs gap-2 text-primary border-primary/40"
+                          onClick={() => handleStatusChange('ACTIVE')}
+                          disabled={ownerActionLoading}
+                        >
+                          <Play className="h-4 w-4" /> Activar
+                        </Button>
+                      ) : null}
+                      <Button
+                        variant="outline"
+                        className="h-12 rounded-2xl font-bold uppercase tracking-tighter text-xs gap-2 text-primary border-primary/40"
+                        onClick={() => handleStatusChange('SOLD')}
+                        disabled={ownerActionLoading || vehicle.status === 'SOLD'}
+                      >
+                        <CheckSquare className="h-4 w-4" /> Vendida
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className={`h-12 rounded-2xl font-bold uppercase tracking-tighter text-xs gap-2 ${confirmDelete ? 'bg-red-500/10 border-red-500 text-red-500' : 'text-red-400 border-red-400/30'}`}
+                        onClick={handleDelete}
+                        disabled={ownerActionLoading}
+                      >
+                        <Trash2 className="h-4 w-4" /> {confirmDelete ? '¿Confirmar?' : 'Eliminar'}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    size="lg"
+                    className="w-full h-16 rounded-2xl font-bold text-lg shadow-xl shadow-primary/20 group uppercase tracking-tighter"
+                    onClick={() => navigate(
+                      `/messages?userId=${vehicle.sellerId}&userName=${encodeURIComponent(vehicle.sellerName)}&company=${encodeURIComponent(vehicle.sellerCompany || vehicle.sellerName)}&vehicleId=${vehicle.id}`
+                    )}
+                  >
+                    <MessageSquare className="mr-2 h-6 w-6" />
+                    CONTACTAR VENDEDOR
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                )}
               </div>
 
               {/* Seller Info */}

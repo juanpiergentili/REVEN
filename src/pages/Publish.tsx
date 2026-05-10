@@ -246,8 +246,8 @@ export function Publish() {
 
       const vehicleData: any = {
         sellerId: user.uid,
-        sellerName: userProfile?.companyName || userProfile?.name || user.displayName || 'Agencia',
-        sellerCompany: userProfile?.companyName || 'Agencia',
+        sellerName: userProfile?.company || userProfile?.name || user.displayName || '',
+        sellerCompany: userProfile?.company || '',
         brand: formData.brand,
         model: formData.model,
         version: formData.version,
