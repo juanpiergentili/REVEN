@@ -12,6 +12,16 @@ service firebase.storage {
         && request.resource.contentType.matches('image/.*');
     }
 
+    // User profile assets (logo, avatar): owner uploads, anyone authenticated can read.
+    // Path must be: users/{userId}/{fileName}
+    match /users/{userId}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
     // Deny everything else
     match /{allPaths=**} {
       allow read, write: if false;
