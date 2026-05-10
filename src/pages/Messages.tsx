@@ -41,10 +41,20 @@ export function Messages() {
   const [isInitializing, setIsInitializing] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  // Prevent body horizontal scroll while Messages overlay is mounted
+  // Prevent horizontal scroll while Messages overlay is mounted
   useEffect(() => {
-    document.body.style.overflowX = 'hidden';
-    return () => { document.body.style.overflowX = ''; };
+    const html = document.documentElement;
+    const body = document.body;
+    const prevHtml = html.style.overflowX;
+    const prevBody = body.style.overflowX;
+    html.style.overflowX = 'hidden';
+    body.style.overflowX = 'hidden';
+    html.scrollLeft = 0;
+    body.scrollLeft = 0;
+    return () => {
+      html.style.overflowX = prevHtml;
+      body.style.overflowX = prevBody;
+    };
   }, []);
 
   const currentUserId = user?.uid;
