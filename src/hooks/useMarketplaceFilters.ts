@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import type { Vehicle } from '../types';
+import type { Vehicle, WantedSearch } from '../types';
 import { FilterState, INITIAL_FILTERS } from '../components/marketplace/FilterSidebar';
 
 export type SortOption = 'newest' | 'price_asc' | 'price_desc' | 'km_asc' | 'year_desc' | 'year_asc';
@@ -65,13 +65,53 @@ function sortVehicles(vehicles: Vehicle[], sortBy: SortOption): Vehicle[] {
   });
 }
 
-export function useMarketplaceFilters(vehicles: Vehicle[]) {
+function filterWantedSearches(wanted: WantedSearch[], filters: FilterState): WantedSearch[] {
+  return wanted.filter(w => {
+    if (filters.searchQuery) {
+      const q = filters.searchQuery.toLowerCase();
+      const hit = w.brand.toLowerCase().includes(q)
+                || w.model.toLowerCase().includes(q)
+                || (w.version || '').toLowerCase().includes(q);
+      if (!hit) return false;
+    }
+    if (filters.condition && !w.conditions.includes(filters.condition as any)) return false;
+    if (filters.brand !== 'todos' && w.brand.toLowerCase() !== filters.brand.toLowerCase()) return false;
+    if (filters.model !== 'todos' && w.model.toLowerCase() !== filters.model.toLowerCase()) return false;
+    if (filters.yearFrom && w.yearRange.max < Number(filters.yearFrom)) return false;
+    if (filters.yearTo && w.yearRange.min > Number(filters.yearTo)) return false;
+    if (filters.minPrice && w.budgetRange.max < Number(filters.minPrice)) return false;
+    if (filters.maxPrice && w.budgetRange.min > Number(filters.maxPrice)) return false;
+    if (filters.kmMax && w.kmApprox && w.kmApprox > Number(filters.kmMax)) return false;
+    if (filters.color !== 'todos' && w.color && w.color.toLowerCase() !== filters.color.toLowerCase()) return false;
+    if (filters.province !== 'todos' && w.province && w.province !== filters.province) return false;
+    return true;
+  });
+}
+
+function sortWantedSearches(wanted: WantedSearch[], sortBy: SortOption): WantedSearch[] {
+  return [...wanted].sort((a, b) => {
+    switch (sortBy) {
+      case 'price_asc':  return a.budgetRange.min - b.budgetRange.min;
+      case 'price_desc': return b.budgetRange.max - a.budgetRange.max;
+      case 'year_desc':  return b.yearRange.max - a.yearRange.max;
+      case 'year_asc':   return a.yearRange.min - b.yearRange.min;
+      default:           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    }
+  });
+}
+
+export function useMarketplaceFilters(vehicles: Vehicle[], wantedSearches: WantedSearch[] = []) {
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [sortBy, setSortBy] = useState<SortOption>('newest');
 
   const filteredVehicles = useMemo(
     () => sortVehicles(filterVehicles(vehicles, filters), sortBy),
     [vehicles, filters, sortBy],
+  );
+
+  const filteredWantedSearches = useMemo(
+    () => sortWantedSearches(filterWantedSearches(wantedSearches, filters), sortBy),
+    [wantedSearches, filters, sortBy],
   );
 
   const clearFilters = useCallback(() => setFilters(INITIAL_FILTERS), []);
@@ -101,6 +141,7 @@ export function useMarketplaceFilters(vehicles: Vehicle[]) {
     filters, setFilters,
     sortBy, setSortBy,
     filteredVehicles,
+    filteredWantedSearches,
     clearFilters,
     handleRemoveChip,
     activeFilterCount,

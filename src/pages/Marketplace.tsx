@@ -223,9 +223,9 @@ export function Marketplace() {
 
   const {
     filters, setFilters, sortBy, setSortBy,
-    filteredVehicles, clearFilters, handleRemoveChip,
+    filteredVehicles, filteredWantedSearches, clearFilters, handleRemoveChip,
     activeFilterCount, hasActiveFilters,
-  } = useMarketplaceFilters(vehicles);
+  } = useMarketplaceFilters(vehicles, wantedSearches);
 
   // Vehicles subscription
   useEffect(() => {
@@ -360,7 +360,7 @@ export function Marketplace() {
                 </TabsTrigger>
                 <TabsTrigger value="wanted" className="flex-1 min-w-0 rounded-xl py-2.5 font-bold uppercase tracking-wide text-xs text-white/50 transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25">
                   Búsquedas
-                  <span className="ml-1.5 text-[10px] opacity-60">({wantedSearches.length})</span>
+                  <span className="ml-1.5 text-[10px] opacity-60">({filteredWantedSearches.length})</span>
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -505,6 +505,12 @@ export function Marketplace() {
               {/* Sidebar */}
               <aside className="hidden lg:block w-64 shrink-0">
                 <div className="sticky top-32 space-y-6">
+                  <FilterSidebar
+                    filters={filters}
+                    onFilterChange={setFilters}
+                    onClear={clearFilters}
+                    resultCount={filteredWantedSearches.length}
+                  />
                   <div className="p-6 rounded-2xl bg-primary/5 border border-primary/20 space-y-4">
                     <h4 className="text-sm font-bold uppercase tracking-tighter">¿Buscás algo específico?</h4>
                     <p className="text-xs text-muted-foreground font-medium leading-relaxed">
@@ -517,21 +523,26 @@ export function Marketplace() {
                       <Plus className="mr-2 h-3 w-3" /> PUBLICAR BÚSQUEDA
                     </Button>
                   </div>
-                  <div className="p-5 rounded-2xl bg-card/50 border border-border space-y-3">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Red activa</p>
-                    <p className="text-3xl font-black tracking-tighter">{wantedSearches.length}</p>
-                    <p className="text-xs text-muted-foreground font-medium">búsquedas de colegas hoy</p>
-                  </div>
                 </div>
               </aside>
 
               {/* Cards */}
               <div className="flex-1 min-w-0 space-y-8">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold tracking-tighter uppercase">
-                    Búsquedas Activas{' '}
-                    <span className="text-primary">{wantedSearches.length}</span>
-                  </h2>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-baseline gap-2">
+                    <h2 className="text-2xl font-bold tracking-tighter uppercase">Búsquedas Activas</h2>
+                    <AnimatePresence mode="wait">
+                      <motion.span
+                        key={filteredWantedSearches.length}
+                        initial={{ opacity: 0, y: -4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 4 }}
+                        className="text-primary font-black text-2xl tracking-tighter"
+                      >
+                        {filteredWantedSearches.length}
+                      </motion.span>
+                    </AnimatePresence>
+                  </div>
                   {/* Mobile CTA */}
                   <Button
                     size="sm"
@@ -542,18 +553,26 @@ export function Marketplace() {
                   </Button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {wantedSearches.map((wanted: WantedSearch) => (
-                    <div key={wanted.id}>
-                      <WantedCard
-                        wanted={wanted}
-                        onContact={() => {
-                          navigate(`/messages?userId=${wanted.userId}&userName=${encodeURIComponent(wanted.userName)}&company=${encodeURIComponent(wanted.companyName)}&wantedId=${wanted.id}`);
-                        }}
-                      />
-                    </div>
-                  ))}
-                </div>
+                <FilterChips filters={filters} onRemove={handleRemoveChip} onClearAll={clearFilters} />
+
+                {filteredWantedSearches.length === 0 ? (
+                  hasActiveFilters
+                    ? <EmptyFiltered onClear={clearFilters} />
+                    : <EmptyNoData />
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {filteredWantedSearches.map((wanted: WantedSearch) => (
+                      <div key={wanted.id}>
+                        <WantedCard
+                          wanted={wanted}
+                          onContact={() => {
+                            navigate(`/messages?userId=${wanted.userId}&userName=${encodeURIComponent(wanted.userName)}&company=${encodeURIComponent(wanted.companyName)}&wantedId=${wanted.id}`);
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </TabsContent>
@@ -610,28 +629,33 @@ export function Marketplace() {
                   filters={filters}
                   onFilterChange={setFilters}
                   onClear={clearFilters}
-                  resultCount={filteredVehicles.length}
+                  resultCount={activeTab === 'stock' ? filteredVehicles.length : filteredWantedSearches.length}
                 />
               </div>
 
               {/* Drawer footer */}
-              <div className="p-6 border-t border-border space-y-3">
-                {activeFilterCount > 0 && (
-                  <Button
-                    variant="ghost"
-                    className="w-full h-11 rounded-xl font-bold uppercase tracking-widest text-xs text-muted-foreground"
-                    onClick={() => { clearFilters(); }}
-                  >
-                    Limpiar {activeFilterCount} filtro{activeFilterCount !== 1 ? 's' : ''}
-                  </Button>
-                )}
-                <Button
-                  className="w-full h-14 rounded-xl font-bold uppercase tracking-tighter text-lg shadow-xl shadow-primary/20"
-                  onClick={() => setShowMobileFilters(false)}
-                >
-                  Ver {filteredVehicles.length} resultado{filteredVehicles.length !== 1 ? 's' : ''}
-                </Button>
-              </div>
+              {(() => {
+                const count = activeTab === 'stock' ? filteredVehicles.length : filteredWantedSearches.length;
+                return (
+                  <div className="p-6 border-t border-border space-y-3">
+                    {activeFilterCount > 0 && (
+                      <Button
+                        variant="ghost"
+                        className="w-full h-11 rounded-xl font-bold uppercase tracking-widest text-xs text-muted-foreground"
+                        onClick={() => { clearFilters(); }}
+                      >
+                        Limpiar {activeFilterCount} filtro{activeFilterCount !== 1 ? 's' : ''}
+                      </Button>
+                    )}
+                    <Button
+                      className="w-full h-14 rounded-xl font-bold uppercase tracking-tighter text-lg shadow-xl shadow-primary/20"
+                      onClick={() => setShowMobileFilters(false)}
+                    >
+                      Ver {count} resultado{count !== 1 ? 's' : ''}
+                    </Button>
+                  </div>
+                );
+              })()}
             </motion.div>
           </>
         )}
