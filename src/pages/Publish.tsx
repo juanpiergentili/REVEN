@@ -735,7 +735,8 @@ export function Publish() {
                           Volver
                         </Button>
                         <Button onClick={confirmNoPhotos} className="rounded-full px-6 font-bold uppercase tracking-widest text-xs bg-amber-500 hover:bg-amber-600">
-                          Continuar sin fotos
+                          <span className="hidden sm:inline">Continuar sin fotos</span>
+                          <span className="sm:hidden">Continuar</span>
                         </Button>
                       </div>
                     </div>
