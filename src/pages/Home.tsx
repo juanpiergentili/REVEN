@@ -56,7 +56,7 @@ const STEPS = [
 ];
 
 const FAQ_ITEMS = [
-  { q: '¿Por qué REVEN no es gratis?', a: 'Porque la exclusividad tiene un costo. El filtro de pago garantiza que todos los miembros son profesionales serios. Sin ruido, sin curiosos.' },
+  { q: '¿Por qué REVEN no es gratis?', a: 'Porque la exclusividad tiene un costo. El filtro de pago garantiza que todos los miembros son profesionales serios.' },
   { q: '¿Puedo probar antes de pagar?', a: 'Sí. Usá el código REVENFREE60 al registrarte para obtener 60 días de acceso gratuito sin compromisos.' },
   { q: '¿Hay permanencia mínima?', a: 'No. Podés cancelar cuando quieras sin penalidades. Tu acceso se mantiene activo hasta el fin del período facturado.' },
   { q: '¿Qué pasa si mi competencia directa está en REVEN?', a: 'El mercado B2B es colaborativo. Las mejores agencias operan con todas las fuentes disponibles. Tu ventaja está en la velocidad y el acceso a precios reales.' },
@@ -375,7 +375,7 @@ export function Home() {
             <div className="flex flex-col sm:flex-row gap-4 pt-2">
               <Button
                 size="lg"
-                className="h-14 px-10 rounded-full font-black text-sm uppercase tracking-widest shadow-2xl shadow-primary/30 group bg-primary text-primary-foreground hover:bg-primary/90"
+                className="h-14 px-10 rounded-full font-black text-base uppercase tracking-tight italic shadow-2xl shadow-primary/30 group bg-primary text-primary-foreground hover:bg-primary/90"
                 onClick={() => setIsAdmissionOpen(true)}
               >
                 SOLICITÀ TU ACCESO
@@ -384,7 +384,7 @@ export function Home() {
               <Button
                 size="lg"
                 variant="outline"
-                className="h-14 px-10 rounded-full font-bold text-sm uppercase tracking-widest border-white/20 bg-white/5 text-white hover:bg-white/10"
+                className="h-14 px-10 rounded-full font-black text-base uppercase tracking-tight italic border-white/20 bg-white/5 text-white hover:bg-white/10"
               >
                 VER VIDEO DEMO
               </Button>
@@ -394,7 +394,7 @@ export function Home() {
       </section>
 
       {/* ── Solutions ──────────────────────────────────────────────────── */}
-      <section className="py-24 md:py-32 bg-[#0a0a0a]">
+      <section className="pt-24 pb-12 md:pt-32 md:pb-16 bg-[#0a0a0a]">
         <div className="container mx-auto px-4 md:px-8 lg:px-12">
           <div className="mb-16 max-w-3xl">
             <h2 className="text-4xl md:text-6xl font-black tracking-tighter uppercase leading-none text-white mb-4">
@@ -408,7 +408,7 @@ export function Home() {
 
           <div className="relative grid grid-cols-1 lg:grid-cols-[1fr_1fr_1fr] items-stretch min-h-[480px]">
             {/* Left column */}
-            <div className="space-y-10 py-8 pr-8 z-10">
+            <div className="space-y-10 py-8 lg:pr-8 z-10">
               {SOLUTIONS_LEFT.map((point, i) => (
                 <motion.div
                   key={i}
@@ -438,7 +438,7 @@ export function Home() {
             </div>
 
             {/* Right column */}
-            <div className="space-y-10 py-8 pl-8 z-10">
+            <div className="space-y-10 py-8 lg:pl-8 z-10">
               {SOLUTIONS_RIGHT.map((point, i) => (
                 <motion.div
                   key={i}
@@ -461,7 +461,7 @@ export function Home() {
       </section>
 
       {/* ── Steps ────────────────────────────────────────────────────────── */}
-      <section className="py-24 md:py-32 bg-[#0a0a0a] border-t border-white/5">
+      <section className="py-16 md:py-24 bg-[#0a0a0a] border-t border-white/5">
         <div className="container mx-auto px-4 md:px-8 lg:px-12">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
             <div className="space-y-12 order-2 lg:order-1">
@@ -498,7 +498,7 @@ export function Home() {
 
               <Button
                 size="lg"
-                className="h-14 px-10 rounded-full font-black uppercase tracking-widest bg-primary text-primary-foreground hover:bg-primary/90 shadow-xl shadow-primary/20 group"
+                className="h-14 px-10 rounded-full font-black uppercase tracking-tight italic bg-primary text-primary-foreground hover:bg-primary/90 shadow-xl shadow-primary/20 group text-base"
                 onClick={() => setIsAdmissionOpen(true)}
               >
                 COMENZAR AHORA
@@ -720,13 +720,13 @@ export function Home() {
             className="space-y-8"
           >
             <h2 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter uppercase text-white leading-[1]">
-              ¿VAS A SEGUIR <br />
-              QUEDÁNDOTE <br />
-              AFUERA?
+              ¿QUÉ ESPERÁS <br />
+              PARA <br />
+              SUMARTE?
             </h2>
             <Button
               size="lg"
-              className="h-16 px-14 rounded-full font-black text-sm uppercase tracking-widest bg-primary text-primary-foreground hover:bg-primary/90 shadow-2xl shadow-primary/30"
+              className="h-16 px-14 rounded-full font-black text-base uppercase tracking-tight italic bg-primary text-primary-foreground hover:bg-primary/90 shadow-2xl shadow-primary/30"
               onClick={() => setIsAdmissionOpen(true)}
             >
               SOLICITÀ TU ACCESO AHORA
