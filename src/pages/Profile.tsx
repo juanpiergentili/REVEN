@@ -469,7 +469,7 @@ export function Profile() {
             </div>
           ) : isOwnProfile ? (
             <Tabs defaultValue="all">
-              <TabsList className="mb-8 bg-muted rounded-2xl p-1 h-auto gap-1 flex-wrap">
+              <TabsList className="mb-8 bg-muted rounded-2xl p-1 h-auto gap-1 overflow-x-auto flex-nowrap w-full justify-start">
                 <TabsTrigger value="all"    className="rounded-xl font-bold text-[10px] uppercase tracking-widest px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                   Todo ({allListings.length})
                 </TabsTrigger>
@@ -774,7 +774,7 @@ function VehicleGrid({
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
       {listings.map((listing, i) => {
         const statusCfg = STATUS_CONFIG[listing.status as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.DRAFT;
         const isToggling = togglingId === listing.id;
@@ -787,11 +787,11 @@ function VehicleGrid({
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: i * 0.05 }}
-            className="group relative bg-card border border-border hover:border-primary/30 rounded-2xl overflow-hidden transition-all duration-500 shadow-sm"
+            className="group relative bg-card border border-border hover:border-primary/30 rounded-2xl overflow-hidden transition-all duration-500 shadow-sm flex sm:flex-col"
           >
             {/* Photo */}
             <div
-              className="relative aspect-video overflow-hidden cursor-pointer"
+              className="relative w-32 shrink-0 sm:w-full sm:aspect-video overflow-hidden cursor-pointer rounded-l-2xl sm:rounded-l-none sm:rounded-t-2xl"
               onClick={() => onNavigate(listing.id)}
             >
               <img
@@ -799,12 +799,14 @@ function VehicleGrid({
                 alt={`${listing.brand} ${listing.model}`}
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
               />
-              <div className="absolute top-4 left-4">
-                <Badge className={`border font-bold text-[9px] px-2.5 py-1 rounded-full uppercase tracking-wider ${statusCfg.color}`}>
+              {/* Status badge */}
+              <div className="absolute top-2 left-2 sm:top-3 sm:left-3">
+                <Badge className={`border font-bold text-[8px] sm:text-[9px] px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full uppercase tracking-wider ${statusCfg.color}`}>
                   {statusCfg.label}
                 </Badge>
               </div>
-              <div className="absolute top-4 right-4 flex flex-col gap-2">
+              {/* Year + price - desktop only overlay */}
+              <div className="hidden sm:flex absolute top-3 right-3 flex-col gap-1.5 items-end">
                 <Badge className="bg-black/60 backdrop-blur-md border-white/10 text-white font-black text-[10px] px-3 py-1.5 rounded-full uppercase">
                   {listing.year}
                 </Badge>
@@ -815,10 +817,14 @@ function VehicleGrid({
             </div>
 
             {/* Info */}
-            <div className="p-3 space-y-2">
+            <div className="flex-1 min-w-0 p-3 flex flex-col gap-2">
               <div className="cursor-pointer" onClick={() => onNavigate(listing.id)}>
                 <h3 className="text-sm font-bold tracking-tighter uppercase leading-tight truncate">{listing.brand} {listing.model}</h3>
                 <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest truncate">{listing.version}</p>
+                {/* Price - mobile only */}
+                <p className="sm:hidden text-base font-black text-primary tracking-tighter mt-1">
+                  {listing.currency} {listing.price?.toLocaleString()}
+                </p>
               </div>
 
               <div className="flex items-center gap-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground">
@@ -827,14 +833,14 @@ function VehicleGrid({
               </div>
 
               {isOwnProfile && (
-                <div className="flex flex-wrap gap-1 pt-2 border-t border-border mt-1">
+                <div className="flex flex-wrap gap-1 pt-2 border-t border-border">
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => onEdit(listing.id)}
-                    className="flex-1 rounded-full font-bold uppercase tracking-widest text-[9px] h-8 px-2 border-border hover:border-primary/30 gap-1.5"
+                    className="flex-1 rounded-full font-bold uppercase tracking-widest text-[9px] h-8 px-2 border-border hover:border-primary/30 gap-1"
                   >
-                    <Settings className="h-3.5 w-3.5 shrink-0" /> Editar
+                    <Settings className="h-3 w-3 shrink-0" /> Editar
                   </Button>
                   {listing.status !== 'SOLD' && (
                     <>
@@ -843,7 +849,7 @@ function VehicleGrid({
                         variant="outline"
                         disabled={isToggling || isMarkingSold || (trialExpired && listing.status === 'PAUSED') || isDeletingId === listing.id}
                         onClick={() => onToggle(listing)}
-                        className="flex-1 rounded-full font-bold uppercase tracking-widest text-[9px] h-8 px-2 border-border hover:border-primary/30 gap-1.5"
+                        className="flex-1 rounded-full font-bold uppercase tracking-widest text-[9px] h-8 px-2 border-border hover:border-primary/30 gap-1"
                       >
                         {isToggling ? (
                           <Loader2 className="h-3 w-3 animate-spin shrink-0" />
@@ -860,7 +866,7 @@ function VehicleGrid({
                         variant="outline"
                         disabled={isToggling || isMarkingSold || isDeletingId === listing.id}
                         onClick={() => onMarkSold(listing)}
-                        className="flex-1 rounded-full font-bold uppercase tracking-widest text-[9px] h-8 px-2 border-primary/40 text-primary hover:bg-primary/10 gap-1.5"
+                        className="flex-1 rounded-full font-bold uppercase tracking-widest text-[9px] h-8 px-2 border-primary/40 text-primary hover:bg-primary/10 gap-1"
                       >
                         {isMarkingSold ? (
                           <Loader2 className="h-3 w-3 animate-spin shrink-0" />

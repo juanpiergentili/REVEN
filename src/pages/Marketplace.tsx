@@ -391,43 +391,23 @@ export function Marketplace() {
                 <FilterChips filters={filters} onRemove={handleRemoveChip} onClearAll={clearFilters} />
 
                 {/* Toolbar */}
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-baseline gap-3">
-                    <h2 className="text-2xl font-bold tracking-tighter uppercase">Resultados</h2>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-baseline gap-2 min-w-0">
+                    <h2 className="text-xl sm:text-2xl font-bold tracking-tighter uppercase shrink-0">Resultados</h2>
                     <AnimatePresence mode="wait">
                       <motion.span
                         key={filteredVehicles.length}
                         initial={{ opacity: 0, y: -4 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 4 }}
-                        className="text-primary font-black text-2xl tracking-tighter"
+                        className="text-primary font-black text-xl sm:text-2xl tracking-tighter shrink-0"
                       >
                         {filteredVehicles.length}
                       </motion.span>
                     </AnimatePresence>
                   </div>
 
-                  <div className="flex items-center gap-3 shrink-0">
-                    {/* Items per page */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger className="h-10 gap-2 font-bold tracking-tighter uppercase text-xs rounded-full hover:bg-muted border border-border inline-flex items-center px-3 cursor-pointer">
-                        {itemsPerPage}/pág
-                        <ChevronDown className="h-3.5 w-3.5 text-primary" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="rounded-xl p-2 min-w-[140px]">
-                        {ITEMS_PER_PAGE_OPTIONS.map(opt => (
-                          <DropdownMenuItem
-                            key={opt}
-                            onClick={() => { setItemsPerPage(opt); setCurrentPage(1); }}
-                            className="rounded-xl font-bold uppercase tracking-widest text-[10px] px-3 py-2.5 cursor-pointer flex items-center justify-between"
-                          >
-                            {opt} vehículos
-                            {opt === itemsPerPage && <Check className="h-3.5 w-3.5 text-primary" />}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-
+                  <div className="flex items-center gap-2 shrink-0">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground hidden sm:block">
                       Ordenar:
                     </span>
@@ -449,7 +429,7 @@ export function Marketplace() {
                   <>
                   <motion.div
                     layout
-                    className="grid grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-6"
+                    className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-6"
                   >
                     <AnimatePresence mode="popLayout">
                       {paginatedVehicles.map(vehicle => (
