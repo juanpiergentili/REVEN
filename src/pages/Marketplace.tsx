@@ -505,12 +505,6 @@ export function Marketplace() {
               {/* Sidebar */}
               <aside className="hidden lg:block w-64 shrink-0">
                 <div className="sticky top-32 space-y-6">
-                  <FilterSidebar
-                    filters={filters}
-                    onFilterChange={setFilters}
-                    onClear={clearFilters}
-                    resultCount={filteredWantedSearches.length}
-                  />
                   <div className="p-6 rounded-2xl bg-primary/5 border border-primary/20 space-y-4">
                     <h4 className="text-sm font-bold uppercase tracking-tighter">¿Buscás algo específico?</h4>
                     <p className="text-xs text-muted-foreground font-medium leading-relaxed">
@@ -523,6 +517,12 @@ export function Marketplace() {
                       <Plus className="mr-2 h-3 w-3" /> PUBLICAR BÚSQUEDA
                     </Button>
                   </div>
+                  <FilterSidebar
+                    filters={filters}
+                    onFilterChange={setFilters}
+                    onClear={clearFilters}
+                    resultCount={filteredWantedSearches.length}
+                  />
                 </div>
               </aside>
 
