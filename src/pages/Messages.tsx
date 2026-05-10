@@ -65,6 +65,7 @@ export function Messages() {
   const targetUserName = searchParams.get('userName');
   const targetCompany = searchParams.get('company');
   const vehicleId = searchParams.get('vehicleId');
+  const wantedId = searchParams.get('wantedId');
   const targetLogo = searchParams.get('logo') || undefined;
 
   useEffect(() => {
@@ -106,6 +107,24 @@ export function Messages() {
             }
           }
 
+          // Fetch wanted search info if wantedId is provided
+          let wantedInfoData: ConversationData['wantedInfo'] | undefined;
+          if (wantedId) {
+            const wDoc = await getDoc(doc(db, 'wanted_searches', wantedId));
+            if (wDoc.exists()) {
+              const w = wDoc.data();
+              wantedInfoData = {
+                brand: w.brand || '',
+                model: w.model || '',
+                version: w.version || undefined,
+                yearRange: w.yearRange || { min: 0, max: 0 },
+                budgetRange: w.budgetRange || { min: 0, max: 0 },
+                currency: w.currency || 'ARS',
+                conditions: w.conditions || [],
+              };
+            }
+          }
+
           const id = await findOrCreateConversation({
             buyerId: currentUserId,
             sellerId: targetUserId,
@@ -115,16 +134,17 @@ export function Messages() {
             sellerCompany: targetCompany || targetUserName,
             vehicleId: vehicleId || undefined,
             vehicleInfo: vehicleInfoData,
+            wantedId: wantedId || undefined,
+            wantedInfo: wantedInfoData,
             buyerLogo,
             sellerLogo: targetLogo,
           });
           setSelectedConvoId(id);
 
-          if (vehicleId) {
-            const snapshot = await getDocs(collection(db, 'conversations', id, 'messages'));
-            if (snapshot.docs.length === 0) {
-              setNewMessage('Me interesa este vehículo');
-            }
+          const snapshot = await getDocs(collection(db, 'conversations', id, 'messages'));
+          if (snapshot.docs.length === 0) {
+            if (vehicleId) setNewMessage('Me interesa este vehículo');
+            else if (wantedId) setNewMessage('Tengo un vehículo que podría interesarte');
           }
         } catch (error: any) {
           console.error("Error creating conversation:", error);
@@ -135,7 +155,7 @@ export function Messages() {
       };
       initConvo();
     }
-  }, [convoId, targetUserId, targetUserName, targetCompany, vehicleId, currentUserId, currentUserName, authLoading]);
+  }, [convoId, targetUserId, targetUserName, targetCompany, vehicleId, wantedId, currentUserId, currentUserName, authLoading]);
 
   useEffect(() => {
     if (!currentUserId) return;
@@ -334,10 +354,23 @@ export function Messages() {
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-black uppercase tracking-tighter text-base leading-none truncate">{selectedConvo ? getDisplayName(selectedConvo) : targetCompany || targetUserName}</h3>
-                    {(selectedConvo ? getDisplayCompany(selectedConvo) : (targetCompany ? targetUserName : '')) && (
-                      <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-0.5">{selectedConvo ? getDisplayCompany(selectedConvo) : (targetCompany ? targetUserName : '')}</p>
-                    )}
+                    {(() => {
+                      const otherId = selectedConvo
+                        ? (selectedConvo.buyerId === currentUserId ? selectedConvo.sellerId : selectedConvo.buyerId)
+                        : targetUserId;
+                      const displayName = selectedConvo ? getDisplayName(selectedConvo) : targetCompany || targetUserName;
+                      const displaySub = selectedConvo ? getDisplayCompany(selectedConvo) : (targetCompany ? targetUserName : '');
+                      return (
+                        <>
+                          <Link to={`/profile/${otherId}`} className="font-black uppercase tracking-tighter text-base leading-none truncate hover:text-primary transition-colors block">
+                            {displayName}
+                          </Link>
+                          {displaySub && (
+                            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-0.5">{displaySub}</p>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
                 {/* Row 2: vehicle card (if available) */}
@@ -361,6 +394,26 @@ export function Messages() {
                       )}
                     </div>
                   </Link>
+                )}
+                {/* Row 2 (alt): wanted search card */}
+                {selectedConvo?.wantedInfo && (
+                  <div className="w-full px-4 pb-3 flex items-start gap-3 border-t border-border/50 pt-2">
+                    <div className="w-16 h-11 rounded-xl shrink-0 border border-border bg-primary/10 flex items-center justify-center">
+                      <Search className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-primary/70 leading-none mb-0.5">Búsqueda activa</p>
+                      <p className="font-black uppercase tracking-tighter text-sm leading-tight truncate">
+                        {selectedConvo.wantedInfo.brand} {selectedConvo.wantedInfo.model}
+                        {selectedConvo.wantedInfo.version && ` — ${selectedConvo.wantedInfo.version}`}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground font-bold mt-0.5">
+                        {selectedConvo.wantedInfo.yearRange.min}–{selectedConvo.wantedInfo.yearRange.max}
+                        {' · '}
+                        {selectedConvo.wantedInfo.currency} {selectedConvo.wantedInfo.budgetRange.min.toLocaleString('es-AR')} – {selectedConvo.wantedInfo.budgetRange.max.toLocaleString('es-AR')}
+                      </p>
+                    </div>
+                  </div>
                 )}
               </div>
 

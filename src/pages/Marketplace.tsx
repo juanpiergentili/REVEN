@@ -548,7 +548,7 @@ export function Marketplace() {
                       <WantedCard
                         wanted={wanted}
                         onContact={() => {
-                          navigate(`/messages?userId=${wanted.userId}&userName=${encodeURIComponent(wanted.userName)}&company=${encodeURIComponent(wanted.companyName)}`);
+                          navigate(`/messages?userId=${wanted.userId}&userName=${encodeURIComponent(wanted.userName)}&company=${encodeURIComponent(wanted.companyName)}&wantedId=${wanted.id}`);
                         }}
                       />
                     </div>

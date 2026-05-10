@@ -17,6 +17,16 @@ export interface ConversationData {
     photo: string;
     price?: number;
   };
+  wantedId?: string;
+  wantedInfo?: {
+    brand: string;
+    model: string;
+    version?: string;
+    yearRange: { min: number; max: number };
+    budgetRange: { min: number; max: number };
+    currency: string;
+    conditions: string[];
+  };
   buyerId: string;
   sellerId: string;
   buyerName: string;
@@ -54,6 +64,8 @@ export async function findOrCreateConversation(params: {
   sellerLogo?: string;
   vehicleId?: string;
   vehicleInfo?: ConversationData['vehicleInfo'];
+  wantedId?: string;
+  wantedInfo?: ConversationData['wantedInfo'];
 }): Promise<string> {
   const conversationsRef = collection(db, 'conversations');
 
@@ -68,8 +80,12 @@ export async function findOrCreateConversation(params: {
   for (const docSnap of snapshot.docs) {
     const data = docSnap.data() as ConversationData;
     const isMatch = data.participants.includes(params.sellerId);
-    const vehicleMatch = params.vehicleId ? data.vehicleId === params.vehicleId : !data.vehicleId;
-    if (isMatch && vehicleMatch) {
+    const contextMatch = params.vehicleId
+      ? data.vehicleId === params.vehicleId
+      : params.wantedId
+        ? data.wantedId === params.wantedId
+        : !data.vehicleId && !data.wantedId;
+    if (isMatch && contextMatch) {
       // Back-fill vehicleInfo if conversation was created before this feature
       if (!data.vehicleInfo && params.vehicleInfo) {
         await updateDoc(doc(conversationsRef, docSnap.id), { vehicleInfo: params.vehicleInfo });
@@ -94,6 +110,8 @@ export async function findOrCreateConversation(params: {
 
   if (params.vehicleId) newConvo.vehicleId = params.vehicleId;
   if (params.vehicleInfo) newConvo.vehicleInfo = params.vehicleInfo;
+  if (params.wantedId) newConvo.wantedId = params.wantedId;
+  if (params.wantedInfo) newConvo.wantedInfo = params.wantedInfo;
   if (params.buyerLogo) newConvo.buyerLogo = params.buyerLogo;
   if (params.sellerLogo) newConvo.sellerLogo = params.sellerLogo;
 
