@@ -115,6 +115,7 @@ export interface Vehicle {
   sellerId: string;
   sellerName: string;
   sellerCompany: string;
+  sellerAvatarUrl?: string;
 
   // Datos del vehículo
   brand: string;

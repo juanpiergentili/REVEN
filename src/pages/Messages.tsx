@@ -4,7 +4,7 @@ import { getVehiclePath } from '@/src/lib/seo';
 import { Send, Search, ChevronLeft, Clock, Check, CheckCheck, ArrowLeft, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth, db } from '@/src/lib/firebase';
@@ -49,6 +49,7 @@ export function Messages() {
   const targetUserName = searchParams.get('userName');
   const targetCompany = searchParams.get('company');
   const vehicleId = searchParams.get('vehicleId');
+  const targetLogo = searchParams.get('logo') || undefined;
 
   useEffect(() => {
     if (authLoading) return;
@@ -63,11 +64,14 @@ export function Messages() {
         try {
           setIsInitializing(true);
 
-          // Fetch buyer's real company name from Firestore
+          // Fetch buyer's real company name and logo from Firestore
           const buyerDoc = await getDoc(doc(db, 'users', currentUserId));
           const buyerCompanyName = buyerDoc.exists()
             ? (buyerDoc.data().company || currentUserName)
             : currentUserName;
+          const buyerLogo = buyerDoc.exists()
+            ? (buyerDoc.data().logoUrl || buyerDoc.data().avatarUrl || undefined)
+            : undefined;
 
           // Fetch vehicle info if vehicleId is provided
           let vehicleInfoData: ConversationData['vehicleInfo'] | undefined;
@@ -95,6 +99,8 @@ export function Messages() {
             sellerCompany: targetCompany || targetUserName,
             vehicleId: vehicleId || undefined,
             vehicleInfo: vehicleInfoData,
+            buyerLogo,
+            sellerLogo: targetLogo,
           });
           setSelectedConvoId(id);
 
@@ -170,6 +176,10 @@ export function Messages() {
     return company ? name : '';
   };
 
+  const getDisplayLogo = (convo: ConversationData) => {
+    return convo.buyerId === currentUserId ? convo.sellerLogo : convo.buyerLogo;
+  };
+
   const filteredConversations = conversations.filter(c => {
     if (!searchQuery) return true;
     const name = getDisplayName(c).toLowerCase();
@@ -189,8 +199,8 @@ export function Messages() {
         </Badge>
       </div>
 
-      <div className="flex flex-1 min-h-0 overflow-hidden w-full min-w-0">
-        <aside className={`w-full md:w-96 shrink-0 border-r border-border flex flex-col min-h-0 min-w-0 ${selectedConvoId ? 'hidden md:flex' : 'flex'}`}>
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+        <aside className={`w-full md:w-96 border-r border-border flex flex-col min-h-0 ${selectedConvoId ? 'hidden md:flex' : 'flex'}`}>
           <div className="p-4 shrink-0">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -243,6 +253,7 @@ export function Messages() {
                     >
                       <div className="relative">
                         <Avatar className="h-12 w-12 shrink-0 border-2 border-primary/20">
+                          {getDisplayLogo(convo) && <AvatarImage src={getDisplayLogo(convo)!} alt={getDisplayName(convo)} className="object-cover" />}
                           <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
                             {getDisplayName(convo).split(' ').map(n => n[0]).join('').slice(0, 2)}
                           </AvatarFallback>
@@ -277,7 +288,7 @@ export function Messages() {
           </div>
         </aside>
 
-        <div className={`flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden ${selectedConvoId || initError ? 'flex' : 'hidden md:flex'}`}>
+        <div className={`flex-1 flex flex-col min-h-0 ${selectedConvoId || initError ? 'flex' : 'hidden md:flex'}`}>
           {initError ? (
             <div className="flex-1 flex items-center justify-center p-8">
               <div className="text-center space-y-4 max-w-md">
@@ -292,13 +303,16 @@ export function Messages() {
           ) : selectedConvo || isDeepLinkCreating ? (
             <>
               {/* Conversation header */}
-              <div className="border-b border-border bg-background/80 backdrop-blur-xl shrink-0 min-w-0 overflow-hidden">
+              <div className="border-b border-border bg-background/80 backdrop-blur-xl shrink-0">
                 {/* Row 1: back + agency name */}
                 <div className="px-4 pt-3 pb-2 flex items-center gap-3">
                   <Button variant="ghost" size="icon" className="rounded-full md:hidden shrink-0" onClick={() => setSelectedConvoId(null)}>
                     <ChevronLeft className="h-5 w-5" />
                   </Button>
                   <Avatar className="h-9 w-9 border-2 border-primary/20 shrink-0">
+                    {selectedConvo && getDisplayLogo(selectedConvo) && (
+                      <AvatarImage src={getDisplayLogo(selectedConvo)!} alt={getDisplayName(selectedConvo)} className="object-cover" />
+                    )}
                     <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
                       {(selectedConvo ? getDisplayName(selectedConvo) : targetCompany || targetUserName || '...').split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
                     </AvatarFallback>

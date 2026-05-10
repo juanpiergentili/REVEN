@@ -107,10 +107,10 @@ export function Agencies() {
                       {agency.name} {agency.lastName}
                     </p>
                   )}
-                  {(agency.city || agency.province) && (
+                  {(agency.cityDisplay || agency.provinceDisplay || agency.city || agency.province) && (
                     <p className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
                       <MapPin className="h-3 w-3 shrink-0 text-primary" />
-                      {[agency.city, agency.province].filter(Boolean).join(', ')}
+                      {[agency.cityDisplay || agency.city, agency.provinceDisplay || agency.province].filter(Boolean).join(', ')}
                     </p>
                   )}
                 </div>

@@ -20,7 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { getResponseBadge } from '@/src/lib/analytics';
 import { useAuth, db } from '@/src/lib/firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { getVehiclesBySeller, updateVehicleStatus, pauseAllSellerListings, deleteVehicle } from '@/src/lib/vehicles';
 import { addPointsToAgency, getAgencyTier, getTierColor } from '@/src/lib/gamification';
 import { isTrialUser, isTrialExpired, getTrialDaysRemaining, getTrialEndDate, TRIAL_MAX_LISTINGS } from '@/src/lib/trial';
@@ -142,9 +142,25 @@ export function Profile() {
         logoUrl = await getDownloadURL(logoRef);
       }
 
+      // Resolve province/city IDs to display names for listing pages (Agencies, etc.)
+      const provinceDisplay = provincias.find(p => p.id === editForm.province)?.nombre || editForm.province || '';
+      const cityDisplay = localidades.find(l => l.id === editForm.city)?.nombre || editForm.city || '';
+
       // Logo IS the universal image (avatarUrl = logoUrl so old references still work)
-      const updateData = { ...editForm, avatarUrl: logoUrl, logoUrl, updatedAt: new Date() };
+      const updateData = { ...editForm, avatarUrl: logoUrl, logoUrl, provinceDisplay, cityDisplay, updatedAt: new Date() };
       await updateDoc(doc(db, 'users', user.uid), updateData);
+
+      // Propagate logo + location to all seller's vehicle listings on every save
+      const newLocation = cityDisplay ? `${cityDisplay}, ${provinceDisplay}` : provinceDisplay;
+      const vehicleUpdates: Record<string, any> = {
+        sellerAvatarUrl: logoUrl,
+        ...(newLocation && { location: newLocation, province: editForm.province, city: cityDisplay }),
+      };
+      const vehiclesSnap = await getDocs(query(collection(db, 'vehicles'), where('sellerId', '==', user.uid)));
+      if (!vehiclesSnap.empty) {
+        await Promise.all(vehiclesSnap.docs.map(v => updateDoc(doc(db, 'vehicles', v.id), vehicleUpdates)));
+      }
+
       setProfileData((prev: any) => ({ ...prev, ...updateData }));
       setLogoFile(null);
       setLogoPreview('');
@@ -799,10 +815,10 @@ function VehicleGrid({
             </div>
 
             {/* Info */}
-            <div className="p-3 md:p-4 space-y-2">
+            <div className="p-3 space-y-2">
               <div className="cursor-pointer" onClick={() => onNavigate(listing.id)}>
-                <h3 className="text-sm md:text-base font-bold tracking-tighter uppercase leading-tight truncate">{listing.brand} {listing.model}</h3>
-                <p className="text-[9px] md:text-[10px] font-bold text-muted-foreground uppercase tracking-widest truncate">{listing.version}</p>
+                <h3 className="text-sm font-bold tracking-tighter uppercase leading-tight truncate">{listing.brand} {listing.model}</h3>
+                <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest truncate">{listing.version}</p>
               </div>
 
               <div className="flex items-center gap-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground">

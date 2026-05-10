@@ -23,6 +23,8 @@ export interface ConversationData {
   sellerName: string;
   buyerCompany: string;
   sellerCompany: string;
+  buyerLogo?: string;
+  sellerLogo?: string;
   lastMessage?: string;
   lastMessageAt: Timestamp;
   createdAt: Timestamp;
@@ -48,6 +50,8 @@ export async function findOrCreateConversation(params: {
   sellerName: string;
   buyerCompany: string;
   sellerCompany: string;
+  buyerLogo?: string;
+  sellerLogo?: string;
   vehicleId?: string;
   vehicleInfo?: ConversationData['vehicleInfo'];
 }): Promise<string> {
@@ -90,6 +94,8 @@ export async function findOrCreateConversation(params: {
 
   if (params.vehicleId) newConvo.vehicleId = params.vehicleId;
   if (params.vehicleInfo) newConvo.vehicleInfo = params.vehicleInfo;
+  if (params.buyerLogo) newConvo.buyerLogo = params.buyerLogo;
+  if (params.sellerLogo) newConvo.sellerLogo = params.sellerLogo;
 
   const docRef = await addDoc(conversationsRef, newConvo);
   return docRef.id;

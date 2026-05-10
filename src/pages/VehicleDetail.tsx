@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useState, useEffect, useCallback } from 'react';
 import { doc, getDoc, updateDoc, deleteDoc, getDocs, collection, increment, serverTimestamp } from 'firebase/firestore';
@@ -672,7 +673,7 @@ export function VehicleDetail() {
                     size="lg"
                     className="w-full h-16 rounded-2xl font-bold text-lg shadow-xl shadow-primary/20 group uppercase tracking-tighter"
                     onClick={() => navigate(
-                      `/messages?userId=${vehicle.sellerId}&userName=${encodeURIComponent(vehicle.sellerName)}&company=${encodeURIComponent(vehicle.sellerCompany || vehicle.sellerName)}&vehicleId=${vehicle.id}`
+                      `/messages?userId=${vehicle.sellerId}&userName=${encodeURIComponent(vehicle.sellerName)}&company=${encodeURIComponent(vehicle.sellerCompany || vehicle.sellerName)}&vehicleId=${vehicle.id}${vehicle.sellerAvatarUrl ? `&logo=${encodeURIComponent(vehicle.sellerAvatarUrl)}` : ''}`
                     )}
                   >
                     <MessageSquare className="mr-2 h-6 w-6" />
@@ -684,9 +685,12 @@ export function VehicleDetail() {
 
               {/* Seller Info */}
               <div className="p-8 rounded-[2.5rem] bg-primary/5 border border-primary/20 flex items-center gap-4">
-                <div className="h-14 w-14 rounded-full bg-primary/20 flex items-center justify-center">
-                  <Users className="h-7 w-7 text-primary" />
-                </div>
+                <Avatar className="h-14 w-14 border-2 border-primary/20 shrink-0">
+                  {vehicle.sellerAvatarUrl && <AvatarImage src={vehicle.sellerAvatarUrl} alt={vehicle.sellerName} className="object-cover" />}
+                  <AvatarFallback className="bg-primary/10 text-primary font-bold text-xl">
+                    {(vehicle.sellerName || vehicle.sellerCompany || '?')[0]?.toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Vendedor</p>
                   <h4 className="font-bold text-lg uppercase tracking-tighter">{vehicle.sellerName}</h4>
