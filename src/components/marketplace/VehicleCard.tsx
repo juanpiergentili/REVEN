@@ -31,7 +31,7 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
           <div className="flex sm:flex-col">
 
             {/* Photo */}
-            <div className="relative w-32 shrink-0 sm:w-full sm:aspect-[16/11] overflow-hidden bg-muted rounded-l-2xl sm:rounded-l-none sm:rounded-t-2xl">
+            <div className="relative w-36 shrink-0 min-h-[160px] sm:min-h-0 sm:w-full sm:aspect-[16/11] overflow-hidden bg-muted rounded-l-2xl sm:rounded-l-none sm:rounded-t-2xl">
               {hasPhoto ? (
                 <img
                   src={vehicle.photos[0]}
@@ -128,34 +128,19 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
                   {vehicle.currency} {vehicle.price?.toLocaleString('es-AR') ?? '—'}
                 </p>
 
-                {/* Mobile: condensed stats row */}
-                <div className="sm:hidden flex items-center gap-2 text-[9px] font-bold uppercase tracking-wider text-muted-foreground flex-wrap">
-                  <span>{vehicle.year}</span>
-                  <span className="text-primary/30">·</span>
-                  <span>{vehicle.km?.toLocaleString('es-AR')} km</span>
-                  <span className="text-primary/30">·</span>
-                  <span>{vehicle.fuelType}</span>
-                </div>
-
-                {/* Mobile: location */}
-                <div className="sm:hidden flex items-center gap-1 text-[9px] text-muted-foreground font-medium">
-                  <MapPin className="h-3 w-3 text-primary shrink-0" />
-                  <span className="truncate">{vehicle.location}</span>
-                </div>
-
-                {/* Desktop: stats grid */}
-                <div className="hidden sm:grid grid-cols-3 gap-4">
-                  <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-muted border border-border group-hover:bg-primary/5 group-hover:border-primary/10 transition-colors">
-                    <Calendar className="h-4 w-4 text-primary" />
-                    <span className="text-[10px] font-bold uppercase tracking-tighter">{vehicle.year}</span>
+                {/* Stats grid — compact on mobile, full on desktop */}
+                <div className="grid grid-cols-3 gap-1 sm:gap-4">
+                  <div className="flex flex-col items-center gap-0.5 sm:gap-1 p-1.5 sm:p-3 rounded-lg sm:rounded-xl bg-muted border border-border group-hover:bg-primary/5 group-hover:border-primary/10 transition-colors">
+                    <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
+                    <span className="text-[8px] sm:text-[10px] font-bold uppercase tracking-tighter">{vehicle.year}</span>
                   </div>
-                  <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-muted border border-border group-hover:bg-primary/5 group-hover:border-primary/10 transition-colors">
-                    <Gauge className="h-4 w-4 text-primary" />
-                    <span className="text-[10px] font-bold uppercase tracking-tighter">{vehicle.km?.toLocaleString('es-AR')} KM</span>
+                  <div className="flex flex-col items-center gap-0.5 sm:gap-1 p-1.5 sm:p-3 rounded-lg sm:rounded-xl bg-muted border border-border group-hover:bg-primary/5 group-hover:border-primary/10 transition-colors">
+                    <Gauge className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
+                    <span className="text-[8px] sm:text-[10px] font-bold uppercase tracking-tighter">{vehicle.km?.toLocaleString('es-AR')} KM</span>
                   </div>
-                  <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-muted border border-border group-hover:bg-primary/5 group-hover:border-primary/10 transition-colors">
-                    <Fuel className="h-4 w-4 text-primary" />
-                    <span className="text-[10px] font-bold uppercase tracking-tighter truncate w-full text-center">{vehicle.fuelType}</span>
+                  <div className="flex flex-col items-center gap-0.5 sm:gap-1 p-1.5 sm:p-3 rounded-lg sm:rounded-xl bg-muted border border-border group-hover:bg-primary/5 group-hover:border-primary/10 transition-colors">
+                    <Fuel className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
+                    <span className="text-[8px] sm:text-[10px] font-bold uppercase tracking-tighter truncate w-full text-center">{vehicle.fuelType}</span>
                   </div>
                 </div>
               </CardContent>
