@@ -7,8 +7,7 @@ import {
   Menu, 
   X, 
   Plus, 
-  Moon, 
-  Sun,
+
   User,
   Mail,
   Lock,
@@ -101,28 +100,15 @@ export function Header() {
     navigate('/');
   };
 
-  const [isDark, setIsDark] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('theme');
-      if (saved) return saved === 'dark';
-      return true; // Default to dark mode
-    }
-    return true;
-  });
   const location = useLocation();
   const navigate = useNavigate();
 
   const isLanding = location.pathname === '/';
 
   useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  }, [isDark]);
+    document.documentElement.classList.add('dark');
+    localStorage.setItem('theme', 'dark');
+  }, []);
 
   const navItems = [
     { name: 'Inicio', path: '/', icon: LayoutDashboard },
@@ -223,14 +209,6 @@ export function Header() {
             )}
           </Button>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsDark(!isDark)}
-            className="rounded-full w-10 h-10 border border-border"
-          >
-            {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-          </Button>
 
           <div className="hidden md:flex items-center gap-4">
             {user ? (
