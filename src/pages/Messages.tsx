@@ -216,7 +216,7 @@ export function Messages() {
       </div>
 
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        <aside className={`w-full md:w-96 border-r border-border flex flex-col min-h-0 ${selectedConvoId ? 'hidden md:flex' : 'flex'}`}>
+        <aside className={`w-full md:w-96 border-r border-border flex flex-col min-h-0 min-w-0 overflow-x-hidden ${selectedConvoId ? 'hidden md:flex' : 'flex'}`}>
           <div className="p-4 shrink-0">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -304,7 +304,7 @@ export function Messages() {
           </div>
         </aside>
 
-        <div className={`flex-1 flex flex-col min-h-0 ${selectedConvoId || initError ? 'flex' : 'hidden md:flex'}`}>
+        <div className={`flex-1 flex flex-col min-h-0 min-w-0 overflow-x-hidden ${selectedConvoId || initError ? 'flex' : 'hidden md:flex'}`}>
           {initError ? (
             <div className="flex-1 flex items-center justify-center p-8">
               <div className="text-center space-y-4 max-w-md">
@@ -397,9 +397,9 @@ export function Messages() {
                 </div>
               </div>
 
-              <div className="shrink-0 p-4 border-t border-border bg-background/80 backdrop-blur-xl flex flex-col gap-3">
+              <div className="shrink-0 p-4 border-t border-border bg-background/80 backdrop-blur-xl flex flex-col gap-3 overflow-hidden">
                 {/* Quick replies */}
-                <div className="flex gap-2 overflow-x-auto pb-1 max-w-3xl mx-auto w-full [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
+                <div className="flex gap-2 overflow-x-auto pb-1 w-full [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none', overscrollBehaviorX: 'contain' }}>
                   {['¿Sigue disponible?', '¿Me tomás permuta?', '¿Último precio?', 'Me interesa'].map((reply) => (
                     <button
                       key={reply}
