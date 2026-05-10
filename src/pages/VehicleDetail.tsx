@@ -66,11 +66,23 @@ export function VehicleDetail() {
   const isOwner = !!user && !!vehicle && vehicle.sellerId === user.uid;
 
   const handleStatusChange = async (status: Vehicle['status']) => {
-    if (!vehicle) return;
+    if (!vehicle || !user) return;
     setOwnerActionLoading(true);
     try {
-      await updateDoc(doc(db, 'vehicles', vehicle.id), { status });
-      setVehicle(v => v ? { ...v, status } : v);
+      const update: any = { status };
+      // Reactivating a REVEN-sold vehicle: reverse the points and clear sale data
+      if (status === 'ACTIVE' && (vehicle as any).soldViaReven && (vehicle as any).buyerAgencyId) {
+        await Promise.all([
+          addPointsToAgency(user.uid, -50),
+          addPointsToAgency((vehicle as any).buyerAgencyId, -50),
+        ]);
+        update.soldViaReven = null;
+        update.buyerAgencyId = null;
+        update.buyerAgencyName = null;
+        update.soldAt = null;
+      }
+      await updateDoc(doc(db, 'vehicles', vehicle.id), update);
+      setVehicle(v => v ? { ...v, ...update } : v);
     } finally {
       setOwnerActionLoading(false);
     }

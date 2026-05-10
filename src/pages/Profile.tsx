@@ -309,6 +309,9 @@ export function Profile() {
               <Badge className={`font-black text-[10px] rounded-full px-4 py-1 shadow-lg shadow-primary/20 uppercase tracking-widest border ${getTierColor(getAgencyTier(profileData.points || 0))}`}>
                 {getAgencyTier(profileData.points || 0)}
               </Badge>
+              <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1">
+                <span className="text-primary">{(profileData.points || 0).toLocaleString('es-AR')}</span> pts
+              </span>
               <Badge className={`${responseBadge.color} text-white font-bold text-[10px] rounded-full px-4 py-1 uppercase tracking-widest`}>
                 {responseBadge.label}
               </Badge>
