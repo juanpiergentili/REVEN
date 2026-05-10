@@ -296,6 +296,7 @@ export function Home() {
       key: 'plata', displayName: 'PROFESIONAL', ...PLAN_PRICES.plata, popular: false,
       features: ['Hasta 5 autos publicados', 'Agencias hasta 2 sucursales', '3 destacados por mes', 'Datos de mercado básicos', '1 usuario por cuenta', 'Contacto directo B2B'],
       cta: 'SOLICITÀ TU ACCESO',
+      promo: 'Código REVENFREE60 → 2 meses gratis',
     },
     {
       key: 'oro', displayName: 'BUSINESS', ...PLAN_PRICES.oro, popular: true,
@@ -628,6 +629,11 @@ export function Home() {
                   {billingCycle === 'annual' && (
                     <p className={`text-[10px] font-black uppercase tracking-wider mt-2 ${p.popular ? 'text-primary-foreground/70' : 'text-primary'}`}>
                       AHORRÁS {formatARS(p.monthly * 12 - p.annual)}
+                    </p>
+                  )}
+                  {(p as any).promo && (
+                    <p className="text-[10px] font-black uppercase tracking-widest mt-3 text-primary">
+                      {(p as any).promo}
                     </p>
                   )}
                 </div>
