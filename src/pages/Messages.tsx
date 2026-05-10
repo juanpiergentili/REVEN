@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { getVehiclePath } from '@/src/lib/seo';
 import { Send, Search, ChevronLeft, Clock, Check, CheckCheck, ArrowLeft, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -177,7 +178,7 @@ export function Messages() {
   });
 
   return (
-    <div className="fixed inset-x-0 bottom-0 top-24 z-40 flex flex-col bg-background overflow-hidden">
+    <div className="fixed inset-x-0 bottom-0 top-20 z-40 flex flex-col bg-background overflow-hidden">
       <div className={`border-b border-border bg-background/80 backdrop-blur-xl px-6 py-4 flex items-center gap-4 ${selectedConvoId ? 'hidden md:flex' : 'flex'}`}>
         <Button variant="ghost" size="icon" className="rounded-full" onClick={() => navigate(-1)}>
           <ArrowLeft className="h-5 w-5" />
@@ -311,9 +312,9 @@ export function Messages() {
                 </div>
                 {/* Row 2: vehicle card (if available) */}
                 {selectedConvo?.vehicleInfo && selectedConvo?.vehicleId && (
-                  <button
-                    onClick={() => navigate(getVehiclePath(selectedConvo.vehicleInfo!.brand, selectedConvo.vehicleInfo!.model, selectedConvo.vehicleInfo!.version || '', selectedConvo.vehicleInfo!.year, selectedConvo.vehicleId!))}
-                    className="w-full px-4 pb-3 flex items-center gap-3 border-t border-border/50 pt-2 hover:bg-primary/5 transition-colors text-left"
+                  <Link
+                    to={getVehiclePath(selectedConvo.vehicleInfo.brand, selectedConvo.vehicleInfo.model, selectedConvo.vehicleInfo.version || '', selectedConvo.vehicleInfo.year, selectedConvo.vehicleId)}
+                    className="w-full px-4 pb-3 flex items-center gap-3 border-t border-border/50 pt-2 active:bg-primary/10 hover:bg-primary/5 transition-colors"
                   >
                     {selectedConvo.vehicleInfo.photo && (
                       <img src={selectedConvo.vehicleInfo.photo} alt="" className="w-16 h-11 object-cover rounded-xl shrink-0 border border-border" />
@@ -329,7 +330,7 @@ export function Messages() {
                         </p>
                       )}
                     </div>
-                  </button>
+                  </Link>
                 )}
               </div>
 
@@ -366,7 +367,7 @@ export function Messages() {
                 </div>
               </div>
 
-              <div className="p-4 border-t border-border bg-background/50 backdrop-blur-xl flex flex-col gap-3">
+              <div className="shrink-0 p-4 border-t border-border bg-background/80 backdrop-blur-xl flex flex-col gap-3">
                 {/* Quick replies */}
                 <div className="flex gap-2 overflow-x-auto pb-1 max-w-3xl mx-auto w-full scrollbar-none">
                   {['¿Sigue disponible?', '¿Me tomás permuta?', '¿Último precio?', 'Me interesa'].map((reply) => (

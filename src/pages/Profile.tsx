@@ -758,7 +758,7 @@ function VehicleGrid({
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
       {listings.map((listing, i) => {
         const statusCfg = STATUS_CONFIG[listing.status as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.DRAFT;
         const isToggling = togglingId === listing.id;
@@ -771,7 +771,7 @@ function VehicleGrid({
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: i * 0.05 }}
-            className="group relative bg-card border border-border hover:border-primary/30 rounded-[2.5rem] overflow-hidden transition-all duration-500 shadow-sm"
+            className="group relative bg-card border border-border hover:border-primary/30 rounded-2xl overflow-hidden transition-all duration-500 shadow-sm"
           >
             {/* Photo */}
             <div
@@ -799,19 +799,19 @@ function VehicleGrid({
             </div>
 
             {/* Info */}
-            <div className="p-6 space-y-4">
+            <div className="p-3 space-y-2">
               <div className="cursor-pointer" onClick={() => onNavigate(listing.id)}>
-                <h3 className="text-xl font-bold tracking-tighter uppercase">{listing.brand} {listing.model}</h3>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{listing.version}</p>
+                <h3 className="text-sm font-bold tracking-tighter uppercase leading-tight truncate">{listing.brand} {listing.model}</h3>
+                <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest truncate">{listing.version}</p>
               </div>
 
-              <div className="flex items-center gap-4 text-[9px] font-black uppercase tracking-widest text-muted-foreground">
-                <span className="flex items-center gap-1.5"><Eye className="h-3.5 w-3.5 text-primary" /> {listing.viewCount || 0} Vistas</span>
-                <span className="flex items-center gap-1.5"><MessageSquare className="h-3.5 w-3.5 text-primary" /> {listing.contactCount || 0} Consultas</span>
+              <div className="flex items-center gap-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+                <span className="flex items-center gap-1"><Eye className="h-3 w-3 text-primary" /> {listing.viewCount || 0}</span>
+                <span className="flex items-center gap-1"><MessageSquare className="h-3 w-3 text-primary" /> {listing.contactCount || 0}</span>
               </div>
 
               {isOwnProfile && (
-                <div className="flex flex-wrap gap-2 pt-2 border-t border-border mt-2">
+                <div className="flex flex-wrap gap-1 pt-2 border-t border-border mt-1">
                   <Button
                     size="sm"
                     variant="outline"
