@@ -209,6 +209,12 @@ export function Marketplace() {
   const [wantedSearches, setWantedSearches] = useState<WantedSearch[]>([]);
   const [loadingVehicles, setLoadingVehicles] = useState(true);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+
+  // Lock body scroll while filter drawer is open
+  useEffect(() => {
+    document.body.style.overflow = showMobileFilters ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [showMobileFilters]);
   const [showPublishWanted, setShowPublishWanted] = useState(false);
   const [activeTab, setActiveTab] = useState('stock');
   const [currentPage, setCurrentPage] = useState(1);
@@ -619,7 +625,7 @@ export function Marketplace() {
                 <SortDropdown value={sortBy} onChange={setSortBy} />
               </div>
 
-              <div className="flex-1 overflow-hidden px-6 py-2">
+              <div className="flex-1 overflow-y-auto px-6 py-2">
                 <FilterSidebar
                   filters={filters}
                   onFilterChange={setFilters}
