@@ -41,6 +41,12 @@ export function Messages() {
   const [isInitializing, setIsInitializing] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
+  // Prevent body horizontal scroll while Messages overlay is mounted
+  useEffect(() => {
+    document.body.style.overflowX = 'hidden';
+    return () => { document.body.style.overflowX = ''; };
+  }, []);
+
   const currentUserId = user?.uid;
   const currentUserName = user?.displayName || 'Usuario';
 
@@ -383,7 +389,7 @@ export function Messages() {
 
               <div className="shrink-0 p-4 border-t border-border bg-background/80 backdrop-blur-xl flex flex-col gap-3">
                 {/* Quick replies */}
-                <div className="flex gap-2 overflow-x-auto pb-1 max-w-3xl mx-auto w-full scrollbar-none">
+                <div className="flex gap-2 overflow-x-auto pb-1 max-w-3xl mx-auto w-full [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
                   {['¿Sigue disponible?', '¿Me tomás permuta?', '¿Último precio?', 'Me interesa'].map((reply) => (
                     <button
                       key={reply}
