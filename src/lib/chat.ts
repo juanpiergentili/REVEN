@@ -12,7 +12,7 @@ export interface ConversationData {
   vehicleInfo?: {
     brand: string;
     model: string;
-    version: string;
+    version?: string;
     year: number;
     photo: string;
     price?: number;

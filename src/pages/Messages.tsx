@@ -312,7 +312,7 @@ export function Messages() {
                 {/* Row 2: vehicle card (if available) */}
                 {selectedConvo?.vehicleInfo && selectedConvo?.vehicleId && (
                   <button
-                    onClick={() => navigate(getVehiclePath(selectedConvo.vehicleInfo!.brand, selectedConvo.vehicleInfo!.model, selectedConvo.vehicleInfo!.version, selectedConvo.vehicleInfo!.year, selectedConvo.vehicleId!))}
+                    onClick={() => navigate(getVehiclePath(selectedConvo.vehicleInfo!.brand, selectedConvo.vehicleInfo!.model, selectedConvo.vehicleInfo!.version || '', selectedConvo.vehicleInfo!.year, selectedConvo.vehicleId!))}
                     className="w-full px-4 pb-3 flex items-center gap-3 border-t border-border/50 pt-2 hover:bg-primary/5 transition-colors text-left"
                   >
                     {selectedConvo.vehicleInfo.photo && (
