@@ -70,19 +70,23 @@ export function VehicleDetail() {
     setOwnerActionLoading(true);
     try {
       const update: any = { status };
-      // Reactivating a REVEN-sold vehicle: reverse the points and clear sale data
-      if (status === 'ACTIVE' && (vehicle as any).soldViaReven && (vehicle as any).buyerAgencyId) {
-        await Promise.all([
-          addPointsToAgency(user.uid, -50),
-          addPointsToAgency((vehicle as any).buyerAgencyId, -50),
-        ]);
+      const wasRevenSold = status === 'ACTIVE' && (vehicle as any).soldViaReven && (vehicle as any).buyerAgencyId;
+      if (wasRevenSold) {
         update.soldViaReven = null;
         update.buyerAgencyId = null;
         update.buyerAgencyName = null;
         update.soldAt = null;
       }
+      // Update vehicle first — if this fails, no points are reversed
       await updateDoc(doc(db, 'vehicles', vehicle.id), update);
       setVehicle(v => v ? { ...v, ...update } : v);
+      // Deduct points after confirming vehicle update succeeded
+      if (wasRevenSold) {
+        await Promise.all([
+          addPointsToAgency(user.uid, -50),
+          addPointsToAgency((vehicle as any).buyerAgencyId, -50),
+        ]);
+      }
     } finally {
       setOwnerActionLoading(false);
     }
@@ -109,14 +113,18 @@ export function VehicleDetail() {
         update.soldViaReven = true;
         update.buyerAgencyId = selectedBuyer.id;
         update.buyerAgencyName = selectedBuyer.company;
+      }
+      // Mark vehicle as sold first — if this fails, no points are awarded
+      await updateDoc(doc(db, 'vehicles', vehicle.id), update);
+      setVehicle(v => v ? { ...v, status: 'SOLD', ...update } : v);
+      setSoldDialogOpen(false);
+      // Award points after confirming vehicle update succeeded
+      if (soldViaReven && selectedBuyer) {
         await Promise.all([
           addPointsToAgency(user.uid, 50),
           addPointsToAgency(selectedBuyer.id, 50),
         ]);
       }
-      await updateDoc(doc(db, 'vehicles', vehicle.id), update);
-      setVehicle(v => v ? { ...v, status: 'SOLD', ...update } : v);
-      setSoldDialogOpen(false);
     } finally {
       setOwnerActionLoading(false);
     }

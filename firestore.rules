@@ -22,6 +22,11 @@ service cloud.firestore {
         .hasOnly(['totalProfileViews', 'totalListingViews', 'totalContactClicks', 'lastOnline']);
     }
 
+    function isPointsOnlyUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly(['points']);
+    }
+
     // ─── USERS ───────────────────────────────────────────────────────────────
     match /users/{userId} {
       allow read: if isAuthenticated();
@@ -30,7 +35,8 @@ service cloud.firestore {
       // Terceros sólo pueden incrementar analíticas (no las propias).
       allow update: if isOwner(userId)
         || isAdmin()
-        || (isAuthenticated() && !isOwner(userId) && isAnalyticsOnlyUpdate());
+        || (isAuthenticated() && !isOwner(userId) && isAnalyticsOnlyUpdate())
+        || (isAuthenticated() && isPointsOnlyUpdate());
 
       // Datos privados — solo owner + admin
       match /private/{docId} {
