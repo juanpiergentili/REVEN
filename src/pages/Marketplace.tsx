@@ -648,10 +648,10 @@ export function Marketplace() {
                       </Button>
                     )}
                     <Button
-                      className="w-full h-14 rounded-xl font-bold uppercase tracking-tighter text-lg shadow-xl shadow-primary/20"
+                      className="w-full h-14 rounded-xl font-bold uppercase tracking-widest text-sm shadow-xl shadow-primary/20 gap-2"
                       onClick={() => setShowMobileFilters(false)}
                     >
-                      Ver {count} resultado{count !== 1 ? 's' : ''}
+                      Ver <span className="font-black text-base">{count}</span> resultado{count !== 1 ? 's' : ''}
                     </Button>
                   </div>
                 );
