@@ -4,16 +4,19 @@ import {
   ChevronLeft, ChevronRight, Share2, MapPin, Calendar, Gauge, Fuel,
   CheckCircle2, MessageSquare, Eye, ShieldCheck, Users, ArrowRight, Car, Loader2,
   AlertCircle, Wrench, PaintBucket, Settings, X, Expand,
-  Pencil, Pause, Play, CheckSquare, Trash2,
+  Pencil, Pause, Play, CheckSquare, Trash2, Search,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useState, useEffect, useCallback } from 'react';
-import { doc, getDoc, updateDoc, deleteDoc, increment } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, deleteDoc, getDocs, collection, increment, serverTimestamp } from 'firebase/firestore';
 import { db, useAuth } from '@/src/lib/firebase';
 import type { Vehicle } from '@/src/types';
 import { extractIdFromSlug } from '@/src/lib/seo';
+import { addPointsToAgency } from '@/src/lib/gamification';
 
 
 export function VehicleDetail() {
@@ -27,6 +30,11 @@ export function VehicleDetail() {
   const [notFound, setNotFound] = useState(false);
   const [ownerActionLoading, setOwnerActionLoading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [soldDialogOpen, setSoldDialogOpen] = useState(false);
+  const [soldViaReven, setSoldViaReven] = useState<boolean | null>(null);
+  const [agencySearch, setAgencySearch] = useState('');
+  const [agencies, setAgencies] = useState<{ id: string; company: string; name: string }[]>([]);
+  const [selectedBuyer, setSelectedBuyer] = useState<{ id: string; company: string } | null>(null);
 
   const id = slug ? extractIdFromSlug(slug) : undefined;
 
@@ -63,6 +71,40 @@ export function VehicleDetail() {
     try {
       await updateDoc(doc(db, 'vehicles', vehicle.id), { status });
       setVehicle(v => v ? { ...v, status } : v);
+    } finally {
+      setOwnerActionLoading(false);
+    }
+  };
+
+  const openSoldDialog = async () => {
+    setSoldViaReven(null);
+    setSelectedBuyer(null);
+    setAgencySearch('');
+    setSoldDialogOpen(true);
+    const snap = await getDocs(collection(db, 'users'));
+    const list = snap.docs
+      .filter(d => d.id !== user?.uid && d.data().status === 'active' && d.data().role !== 'ADMIN')
+      .map(d => ({ id: d.id, company: d.data().company || d.data().name || 'Agencia', name: d.data().name || '' }));
+    setAgencies(list);
+  };
+
+  const confirmSold = async () => {
+    if (!vehicle || !user) return;
+    setOwnerActionLoading(true);
+    try {
+      const update: any = { status: 'SOLD', soldAt: serverTimestamp() };
+      if (soldViaReven && selectedBuyer) {
+        update.soldViaReven = true;
+        update.buyerAgencyId = selectedBuyer.id;
+        update.buyerAgencyName = selectedBuyer.company;
+        await Promise.all([
+          addPointsToAgency(user.uid, 50),
+          addPointsToAgency(selectedBuyer.id, 50),
+        ]);
+      }
+      await updateDoc(doc(db, 'vehicles', vehicle.id), update);
+      setVehicle(v => v ? { ...v, status: 'SOLD', ...update } : v);
+      setSoldDialogOpen(false);
     } finally {
       setOwnerActionLoading(false);
     }
@@ -568,14 +610,32 @@ export function VehicleDetail() {
                         >
                           <Play className="h-4 w-4" /> Activar
                         </Button>
+                      ) : vehicle.status === 'SOLD' ? (
+                        <Button
+                          variant="outline"
+                          className="h-12 rounded-2xl font-bold uppercase tracking-tighter text-xs gap-2 text-primary border-primary/40"
+                          onClick={() => handleStatusChange('ACTIVE')}
+                          disabled={ownerActionLoading}
+                        >
+                          <Play className="h-4 w-4" /> Reactivar
+                        </Button>
                       ) : null}
                       <Button
                         variant="outline"
-                        className="h-12 rounded-2xl font-bold uppercase tracking-tighter text-xs gap-2 text-primary border-primary/40"
-                        onClick={() => handleStatusChange('SOLD')}
+                        className={`h-12 rounded-2xl font-bold uppercase tracking-tighter text-xs gap-2 ${
+                          vehicle.status === 'SOLD'
+                            ? (vehicle as any).soldViaReven
+                              ? 'bg-primary/10 border-primary text-primary'
+                              : 'bg-muted border-border text-muted-foreground'
+                            : 'text-primary border-primary/40'
+                        }`}
+                        onClick={vehicle.status !== 'SOLD' ? openSoldDialog : undefined}
                         disabled={ownerActionLoading || vehicle.status === 'SOLD'}
                       >
-                        <CheckSquare className="h-4 w-4" /> Vendida
+                        <CheckSquare className="h-4 w-4" />
+                        {vehicle.status === 'SOLD'
+                          ? (vehicle as any).soldViaReven ? 'Vendida REVEN ✓' : 'Vendida'
+                          : 'Marcar vendida'}
                       </Button>
                       <Button
                         variant="outline"
@@ -617,6 +677,88 @@ export function VehicleDetail() {
           </div>
         </div>
       </main>
+
+      {/* Sold Dialog */}
+      <Dialog open={soldDialogOpen} onOpenChange={open => { setSoldDialogOpen(open); if (!open) { setSoldViaReven(null); setSelectedBuyer(null); } }}>
+        <DialogContent className="sm:max-w-md rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="font-black uppercase tracking-tighter text-xl">Marcar como vendida</DialogTitle>
+          </DialogHeader>
+
+          {soldViaReven === null ? (
+            <div className="space-y-4 py-2">
+              <p className="text-sm text-muted-foreground font-medium">¿Cómo realizaste la venta?</p>
+              <div className="grid grid-cols-1 gap-3">
+                <button
+                  onClick={() => setSoldViaReven(true)}
+                  className="flex items-center gap-4 p-4 rounded-2xl border-2 border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors text-left"
+                >
+                  <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-black uppercase tracking-tighter text-sm text-primary">A través de REVEN</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">+50 puntos para vos y el comprador</p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => { setSoldViaReven(false); confirmSold(); }}
+                  className="flex items-center gap-4 p-4 rounded-2xl border border-border bg-muted/30 hover:bg-muted/60 transition-colors text-left"
+                >
+                  <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center shrink-0">
+                    <Users className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="font-black uppercase tracking-tighter text-sm">Por mi cuenta</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">Sin puntos de gamificación</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4 py-2">
+              <p className="text-sm text-muted-foreground font-medium">Seleccioná la agencia compradora</p>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar agencia..."
+                  className="pl-10 rounded-2xl"
+                  value={agencySearch}
+                  onChange={e => setAgencySearch(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              <div className="max-h-56 overflow-y-auto space-y-1 pr-1">
+                {agencies
+                  .filter(a => a.company.toLowerCase().includes(agencySearch.toLowerCase()) || a.name.toLowerCase().includes(agencySearch.toLowerCase()))
+                  .map(agency => (
+                    <button
+                      key={agency.id}
+                      onClick={() => setSelectedBuyer({ id: agency.id, company: agency.company })}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-colors ${selectedBuyer?.id === agency.id ? 'bg-primary/15 border border-primary/40' : 'hover:bg-muted border border-transparent'}`}
+                    >
+                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-[10px] font-black text-primary">
+                        {agency.company[0]}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold uppercase tracking-tighter text-sm truncate">{agency.company}</p>
+                        {agency.name && <p className="text-[10px] text-muted-foreground truncate">{agency.name}</p>}
+                      </div>
+                      {selectedBuyer?.id === agency.id && <CheckCircle2 className="h-4 w-4 text-primary ml-auto shrink-0" />}
+                    </button>
+                  ))}
+              </div>
+              <Button
+                className="w-full h-12 rounded-2xl font-bold uppercase tracking-tighter"
+                onClick={confirmSold}
+                disabled={!selectedBuyer || ownerActionLoading}
+              >
+                {ownerActionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : '+ 50 pts — Confirmar venta REVEN'}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
