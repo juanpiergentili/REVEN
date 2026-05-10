@@ -189,8 +189,8 @@ export function Messages() {
         </Badge>
       </div>
 
-      <div className="flex flex-1 min-h-0 overflow-hidden">
-        <aside className={`w-full md:w-96 border-r border-border flex flex-col min-h-0 ${selectedConvoId ? 'hidden md:flex' : 'flex'}`}>
+      <div className="flex flex-1 min-h-0 overflow-hidden w-full min-w-0">
+        <aside className={`w-full md:w-96 shrink-0 border-r border-border flex flex-col min-h-0 min-w-0 ${selectedConvoId ? 'hidden md:flex' : 'flex'}`}>
           <div className="p-4 shrink-0">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -277,7 +277,7 @@ export function Messages() {
           </div>
         </aside>
 
-        <div className={`flex-1 flex flex-col min-h-0 ${selectedConvoId || initError ? 'flex' : 'hidden md:flex'}`}>
+        <div className={`flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden ${selectedConvoId || initError ? 'flex' : 'hidden md:flex'}`}>
           {initError ? (
             <div className="flex-1 flex items-center justify-center p-8">
               <div className="text-center space-y-4 max-w-md">
@@ -292,7 +292,7 @@ export function Messages() {
           ) : selectedConvo || isDeepLinkCreating ? (
             <>
               {/* Conversation header */}
-              <div className="border-b border-border bg-background/80 backdrop-blur-xl shrink-0">
+              <div className="border-b border-border bg-background/80 backdrop-blur-xl shrink-0 min-w-0 overflow-hidden">
                 {/* Row 1: back + agency name */}
                 <div className="px-4 pt-3 pb-2 flex items-center gap-3">
                   <Button variant="ghost" size="icon" className="rounded-full md:hidden shrink-0" onClick={() => setSelectedConvoId(null)}>

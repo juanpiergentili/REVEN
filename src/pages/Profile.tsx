@@ -799,10 +799,10 @@ function VehicleGrid({
             </div>
 
             {/* Info */}
-            <div className="p-3 space-y-2">
+            <div className="p-3 md:p-4 space-y-2">
               <div className="cursor-pointer" onClick={() => onNavigate(listing.id)}>
-                <h3 className="text-sm font-bold tracking-tighter uppercase leading-tight truncate">{listing.brand} {listing.model}</h3>
-                <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest truncate">{listing.version}</p>
+                <h3 className="text-sm md:text-base font-bold tracking-tighter uppercase leading-tight truncate">{listing.brand} {listing.model}</h3>
+                <p className="text-[9px] md:text-[10px] font-bold text-muted-foreground uppercase tracking-widest truncate">{listing.version}</p>
               </div>
 
               <div className="flex items-center gap-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground">

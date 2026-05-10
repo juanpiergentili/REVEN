@@ -63,23 +63,23 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
               </div>
             </div>
 
-            <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end">
-              <div className="space-y-0.5">
-                <h3 className="font-bold text-2xl leading-none uppercase tracking-tighter text-white">
+            <div className="absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 flex justify-between items-end">
+              <div className="space-y-0.5 min-w-0 flex-1 mr-2">
+                <h3 className="font-bold text-base sm:text-2xl leading-none uppercase tracking-tighter text-white truncate">
                   {vehicle.brand} {vehicle.model}
                 </h3>
-                <p className="text-sm text-white/70 font-bold uppercase tracking-widest truncate max-w-[180px]">
+                <p className="text-[9px] sm:text-sm text-white/70 font-bold uppercase tracking-widest truncate">
                   {vehicle.version}
                 </p>
               </div>
-              <div className="bg-primary text-primary-foreground p-2 rounded-full opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-500">
-                <ArrowUpRight className="h-5 w-5 stroke-[3]" />
+              <div className="bg-primary text-primary-foreground p-1.5 sm:p-2 rounded-full opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-500 shrink-0">
+                <ArrowUpRight className="h-4 w-4 sm:h-5 sm:w-5 stroke-[3]" />
               </div>
             </div>
           </div>
 
-          <CardContent className="p-6 space-y-6">
-            <div className="flex items-center justify-between">
+          <CardContent className="p-3 sm:p-6 space-y-3 sm:space-y-6">
+            <div className="hidden sm:flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Avatar className="h-10 w-10 border-2 border-primary/20">
                   <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
@@ -97,29 +97,29 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
               </div>
             </div>
 
-            <p className="font-bold text-3xl text-primary tracking-tighter">
+            <p className="font-bold text-xl sm:text-3xl text-primary tracking-tighter">
               {vehicle.currency} {vehicle.price?.toLocaleString('es-AR') ?? '—'}
             </p>
 
-            <div className="grid grid-cols-3 gap-4">
-              <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-muted border border-border group-hover:bg-primary/5 group-hover:border-primary/10 transition-colors">
-                <Calendar className="h-4 w-4 text-primary" />
-                <span className="text-[10px] font-bold uppercase tracking-tighter">{vehicle.year}</span>
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-4">
+              <div className="flex flex-col items-center gap-1 p-1.5 sm:p-3 rounded-xl bg-muted border border-border group-hover:bg-primary/5 group-hover:border-primary/10 transition-colors">
+                <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
+                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-tighter">{vehicle.year}</span>
               </div>
-              <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-muted border border-border group-hover:bg-primary/5 group-hover:border-primary/10 transition-colors">
-                <Gauge className="h-4 w-4 text-primary" />
-                <span className="text-[10px] font-bold uppercase tracking-tighter">{vehicle.km?.toLocaleString('es-AR')} KM</span>
+              <div className="flex flex-col items-center gap-1 p-1.5 sm:p-3 rounded-xl bg-muted border border-border group-hover:bg-primary/5 group-hover:border-primary/10 transition-colors">
+                <Gauge className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
+                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-tighter">{vehicle.km?.toLocaleString('es-AR')}km</span>
               </div>
-              <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-muted border border-border group-hover:bg-primary/5 group-hover:border-primary/10 transition-colors">
-                <Fuel className="h-4 w-4 text-primary" />
-                <span className="text-[10px] font-bold uppercase tracking-tighter truncate w-full text-center">{vehicle.fuelType}</span>
+              <div className="flex flex-col items-center gap-1 p-1.5 sm:p-3 rounded-xl bg-muted border border-border group-hover:bg-primary/5 group-hover:border-primary/10 transition-colors">
+                <Fuel className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
+                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-tighter truncate w-full text-center">{vehicle.fuelType}</span>
               </div>
             </div>
           </CardContent>
 
-          <CardFooter className="p-6 pt-0">
-            <Button className="w-full rounded-full font-bold uppercase tracking-widest text-[10px] h-11 shadow-lg shadow-primary/20">
-              VER DETALLE DEL VEHÍCULO
+          <CardFooter className="p-3 pt-0 sm:p-6 sm:pt-0">
+            <Button className="w-full rounded-full font-bold uppercase tracking-widest text-[9px] sm:text-[10px] h-8 sm:h-11 shadow-lg shadow-primary/20">
+              VER DETALLE
             </Button>
           </CardFooter>
         </Card>
