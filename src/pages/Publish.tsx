@@ -248,6 +248,7 @@ export function Publish() {
         sellerId: user.uid,
         sellerName: userProfile?.company || userProfile?.name || user.displayName || '',
         sellerCompany: userProfile?.company || '',
+        sellerAvatarUrl: userProfile?.logoUrl || userProfile?.avatarUrl || '',
         brand: formData.brand,
         model: formData.model,
         version: formData.version,
