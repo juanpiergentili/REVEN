@@ -25,7 +25,7 @@ export function Footer({ onAdmissionClick, onTermsClick, className = "bg-[#0e0a1
              </p>
              <div className="flex gap-4">
                {[Instagram, Facebook, Linkedin, Youtube].map((Icon, i) => (
-                 <a key={i} href="#" className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-[#ffffff] hover:border-[#d4ef06]/50 hover:text-[#d4ef06] transition-all">
+                 <a key={i} href="#" className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-[#ffffff] hover:border-[#aafc3d]/50 hover:text-[#aafc3d] transition-all">
                    <Icon size={18} />
                  </a>
                ))}
@@ -34,37 +34,37 @@ export function Footer({ onAdmissionClick, onTermsClick, className = "bg-[#0e0a1
 
           {/* Links 1 */}
           <div className="md:col-span-2">
-            <h4 className="text-[10px] font-light uppercase tracking-[0.3em] mb-8 text-[#d4ef06]">Plataforma</h4>
+            <h4 className="text-[10px] font-light uppercase tracking-[0.3em] mb-8 text-[#aafc3d]">Plataforma</h4>
             <ul className="space-y-4 text-sm font-light uppercase tracking-widest text-[#ffffff]">
-              <li><Link to="/" className="hover:text-[#d4ef06] transition-colors">Inicio</Link></li>
-              <li><Link to="/marketplace" className="hover:text-[#d4ef06] transition-colors">Marketplace</Link></li>
-              <li><Link to="/login" className="hover:text-[#d4ef06] transition-colors">Ingresar</Link></li>
-              <li><button onClick={onAdmissionClick} className="hover:text-[#d4ef06] transition-colors">Admisión</button></li>
+              <li><Link to="/" className="hover:text-[#aafc3d] transition-colors">Inicio</Link></li>
+              <li><Link to="/marketplace" className="hover:text-[#aafc3d] transition-colors">Marketplace</Link></li>
+              <li><Link to="/login" className="hover:text-[#aafc3d] transition-colors">Ingresar</Link></li>
+              <li><button onClick={onAdmissionClick} className="hover:text-[#aafc3d] transition-colors">Admisión</button></li>
             </ul>
           </div>
 
           {/* Links 2 */}
           <div className="md:col-span-2">
-            <h4 className="text-[10px] font-light uppercase tracking-[0.3em] mb-8 text-[#d4ef06]">Legal</h4>
+            <h4 className="text-[10px] font-light uppercase tracking-[0.3em] mb-8 text-[#aafc3d]">Legal</h4>
             <ul className="space-y-4 text-sm font-light uppercase tracking-widest text-[#ffffff]">
-              <li><button onClick={onTermsClick} className="hover:text-[#d4ef06] transition-colors">Bases y Condiciones</button></li>
-              <li><button onClick={onTermsClick} className="hover:text-[#d4ef06] transition-colors">Privacidad</button></li>
-              <li><button onClick={onTermsClick} className="hover:text-[#d4ef06] transition-colors">Cookies</button></li>
+              <li><button onClick={onTermsClick} className="hover:text-[#aafc3d] transition-colors">Bases y Condiciones</button></li>
+              <li><button onClick={onTermsClick} className="hover:text-[#aafc3d] transition-colors">Privacidad</button></li>
+              <li><button onClick={onTermsClick} className="hover:text-[#aafc3d] transition-colors">Cookies</button></li>
             </ul>
           </div>
 
           {/* Contact Col */}
           <div className="md:col-span-4">
-            <h4 className="text-[10px] font-light uppercase tracking-[0.3em] mb-8 text-[#d4ef06]">Contacto</h4>
+            <h4 className="text-[10px] font-light uppercase tracking-[0.3em] mb-8 text-[#aafc3d]">Contacto</h4>
             <ul className="space-y-6 text-sm font-light text-[#ffffff] uppercase tracking-widest">
               <li className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-[#d4ef06]">
+                <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-[#aafc3d]">
                   <Mail size={18} />
                 </div>
                 <span>hola@reven.com.ar</span>
               </li>
               <li className="flex items-center gap-4 text-[#ffffff]">
-                <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-[#d4ef06]">
+                <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-[#aafc3d]">
                   <Building2 size={18} />
                 </div>
                 <span>Córdoba, Argentina</span>
@@ -75,7 +75,7 @@ export function Footer({ onAdmissionClick, onTermsClick, className = "bg-[#0e0a1
                   target="_blank"
                   className="flex items-center gap-4 group"
                 >
-                  <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-[#d4ef06] group-hover:scale-110 transition-transform">
+                  <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-[#aafc3d] group-hover:scale-110 transition-transform">
                     <MessageCircle size={18} />
                   </div>
                   <span className="group-hover:text-white transition-colors">WhatsApp Soporte</span>
@@ -97,7 +97,7 @@ export function Footer({ onAdmissionClick, onTermsClick, className = "bg-[#0e0a1
       </div>
 
       {/* Decorative Blur */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[80vw] h-[40vw] bg-[#d4ef06]/5 blur-[120px] -z-0 rounded-full" />
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[80vw] h-[40vw] bg-[#aafc3d]/5 blur-[120px] -z-0 rounded-full" />
     </footer>
   );
 }

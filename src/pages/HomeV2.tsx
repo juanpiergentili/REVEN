@@ -178,7 +178,7 @@ export function HomeV2() {
   const footerVideoY = useTransform(footerScroll, [0, 1], [0, -100]); // Parallax
 
   return (
-    <div className="bg-[#0e0a14] dark:bg-[#0e0a14] light:bg-[#f8f9fa] text-white dark:text-white light:text-[#0e0a14] min-h-screen selection:bg-[#d4ef06] selection:text-[#0e0a14] font-normal" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className="bg-[#0e0a14] dark:bg-[#0e0a14] light:bg-[#f8f9fa] text-white dark:text-white light:text-[#0e0a14] min-h-screen selection:bg-[#aafc3d] selection:text-[#0e0a14] font-normal" style={{ fontFamily: "'Inter', sans-serif" }}>
       
       {/* ══════════════════════════════════════ HEADER */}
       <Header />
@@ -198,7 +198,7 @@ export function HomeV2() {
         >
           <h1 className="text-4xl md:text-[52px] font-light uppercase tracking-tighter leading-none mb-4 md:mb-8 dark:text-white light:text-[#0e0a14]">
             El stock de todas las <br />
-            <span className="text-[#d4ef06]">concesionarias</span> <br />
+            <span className="text-[#aafc3d]">concesionarias</span> <br />
             en un solo lugar.
           </h1>
           <p className="text-lg md:text-xl text-zinc-300 dark:text-zinc-300 light:text-[#0e0a14]/60 max-w-2xl mx-auto mb-8 md:mb-10 font-light leading-relaxed">
@@ -208,7 +208,7 @@ export function HomeV2() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <button 
               onClick={() => { trackEvent('hero_cta_click'); setAdmissionOpen(true); }}
-              className="bg-[#d4ef06] text-[#0e0a14] font-normal px-12 py-5 rounded-full hover:bg-white light:hover:bg-[#0e0a14] light:hover:text-white transition-all hover:scale-105 shadow-2xl shadow-[#d4ef06]/20 uppercase tracking-widest text-xs"
+              className="bg-[#aafc3d] text-[#0e0a14] font-normal px-12 py-5 rounded-full hover:bg-white light:hover:bg-[#0e0a14] light:hover:text-white transition-all hover:scale-105 shadow-2xl shadow-[#aafc3d]/20 uppercase tracking-widest text-xs"
             >
               Solicitá tu acceso
             </button>
@@ -236,7 +236,7 @@ export function HomeV2() {
               className="mb-8 md:mb-24 text-center md:text-left"
             >
               <h2 className="text-3xl md:text-[52px] font-light tracking-tighter mb-4 text-white uppercase leading-none">
-                Hacer negocios B2B <br /> <span className="text-[#d4ef06]">hoy es un caos.</span>
+                Hacer negocios B2B <br /> <span className="text-[#aafc3d]">hoy es un caos.</span>
               </h2>
               <p className="text-zinc-300 font-light max-w-xl text-sm md:text-base mx-auto md:mx-0">
                  El mercado informal y los grupos de WhatsApp están matando tu rentabilidad y tiempo.
@@ -246,17 +246,17 @@ export function HomeV2() {
             <div className="flex flex-col lg:flex-row items-stretch justify-between gap-12 lg:gap-8">
               <div className="w-full lg:w-1/4 flex flex-col gap-10 pb-8 md:pb-32">
                 <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}>
-                  <div className="w-10 h-10 mb-4 text-[#d4ef06]"><Zap className="h-8 w-8" /></div>
+                  <div className="w-10 h-10 mb-4 text-[#aafc3d]"><Zap className="h-8 w-8" /></div>
                   <h3 className="text-white font-normal text-lg mb-2 uppercase tracking-tighter">Ruido constante</h3>
                   <p className="text-zinc-300 font-light text-sm leading-relaxed">Grupos de WhatsApp con 500 mensajes al día que no llevan a nada.</p>
                 </motion.div>
                 <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }}>
-                  <div className="w-10 h-10 mb-4 text-[#d4ef06]"><CreditCard className="h-8 w-8" /></div>
+                  <div className="w-10 h-10 mb-4 text-[#aafc3d]"><CreditCard className="h-8 w-8" /></div>
                   <h3 className="text-white font-normal text-lg mb-2 uppercase tracking-tighter">Falta de tiempo</h3>
                   <p className="text-zinc-300 font-light text-sm leading-relaxed">Llamar una por una para consultar stock y precios que nunca coinciden.</p>
                 </motion.div>
                 <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: 0.3 }}>
-                  <div className="w-10 h-10 mb-4 text-[#d4ef06]"><ShieldCheck className="h-8 w-8" /></div>
+                  <div className="w-10 h-10 mb-4 text-[#aafc3d]"><ShieldCheck className="h-8 w-8" /></div>
                   <h3 className="text-white font-normal text-lg mb-2 uppercase tracking-tighter">Inseguridad total</h3>
                   <p className="text-zinc-300 font-light text-sm leading-relaxed">Operar sin referencias de colegas verificados es un riesgo innecesario.</p>
                 </motion.div>
@@ -276,17 +276,17 @@ export function HomeV2() {
 
               <div className="w-full lg:w-1/4 flex flex-col gap-10 pb-8 md:pb-32">
                 <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}>
-                  <div className="w-10 h-10 mb-4 text-[#d4ef06]"><Users className="h-8 w-8" /></div>
+                  <div className="w-10 h-10 mb-4 text-[#aafc3d]"><Users className="h-8 w-8" /></div>
                   <h3 className="text-white font-normal text-lg mb-2 uppercase tracking-tighter">Poca transparencia</h3>
                   <p className="text-zinc-300 font-light text-sm leading-relaxed">No saber a qué valores se opera realmente el mercado mayorista.</p>
                 </motion.div>
                 <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }}>
-                  <div className="w-10 h-10 mb-4 text-[#d4ef06]"><Fingerprint className="h-8 w-8" /></div>
+                  <div className="w-10 h-10 mb-4 text-[#aafc3d]"><Fingerprint className="h-8 w-8" /></div>
                   <h3 className="text-white font-normal text-lg mb-2 uppercase tracking-tighter">Capital parado</h3>
                   <p className="text-zinc-300 font-light text-sm leading-relaxed">Autos parados 90+ días sin comprador por falta de un canal B2B ágil.</p>
                 </motion.div>
                 <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: 0.3 }}>
-                  <div className="w-10 h-10 mb-4 text-[#d4ef06]"><FileText className="h-8 w-8" /></div>
+                  <div className="w-10 h-10 mb-4 text-[#aafc3d]"><FileText className="h-8 w-8" /></div>
                   <h3 className="text-white font-normal text-lg mb-2 uppercase tracking-tighter">Falta de respaldo</h3>
                   <p className="text-zinc-300 font-light text-sm leading-relaxed">Cerrar tratos de palabra sin un entorno profesional que te cuide.</p>
                 </motion.div>
@@ -308,7 +308,7 @@ export function HomeV2() {
         </div>
 
         <div className="max-w-6xl mx-auto relative z-10">
-          <h2 className="text-center text-3xl md:text-5xl font-light uppercase tracking-tighter mb-12 md:mb-24 dark:text-white light:text-[#0e0a14]">Cómo funciona <span className="text-[#d4ef06]">Reven.</span></h2>
+          <h2 className="text-center text-3xl md:text-5xl font-light uppercase tracking-tighter mb-12 md:mb-24 dark:text-white light:text-[#0e0a14]">Cómo funciona <span className="text-[#aafc3d]">Reven.</span></h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-16 backdrop-blur-sm bg-black/10 p-6 md:p-12 rounded-[2rem] md:rounded-[3rem]">
             {[
               { s: "01", t: "APLICÁ", d: "Completás el formulario de solicitud de acceso con tu CUIT." },
@@ -316,7 +316,7 @@ export function HomeV2() {
               { s: "03", t: "OPERÁ", d: "Accedé al stock mayorista y empezá a cerrar negocios." }
             ].map((step, i) => (
               <div key={i} className="text-center">
-                <span className="text-6xl md:text-7xl font-light text-[#d4ef06]/20 mb-4 block leading-none">{step.s}</span>
+                <span className="text-6xl md:text-7xl font-light text-[#aafc3d]/20 mb-4 block leading-none">{step.s}</span>
                 <h3 className="text-xl md:text-2xl font-light mb-4 dark:text-white light:text-white md:light:text-[#0e0a14]">{step.t}</h3>
                 <p className="text-zinc-300 dark:text-zinc-300 light:text-white/60 md:light:text-[#0e0a14]/60 leading-relaxed font-light">{step.d}</p>
               </div>
@@ -328,7 +328,7 @@ export function HomeV2() {
       {/* ══════════════════════════════════════ BENEFICIOS */}
       <section className="py-16 md:py-32 px-4 md:px-6 bg-[#0e0a14] light:bg-[#f8f9fa]">
         <div className="max-w-6xl mx-auto pt-16 md:pt-32">
-          <h2 className="text-center text-3xl md:text-4xl font-light uppercase tracking-tighter mb-12 md:mb-20 dark:text-white light:text-[#0e0a14]">¿Por qué <span className="text-[#d4ef06]">Reven?</span></h2>
+          <h2 className="text-center text-3xl md:text-4xl font-light uppercase tracking-tighter mb-12 md:mb-20 dark:text-white light:text-[#0e0a14]">¿Por qué <span className="text-[#aafc3d]">Reven?</span></h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
              {[
                { t: "Stock mayorista", d: "El catálogo más grande de Argentina exclusivo B2B." },
@@ -338,8 +338,8 @@ export function HomeV2() {
                { t: "Adiós WhatsApp", d: "Filtros profesionales para no perder tiempo." },
                { t: "Competitividad", d: "Sumate a la red que domina el mercado B2B." }
              ].map((b, i) => (
-               <div key={i} className="p-8 md:p-10 bg-white/5 dark:bg-white/5 light:bg-white rounded-[2rem] md:rounded-3xl border border-white/5 light:border-[#0e0a14]/5 hover:bg-[#d4ef06]/5 light:hover:bg-[#d4ef06]/5 transition-all shadow-sm">
-                 <h4 className="text-[#d4ef06] font-light mb-3 uppercase tracking-widest text-xs">{b.t}</h4>
+               <div key={i} className="p-8 md:p-10 bg-white/5 dark:bg-white/5 light:bg-white rounded-[2rem] md:rounded-3xl border border-white/5 light:border-[#0e0a14]/5 hover:bg-[#aafc3d]/5 light:hover:bg-[#aafc3d]/5 transition-all shadow-sm">
+                 <h4 className="text-[#aafc3d] font-light mb-3 uppercase tracking-widest text-xs">{b.t}</h4>
                  <p className="font-light text-zinc-300 dark:text-zinc-300 light:text-[#0e0a14]/60 leading-relaxed text-sm">{b.d}</p>
                </div>
              ))}
@@ -360,7 +360,7 @@ export function HomeV2() {
         
         <div className="max-w-6xl mx-auto relative z-10">
           <div className="text-center mb-16 md:mb-20">
-            <h2 className="text-4xl md:text-[52px] font-light uppercase tracking-tighter mb-4 md:mb-8 leading-none dark:text-white light:text-[#0e0a14]">Invertí en tu <br /><span className="text-[#d4ef06]">mayor canal</span> de ventas.</h2>
+            <h2 className="text-4xl md:text-[52px] font-light uppercase tracking-tighter mb-4 md:mb-8 leading-none dark:text-white light:text-[#0e0a14]">Invertí en tu <br /><span className="text-[#aafc3d]">mayor canal</span> de ventas.</h2>
             
             <div className="flex items-center justify-center gap-6 mt-8 md:mt-12 mb-12 md:mb-20">
               <span className={`text-xs font-bold uppercase tracking-widest ${billing === 'monthly' ? 'text-white light:text-[#0e0a14]' : 'text-white/30 light:text-[#0e0a14]/30'}`}>Mensual</span>
@@ -370,11 +370,11 @@ export function HomeV2() {
               >
                 <motion.div 
                   animate={{ x: billing === 'annual' ? 28 : 0 }}
-                  className="w-5 h-5 rounded-full bg-[#d4ef06]"
+                  className="w-5 h-5 rounded-full bg-[#aafc3d]"
                 />
               </button>
               <span className={`text-xs font-bold uppercase tracking-widest ${billing === 'annual' ? 'text-white light:text-[#0e0a14]' : 'text-white/30 light:text-[#0e0a14]/30'}`}>
-                Anual <span className="text-[#d4ef06] text-[10px] font-black ml-2">35% OFF</span>
+                Anual <span className="text-[#aafc3d] text-[10px] font-black ml-2">35% OFF</span>
               </span>
             </div>
           </div>
@@ -383,7 +383,7 @@ export function HomeV2() {
             {PLANS.map((p, i) => (
               <div 
                 key={i} 
-                className={`p-10 md:p-12 rounded-[2.5rem] border flex flex-col transition-all ${p.popular ? 'bg-[#d4ef06] border-[#d4ef06] text-[#0e0a14] scale-105 shadow-2xl shadow-[#d4ef06]/20' : 'bg-white/5 dark:bg-white/5 light:bg-white border-white/5 light:border-[#0e0a14]/5 text-white dark:text-white light:text-[#0e0a14]'}`}
+                className={`p-10 md:p-12 rounded-[2.5rem] border flex flex-col transition-all ${p.popular ? 'bg-[#aafc3d] border-[#aafc3d] text-[#0e0a14] scale-105 shadow-2xl shadow-[#aafc3d]/20' : 'bg-white/5 dark:bg-white/5 light:bg-white border-white/5 light:border-[#0e0a14]/5 text-white dark:text-white light:text-[#0e0a14]'}`}
               >
                 <h3 className="text-xs font-black uppercase tracking-[0.2em] mb-10 opacity-60 text-center">{p.name}</h3>
                 <div className="flex flex-col items-center justify-center gap-1 mb-12">
@@ -404,8 +404,8 @@ export function HomeV2() {
                 <ul className="space-y-4 mb-12 flex-1">
                   {p.features.map(f => (
                     <li key={f} className={`text-sm font-light flex items-start gap-3 ${p.popular ? 'text-[#0e0a14]' : 'text-zinc-300'}`}>
-                       <span className={`mt-1 h-3 w-3 rounded-full flex items-center justify-center ${p.popular ? 'bg-[#0e0a14]' : 'bg-[#d4ef06]'}`}>
-                          <svg className={`w-2 h-2 ${p.popular ? 'text-[#d4ef06]' : 'text-[#0e0a14]'}`} viewBox="0 0 20 20" fill="currentColor"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
+                       <span className={`mt-1 h-3 w-3 rounded-full flex items-center justify-center ${p.popular ? 'bg-[#0e0a14]' : 'bg-[#aafc3d]'}`}>
+                          <svg className={`w-2 h-2 ${p.popular ? 'text-[#aafc3d]' : 'text-[#0e0a14]'}`} viewBox="0 0 20 20" fill="currentColor"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
                        </span>
                        {f}
                     </li>
@@ -413,7 +413,7 @@ export function HomeV2() {
                 </ul>
                 <button 
                   onClick={() => setAdmissionOpen(true)}
-                  className={`w-full py-5 rounded-full font-normal uppercase text-xs tracking-widest transition-transform hover:scale-105 shadow-lg ${p.popular ? 'bg-[#0e0a14] text-[#d4ef06]' : 'bg-[#d4ef06] text-[#0e0a14]'}`}
+                  className={`w-full py-5 rounded-full font-normal uppercase text-xs tracking-widest transition-transform hover:scale-105 shadow-lg ${p.popular ? 'bg-[#0e0a14] text-[#aafc3d]' : 'bg-[#aafc3d] text-[#0e0a14]'}`}
                 >
                   {p.cta}
                 </button>
@@ -436,7 +436,7 @@ export function HomeV2() {
           </div>
 
           <div className="relative z-10 max-w-3xl mx-auto">
-            <h2 className="text-center text-3xl md:text-4xl font-light uppercase tracking-tighter mb-12 md:mb-20 text-white">Dudas <span className="text-[#d4ef06]">recurrentes.</span></h2>
+            <h2 className="text-center text-3xl md:text-4xl font-light uppercase tracking-tighter mb-12 md:mb-20 text-white">Dudas <span className="text-[#aafc3d]">recurrentes.</span></h2>
             <div className="space-y-4">
               {FAQS.map((faq, i) => (
                 <div key={i} className="last:border-0 overflow-hidden">
@@ -444,8 +444,8 @@ export function HomeV2() {
                     onClick={() => setActiveFaq(activeFaq === i ? null : i)}
                     className="w-full py-6 md:py-8 flex items-center justify-between text-left group"
                    >
-                     <span className="text-base md:text-lg font-light group-hover:text-[#d4ef06] transition-colors text-zinc-300">{faq.q}</span>
-                     <span className={`text-[#d4ef06] text-2xl transition-transform ${activeFaq === i ? 'rotate-45' : ''}`}>+</span>
+                     <span className="text-base md:text-lg font-light group-hover:text-[#aafc3d] transition-colors text-zinc-300">{faq.q}</span>
+                     <span className={`text-[#aafc3d] text-2xl transition-transform ${activeFaq === i ? 'rotate-45' : ''}`}>+</span>
                    </button>
                    <AnimatePresence>
                      {activeFaq === i && (
@@ -490,7 +490,7 @@ export function HomeV2() {
               </motion.h2>
               <button 
                 onClick={() => setAdmissionOpen(true)}
-                className="bg-[#d4ef06] text-[#0e0a14] font-normal px-10 md:px-16 py-5 md:py-6 rounded-full text-xs uppercase tracking-widest hover:scale-105 transition-transform shadow-2xl shadow-[#d4ef06]/20"
+                className="bg-[#aafc3d] text-[#0e0a14] font-normal px-10 md:px-16 py-5 md:py-6 rounded-full text-xs uppercase tracking-widest hover:scale-105 transition-transform shadow-2xl shadow-[#aafc3d]/20"
               >
                   Solicitá tu acceso ahora
               </button>
@@ -511,7 +511,7 @@ export function HomeV2() {
              <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} className="bg-[#1a1020] p-12 md:p-16 rounded-[3rem] border border-white/5 max-w-xl w-full shadow-2xl relative">
                 <button onClick={() => setAdmissionOpen(false)} className="absolute top-8 right-8 text-white/20 hover:text-white transition-colors text-3xl font-black">&times;</button>
                 
-                <h3 className="text-3xl font-normal uppercase tracking-tighter mb-4 leading-none text-white">Solicitá ingreso <span className="text-[#d4ef06]">exclusivo.</span></h3>
+                <h3 className="text-3xl font-normal uppercase tracking-tighter mb-4 leading-none text-white">Solicitá ingreso <span className="text-[#aafc3d]">exclusivo.</span></h3>
                 <p className="text-white/40 mb-10 font-normal">Nuestro equipo validará tu agencia en 24hs hábiles.</p>
                 
                 <form 
@@ -519,7 +519,7 @@ export function HomeV2() {
                   className="space-y-6"
                 >
                   <div className="space-y-4">
-                    <input type="text" placeholder="Nombre completo" required className="w-full bg-white/5 border border-white/10 p-5 rounded-2xl outline-none focus:border-[#d4ef06] transition-colors font-normal text-white" />
+                    <input type="text" placeholder="Nombre completo" required className="w-full bg-white/5 border border-white/10 p-5 rounded-2xl outline-none focus:border-[#aafc3d] transition-colors font-normal text-white" />
                     
                     <div className="relative">
                       <input 
@@ -528,17 +528,17 @@ export function HomeV2() {
                         required 
                         value={cuit}
                         onChange={handleCuitChange}
-                        className={`w-full bg-white/5 border ${cuitError ? 'border-red-500' : cuitStatus === 'VALID' ? 'border-[#d4ef06]' : 'border-white/10'} p-5 rounded-2xl outline-none focus:border-[#d4ef06] transition-colors font-normal text-white`} 
+                        className={`w-full bg-white/5 border ${cuitError ? 'border-red-500' : cuitStatus === 'VALID' ? 'border-[#aafc3d]' : 'border-white/10'} p-5 rounded-2xl outline-none focus:border-[#aafc3d] transition-colors font-normal text-white`} 
                       />
                       {isCheckingCuit && (
                         <div className="absolute right-5 top-1/2 -translate-y-1/2">
-                          <div className="w-5 h-5 border-2 border-t-[#d4ef06] border-white/20 rounded-full animate-spin"></div>
+                          <div className="w-5 h-5 border-2 border-t-[#aafc3d] border-white/20 rounded-full animate-spin"></div>
                         </div>
                       )}
                     </div>
                     {cuitError && <p className="text-red-400 text-xs px-2">{cuitError}</p>}
                     {cuitStatus === 'VALID' && !cuitError && estadoCuit && (
-                      <p className="text-[#d4ef06] text-xs px-2 flex items-center gap-1">
+                      <p className="text-[#aafc3d] text-xs px-2 flex items-center gap-1">
                         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                         Razón Social encontrada. Estado: {estadoCuit}
                       </p>
@@ -550,14 +550,14 @@ export function HomeV2() {
                       required 
                       value={razonSocial}
                       onChange={(e) => setRazonSocial(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 p-5 rounded-2xl outline-none focus:border-[#d4ef06] transition-colors font-normal text-white" 
+                      className="w-full bg-white/5 border border-white/10 p-5 rounded-2xl outline-none focus:border-[#aafc3d] transition-colors font-normal text-white" 
                     />
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <input type="text" placeholder="Ciudad / Provincia" required className="w-full bg-white/5 border border-white/10 p-5 rounded-2xl outline-none focus:border-[#d4ef06] transition-colors font-normal text-white" />
-                      <input type="tel" placeholder="WhatsApp (Cod. área + número)" required className="w-full bg-white/5 border border-white/10 p-5 rounded-2xl outline-none focus:border-[#d4ef06] transition-colors font-normal text-white" />
+                      <input type="text" placeholder="Ciudad / Provincia" required className="w-full bg-white/5 border border-white/10 p-5 rounded-2xl outline-none focus:border-[#aafc3d] transition-colors font-normal text-white" />
+                      <input type="tel" placeholder="WhatsApp (Cod. área + número)" required className="w-full bg-white/5 border border-white/10 p-5 rounded-2xl outline-none focus:border-[#aafc3d] transition-colors font-normal text-white" />
                     </div>
-                    <select required className="w-full bg-white/5 border border-white/10 p-5 rounded-2xl outline-none focus:border-[#d4ef06] transition-colors font-normal text-white/60 appearance-none">
+                    <select required className="w-full bg-white/5 border border-white/10 p-5 rounded-2xl outline-none focus:border-[#aafc3d] transition-colors font-normal text-white/60 appearance-none">
                       <option value="" className="bg-[#1a1020]">Volumen de stock mensual</option>
                       <option value="1-5" className="bg-[#1a1020]">1 a 5 unidades</option>
                       <option value="6-20" className="bg-[#1a1020]">6 a 20 unidades</option>
@@ -566,7 +566,7 @@ export function HomeV2() {
                     </select>
                   </div>
                   
-                  <button type="submit" className="w-full py-6 rounded-full bg-[#d4ef06] text-[#0e0a14] font-black uppercase tracking-widest shadow-2xl shadow-[#d4ef06]/10 hover:scale-[1.02] transition-transform">Enviar solicitud de acceso</button>
+                  <button type="submit" className="w-full py-6 rounded-full bg-[#aafc3d] text-[#0e0a14] font-black uppercase tracking-widest shadow-2xl shadow-[#aafc3d]/10 hover:scale-[1.02] transition-transform">Enviar solicitud de acceso</button>
                 </form>
              </motion.div>
           </motion.div>

@@ -7,13 +7,13 @@ interface LogoProps {
 }
 
 export function Logo({ className = '', variant = 'auto', outline = false }: LogoProps) {
-  // LIME GREEN: #d4ef06
+  // LIME GREEN: #aafc3d
   
   const getRColor = () => {
     if (variant === 'mono-white') return 'text-white';
     if (variant === 'mono-black') return 'text-black';
-    if (variant === 'auto') return 'text-black dark:text-[#d4ef06]';
-    return 'text-[#d4ef06]';
+    if (variant === 'auto') return 'text-black dark:text-[#aafc3d]';
+    return 'text-[#aafc3d]';
   };
 
   const getEvenColor = () => {
@@ -33,7 +33,7 @@ export function Logo({ className = '', variant = 'auto', outline = false }: Logo
     <div className={`font-['Sansation',sans-serif] font-normal tracking-tight select-none flex items-baseline ${className} ${isGiant ? 'text-[28vw] leading-none' : ''}`}>
       <span 
         className={getRColor()} 
-        style={outline ? { ...outlineStyles, WebkitTextStroke: isGiant ? '3px #d4ef06' : '1px #d4ef06' } : {}}
+        style={outline ? { ...outlineStyles, WebkitTextStroke: isGiant ? '3px #aafc3d' : '1px #aafc3d' } : {}}
       >
         R
       </span>
