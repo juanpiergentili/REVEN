@@ -29,25 +29,31 @@ En la última sesión terminamos la **fase más gruesa** del desarrollo de funci
    - Creación visual premium de `Profile.tsx` (Dashboard de la Concesionaria). Un usuario puede ver: Clicks en Perfil, Vistas a Anuncios, Clicks a "Contactar" y su propio historial de Tiempo Estimado de Respuesta.
    - El header ya cuenta con acceso interactivo a tu propio perfil.
 
+6. **Flujo de Olvidé mi Contraseña:**
+   - Integrado directamente dentro del modal de inicio de sesión (`Header.tsx`).
+   - Uso de `sendPasswordResetEmail` de Firebase Auth para un flujo seguro y rápido.
+   - Mensajes de validación de estado integrados en la UI.
+
 ---
 
 ## 🟡 Lo Pendiente (Próximos Pasos Recomendados)
 
-Nuestra aplicación front-end base ya está prácticamente lista en términos de UI y UX. Ahora tocará enfocarse en flujos de subida a la nube.
+Nuestra aplicación front-end base ya está lista en términos de UI y UX. **NOTA IMPORTANTE:** La versión actual (rama v2-development sincronizada con origin/main en el commit cdbd2de) ha sido marcada como la **versión final de base** y no utilizaremos otra por el momento. Ahora nos enfocaremos en flujos de backend y operaciones:
 
-1. **Conectar Flujo de Autenticación al 100%:** 
-   - Actualmente configuramos Firebase `signInWithEmailAndPassword`, pero falta pulir el registro oficial (SignUp) de nuevas concesionarias (aquellas que pasan a estar 'pending' de aprobación).
+1. **Panel Administrador - Eliminación de Usuarios:**
+   - REVEN cuenta con admisión. Falta crear el dashboard `/admin` o el flujo donde ustedes puedan entrar, ver qué "nuevas concesionarias" se han registrado y pasarles el estado de `pending` a `approved`.
+   - **NUEVO REQUISITO:** Incluir la opción en el admin para poder eliminar un usuario de modo que pueda volver a registrarse.
+
+3. **Conectar Flujo de Registro al 100%:** 
+   - Armar el ciclo definitivo de registro de usuarios y de las nuevas concesionarias que pasan a estar 'pending'.
    
-2. **Componente de "Publicar" (`Publish.tsx`):**
-   - Ahora mismo, aunque la base de las reglas de BD están armadas, necesitas un formulario de subida que use nuestra nueva Base de Datos (`vehicle-catalog.ts`), tome las fotos y guarde la información a la colección `vehicles` de Firebase utilizando Cloud Storage.
+4. **Componente de "Publicar" (`Publish.tsx`):**
+   - Necesitas un formulario de subida que use nuestra nueva Base de Datos (`vehicle-catalog.ts`), tome las fotos y guarde la información a la colección `vehicles` de Firebase utilizando Cloud Storage.
 
-3. **Panel Administrador:**
-   - REVEN cuenta con admisión. Falta crear el mini dashboard `/admin` o el flujo donde ustedes puedan entrar, ver qué "nuevas concesionarias" se han registrado y pasarles el estado de `pending` a `approved` en Firebase desde la interfaz (sin tener que ir a la consola bruta de Firebase).
+5. **Subida a Producción (Vercel/Firebase final):**
+   - Validar variables de entorno, dominios y comprobaciones finales.
 
-4. **Subida a Producción (Vercel final):**
-   - Validar que todas tus variables de entorno correspondan a producción, habilitar dominios, y comprobar que todo carga instantáneo.
-
-> **Tip para el asistente de IA o el Socio:** Si quieres retomar inmediatamente después de leer esto, arranca chequeando el componente `Publish.tsx` o el flujo de Admisión de Concesionarias. 
+> **Tip para el asistente de IA o el Socio:** Si quieres retomar inmediatamente después de leer esto, arranca trabajando en el flujo de **Registro de usuarios y "Olvidé mi contraseña"**.
 
 ## 🚀 Despliegue (Deploy)
 Cada vez que se realicen cambios importantes, se debe ejecutar el siguiente flujo para actualizar la plataforma:

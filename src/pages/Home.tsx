@@ -878,11 +878,13 @@ export function Home() {
                     <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Provincia <span className="text-primary">*</span></Label>
                     <Select value={regProvince} onValueChange={v => { setRegProvince(v); setRegCity(''); }}>
                       <SelectTrigger className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4">
-                        <SelectValue placeholder={regLoadingProvincias ? 'Cargando...' : 'Seleccionar'} />
+                        <SelectValue placeholder={regLoadingProvincias ? 'Cargando...' : 'Seleccionar'}>
+                          {regProvince ? regProvincias.find(p => String(p.id) === String(regProvince))?.nombre : undefined}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent className="rounded-xl">
                         {regProvincias.map(p => (
-                          <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
+                          <SelectItem key={p.id} value={String(p.id)}>{p.nombre}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -891,11 +893,13 @@ export function Home() {
                     <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Localidad <span className="text-primary">*</span></Label>
                     <Select value={regCity} onValueChange={setRegCity} disabled={!regProvince || regLoadingLocalidades}>
                       <SelectTrigger className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4">
-                        <SelectValue placeholder={regLoadingLocalidades ? 'Cargando...' : 'Seleccionar'} />
+                        <SelectValue placeholder={regLoadingLocalidades ? 'Cargando...' : 'Seleccionar'}>
+                          {regCity ? regLocalidades.find(l => String(l.id) === String(regCity))?.nombre : undefined}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent className="rounded-xl">
                         {regLocalidades.map(l => (
-                          <SelectItem key={l.id} value={l.id}>{l.nombre}</SelectItem>
+                          <SelectItem key={l.id} value={String(l.id)}>{l.nombre}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

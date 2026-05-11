@@ -26,7 +26,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { signInWithEmailAndPassword, onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
+import { signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail, User as FirebaseUser } from 'firebase/auth';
 import { auth, db, handleFirestoreError, OperationType } from '@/src/lib/firebase';
 import { subscribeToUnreadCount } from '@/src/lib/chat';
 import { loginDemoUser } from '@/src/lib/auth';
@@ -48,6 +48,8 @@ export function Header() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [user, setUser] = useState<FirebaseUser | null>(null);
@@ -154,6 +156,30 @@ export function Header() {
         setError('El método Email/Password no está habilitado en Firebase.');
       } else {
         setError('Credenciales inválidas o error de conexión.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      setError('Ingresa tu correo electrónico.');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setResetSent(true);
+    } catch (err: any) {
+      if (err.code === 'auth/user-not-found') {
+        setError('No hay un usuario registrado con este correo.');
+      } else if (err.code === 'auth/invalid-email') {
+        setError('El correo no es válido.');
+      } else {
+        setError('Error al enviar el correo. Intenta nuevamente.');
       }
     } finally {
       setLoading(false);
@@ -432,16 +458,111 @@ export function Header() {
       </AnimatePresence>
 
       {/* Login Dialog */}
-      <Dialog open={isLoginOpen} onOpenChange={setIsLoginOpen}>
+      <Dialog open={isLoginOpen} onOpenChange={(open) => {
+        setIsLoginOpen(open);
+        if (!open) {
+          setTimeout(() => {
+            setIsForgotPassword(false);
+            setResetSent(false);
+            setError(null);
+            setEmail('');
+            setPassword('');
+          }, 300);
+        }
+      }}>
         <DialogContent className="max-w-lg p-0 overflow-hidden rounded-[2.5rem] border-border bg-card/95 backdrop-blur-2xl shadow-2xl">
           <div className="p-10 md:p-12">
-            <div className="text-center mb-10">
-              <div className="flex justify-center mb-6">
-                <Logo className="text-4xl" variant="auto" />
-              </div>
-              <h3 className="text-3xl font-semibold tracking-tighter uppercase leading-none">Bienvenido</h3>
-              <p className="text-base text-muted-foreground font-light mt-2">Accede a la red B2B más exclusiva.</p>
-            </div>
+            {isForgotPassword ? (
+              <>
+                <div className="text-center mb-10">
+                  <div className="flex justify-center mb-6">
+                    <Logo className="text-4xl" variant="auto" />
+                  </div>
+                  <h3 className="text-3xl font-semibold tracking-tighter uppercase leading-none">Recuperar Acceso</h3>
+                  <p className="text-base text-muted-foreground font-light mt-2">Te enviaremos un enlace para restablecer tu contraseña.</p>
+                </div>
+
+                {error && (
+                  <div className="mb-6 p-4 rounded-xl bg-destructive/10 text-destructive text-xs font-bold uppercase tracking-widest text-center">
+                    {error}
+                  </div>
+                )}
+
+                {resetSent ? (
+                  <div className="text-center space-y-6">
+                    <div className="mx-auto w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-4">
+                      <Mail className="h-8 w-8" />
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="text-xl font-bold uppercase tracking-tighter">Correo Enviado</h4>
+                      <p className="text-sm text-muted-foreground font-light">Revisa tu bandeja de entrada (y spam) de {email}.</p>
+                    </div>
+                    <Button 
+                      onClick={() => {
+                        setIsForgotPassword(false);
+                        setResetSent(false);
+                        setError(null);
+                      }}
+                      variant="outline"
+                      className="w-full h-14 rounded-2xl font-bold text-xs shadow-sm group uppercase tracking-widest mt-4"
+                    >
+                      Volver a iniciar sesión
+                    </Button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleResetPassword} className="space-y-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="reset-email" className="text-xs font-bold uppercase tracking-widest ml-1">Email Profesional</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <Input 
+                          id="reset-email" 
+                          type="email" 
+                          required
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="nombre@concesionaria.com" 
+                          className="h-14 pl-12 rounded-2xl bg-background/50 border-border focus:border-primary/50 transition-all font-bold"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-4 pt-2">
+                      <Button 
+                        type="submit"
+                        disabled={loading}
+                        className="w-full h-14 rounded-2xl font-light text-lg shadow-lg shadow-primary/20 group uppercase tracking-tighter"
+                      >
+                        {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : (
+                          <>
+                            ENVIAR CORREO
+                            <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                          </>
+                        )}
+                      </Button>
+                      <Button 
+                        type="button"
+                        variant="ghost"
+                        onClick={() => {
+                          setIsForgotPassword(false);
+                          setError(null);
+                        }}
+                        className="w-full h-12 rounded-2xl font-bold text-[10px] text-muted-foreground hover:text-foreground uppercase tracking-widest"
+                      >
+                        Cancelar y volver
+                      </Button>
+                    </div>
+                  </form>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="text-center mb-10">
+                  <div className="flex justify-center mb-6">
+                    <Logo className="text-4xl" variant="auto" />
+                  </div>
+                  <h3 className="text-3xl font-semibold tracking-tighter uppercase leading-none">Bienvenido</h3>
+                  <p className="text-base text-muted-foreground font-light mt-2">Accede a la red B2B más exclusiva.</p>
+                </div>
 
             {error && (
               <div className="mb-6 p-4 rounded-xl bg-destructive/10 text-destructive text-xs font-bold uppercase tracking-widest text-center">
@@ -468,6 +589,16 @@ export function Header() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between ml-1">
                   <Label htmlFor="header-password" className="text-xs font-bold uppercase tracking-widest">Contraseña</Label>
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setIsForgotPassword(true);
+                      setError(null);
+                    }}
+                    className="text-[10px] text-muted-foreground hover:text-primary font-bold uppercase tracking-widest transition-colors"
+                  >
+                    ¿Olvidaste tu contraseña?
+                  </button>
                 </div>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -502,6 +633,8 @@ export function Header() {
                 PLATAFORMA EXCLUSIVA B2B
               </div>
             </div>
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>
