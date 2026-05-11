@@ -712,7 +712,7 @@ export function Home() {
                 <Button
                   className={`w-full h-12 rounded-full font-bold text-xs uppercase tracking-widest transition-all
                     ${p.popular
-                      ? 'bg-black text-white hover:bg-black/80 shadow-lg'
+                      ? 'bg-white/10 text-white border border-white/20 hover:bg-white/15 backdrop-blur-sm'
                       : 'bg-primary text-black hover:bg-primary/90'
                     }`}
                   onClick={() => setIsAdmissionOpen(true)}
