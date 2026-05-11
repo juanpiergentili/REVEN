@@ -366,7 +366,7 @@ export function Home() {
       key: 'platinum', displayName: 'ENTERPRISE', ...PLAN_PRICES.platinum, popular: false,
       promo: null as string | null,
       features: ['Autos ilimitados', 'Grupos automotrices', 'Destacados ilimitados', 'Acceso API', 'Alertas personalizadas', 'Usuarios ilimitados', 'Account manager'],
-      cta: 'CONTACTAR VENTAS',
+      cta: 'SOLICITÁ ACCESO',
     },
   ];
 
@@ -705,7 +705,7 @@ export function Home() {
                 <Button
                   className={`w-full h-12 rounded-full font-bold text-xs uppercase tracking-widest transition-all
                     ${p.popular
-                      ? 'bg-white text-black hover:bg-white/90 shadow-lg'
+                      ? 'bg-black text-white hover:bg-black/80 shadow-lg'
                       : 'bg-primary text-black hover:bg-primary/90'
                     }`}
                   onClick={() => setIsAdmissionOpen(true)}
@@ -1016,7 +1016,7 @@ export function Home() {
                 <div className="space-y-2">
                   <Label htmlFor="pop-discount" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Código de Descuento</Label>
                   <div className="flex gap-2">
-                    <Input id="pop-discount" value={discountCode} onChange={(e) => setDiscountCode(e.target.value)} placeholder="REVEN20" className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4 flex-1" />
+                    <Input id="pop-discount" value={discountCode} onChange={(e) => setDiscountCode(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleApplyDiscount()} placeholder="REVEN20" className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4 flex-1" />
                     <Button type="button" variant="secondary" onClick={handleApplyDiscount} className="h-12 rounded-xl font-bold px-6">APLICAR</Button>
                   </div>
                   {appliedCoupon === 'REVENFREE60' && <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest ml-1">60 días gratis aplicados</p>}

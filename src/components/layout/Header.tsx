@@ -278,7 +278,7 @@ export function Header() {
               <>
                 <Button 
                   variant="outline" 
-                  className="rounded-2xl px-6 font-light uppercase tracking-widest text-xs h-11 border-border hover:bg-primary/10 hover:text-primary transition-all"
+                  className="rounded-2xl px-6 font-semibold uppercase tracking-widest text-xs h-11 border-border hover:bg-primary/10 hover:text-primary transition-all"
                   onClick={() => setIsLoginOpen(true)}
                 >
                   <User className="mr-2 h-4 w-4" />
