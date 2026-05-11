@@ -285,7 +285,7 @@ export function Header() {
                   INGRESAR
                 </Button>
                 <Button
-                  className="rounded-full px-6 font-light uppercase tracking-widest text-xs h-11 shadow-lg shadow-primary/20 group"
+                  className="rounded-full px-6 font-semibold uppercase tracking-widest text-xs h-11 shadow-lg shadow-primary/20 group"
                   onClick={() => navigate('/?register=true')}
                 >
                   REGISTRARSE

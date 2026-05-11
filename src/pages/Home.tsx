@@ -501,8 +501,8 @@ export function Home() {
                 src="/celular.jpeg"
                 alt="App REVEN"
                 className="absolute inset-0 w-full h-full object-cover object-bottom"
-                style={{ maskImage: 'linear-gradient(to bottom, transparent 0%, black 8%, black 100%)', maskComposite: 'intersect', WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 8%, black 100%)', WebkitMaskComposite: 'source-in' }}
               />
+              <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, transparent 30%, #0a0a0a 85%)' }} />
             </div>
 
             {/* Right column */}
@@ -801,19 +801,19 @@ export function Home() {
       <Dialog open={isAdmissionOpen} onOpenChange={handleAdmissionOpenChange}>
         <DialogContent className="max-w-[95vw] sm:max-w-4xl p-0 rounded-[2.5rem] border-border bg-card/95 backdrop-blur-2xl shadow-2xl overflow-y-auto max-h-[90dvh]">
           <div className="grid grid-cols-1 md:grid-cols-12 md:min-h-[600px]">
-            <div className="hidden md:flex md:col-span-4 lg:col-span-3 bg-primary p-10 flex-col justify-between text-primary-foreground relative overflow-hidden">
-              <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-white/10 blur-3xl rounded-full" />
+            <div className="hidden md:flex md:col-span-4 lg:col-span-3 bg-primary p-10 flex-col justify-between text-black relative overflow-hidden">
+              <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-black/10 blur-3xl rounded-full" />
               <div className="z-10">
-                <Logo variant="mono-white" className="text-4xl mb-6" />
-                <h3 className="text-3xl font-black tracking-tighter uppercase leading-[0.9] mb-6">Unite a <br />la Elite</h3>
-                <p className="text-sm font-light leading-relaxed text-white max-w-sm">Accedé al stock más exclusivo de Argentina y potenciá tu rentabilidad B2B.</p>
+                <Logo variant="mono-black" className="text-4xl mb-6" />
+                <h3 className="text-3xl font-black tracking-tighter uppercase leading-[0.9] mb-6">Unite a <br />la Comunidad<br />Reven</h3>
+                <p className="text-sm font-semibold leading-relaxed text-black/70 max-w-sm">Accedé al stock más exclusivo de Argentina y potenciá tu rentabilidad B2B.</p>
               </div>
               <div className="z-10 space-y-4">
-                <div className="flex items-center gap-4 bg-white/10 backdrop-blur-xl p-4 rounded-2xl border border-white/20">
-                  <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-                    <ShieldCheck className="h-6 w-6" />
+                <div className="flex items-center gap-4 bg-black/10 backdrop-blur-xl p-4 rounded-2xl border border-black/20">
+                  <div className="h-10 w-10 rounded-full bg-black/15 flex items-center justify-center shrink-0">
+                    <ShieldCheck className="h-6 w-6 text-black" />
                   </div>
-                  <span className="text-xs font-light tracking-widest text-white uppercase">100% Verificado</span>
+                  <span className="text-xs font-bold tracking-widest text-black uppercase">100% Verificado</span>
                 </div>
               </div>
             </div>
