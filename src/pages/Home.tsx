@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, useScroll, useTransform } from 'motion/react';
 import {
   Zap, Check, ArrowRight, ShieldCheck, FileText, Loader2,
   Users, Shield, CreditCard, Plus, MapPin, Loader, Instagram, Upload, Camera
@@ -6,7 +6,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Logo } from '../components/layout/Logo';
 import { Footer } from '../components/layout/Footer';
 import { Input } from '@/components/ui/input';
@@ -66,8 +66,8 @@ const FAQ_ITEMS = [
 ];
 
 const PLAN_PRICES = {
-  plata: { monthly: 200000, annual: 1920000 },
-  oro: { monthly: 350000, annual: 3360000 },
+  business: { monthly: 200000, annual: 1920000 },
+  profesional: { monthly: 350000, annual: 3360000 },
   platinum: { monthly: 500000, annual: 4800000 },
 };
 
@@ -94,7 +94,7 @@ function HomeCarCard({ vehicle }: { vehicle: Vehicle }) {
           <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground text-sm">Sin foto</div>
         )}
         <div className="absolute top-3 left-3">
-          <span className="bg-black/60 backdrop-blur-sm text-white text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full">
+          <span className="bg-black/60 backdrop-blur-sm text-white text-xs font-light tracking-widest text-white uppercase px-2.5 py-1 rounded-full">
             {vehicle.condition === '0KM' ? '0 KM' : 'USADO'}
           </span>
         </div>
@@ -215,7 +215,7 @@ export function Home() {
   const [company, setCompany] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [plan, setPlan] = useState('plata');
+  const [plan, setPlan] = useState('business');
   const [discountCode, setDiscountCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<null | 'REVEN20' | 'REVENFREE60'>(null);
   const [instagramUser, setInstagramUser] = useState('');
@@ -227,6 +227,54 @@ export function Home() {
 
   const { provincias: regProvincias, localidades: regLocalidades, loadingProvincias: regLoadingProvincias, loadingLocalidades: regLoadingLocalidades } = useGeoRef(regProvince);
 
+  const [isCheckingCuit, setIsCheckingCuit] = useState(false);
+  const [cuitStatus, setCuitStatus] = useState<'IDLE' | 'CHECKING' | 'VALID' | 'INVALID'>('IDLE');
+  const [cuitError, setCuitError] = useState('');
+  const [estadoCuit, setEstadoCuit] = useState('');
+
+  const checkCuit = async (val: string) => {
+    const cleanCuit = val.replace(/\D/g, '');
+    if (cleanCuit.length !== 11) return;
+
+    setIsCheckingCuit(true);
+    setCuitError('');
+    setCuitStatus('CHECKING');
+    
+    try {
+      const apiKey = import.meta.env.VITE_CUITALIZER_API_KEY || '';
+      const response = await fetch('https://api.cuitalizer.com.ar/api/v1/contribuyente/consultar', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(apiKey && { 'X-API-Key': apiKey })
+        },
+        body: JSON.stringify({ cuit: cleanCuit }),
+      });
+
+      if (!response.ok) throw new Error('Error en validación');
+      const data = await response.json();
+      const info = data.data || data;
+      const nombre = info.razonSocial || info.razon_social || info.nombre || '';
+      const estado = info.estadoVigencia || info.estado || info.estadoClave || '';
+      
+      if (nombre) {
+        setCompany(nombre);
+        setEstadoCuit(estado);
+        setCuitStatus('VALID');
+        if (estado && !['ACTIVA', 'ACTIVO'].includes(estado.toUpperCase())) {
+          setCuitError(`Estado en ARCA: ${estado} (Se requiere activo)`);
+        }
+      } else {
+        throw new Error('CUIT no encontrado');
+      }
+    } catch (e) {
+      setCuitStatus('INVALID');
+      setCuitError('CUIT no válido o no encontrado');
+    } finally {
+      setIsCheckingCuit(false);
+    }
+  };
+
   const isFreeTrial = appliedCoupon === 'REVENFREE60';
 
   useEffect(() => {
@@ -236,6 +284,16 @@ export function Home() {
     );
     return unsub;
   }, []);
+
+  const footerSectionRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress: footerScroll } = useScroll({
+    target: footerSectionRef,
+    offset: ["start end", "end end"]
+  });
+
+  const footerBlur = useTransform(footerScroll, [0.4, 0.7], ["blur(0px)", "blur(12px)"]); 
+  const footerVideoOpacity = useTransform(footerScroll, [0.1, 0.5], [1, 0.6]);
+  const footerVideoY = useTransform(footerScroll, [0, 1], [0, -100]);
 
   const handleApplyDiscount = () => {
     const code = discountCode.toUpperCase().trim();
@@ -293,18 +351,20 @@ export function Home() {
 
   const PLANS = [
     {
-      key: 'plata', displayName: 'PROFESIONAL', ...PLAN_PRICES.plata, popular: false,
-      features: ['Hasta 5 autos publicados', 'Agencias hasta 2 sucursales', '3 destacados por mes', 'Datos de mercado básicos', '1 usuario por cuenta', 'Contacto directo B2B'],
-      cta: 'SOLICITÀ TU ACCESO',
+      key: 'business', displayName: 'BUSINESS', ...PLAN_PRICES.business, popular: false,
       promo: 'Código REVENFREE60 → 2 meses gratis',
+      features: ['Hasta 5 autos publicados', 'Agencias hasta 2 sucursales', '3 destacados por mes', 'Datos de mercado básicos', '1 usuario por cuenta', 'Contacto directo B2B'],
+      cta: 'SOLICITÁ TU ACCESO',
     },
     {
-      key: 'oro', displayName: 'BUSINESS', ...PLAN_PRICES.oro, popular: true,
+      key: 'profesional', displayName: 'PROFESIONAL', ...PLAN_PRICES.profesional, popular: true,
+      promo: null as string | null,
       features: ['Hasta 15 autos publicados', 'Concesionarias medianas', '15 destacados por mes', 'Datos completos', 'Alertas personalizadas', '3 usuarios', 'Contacto directo B2B'],
       cta: 'SOLICITÀ TU ACCESO',
     },
     {
       key: 'platinum', displayName: 'ENTERPRISE', ...PLAN_PRICES.platinum, popular: false,
+      promo: null as string | null,
       features: ['Autos ilimitados', 'Grupos automotrices', 'Destacados ilimitados', 'Acceso API', 'Alertas personalizadas', 'Usuarios ilimitados', 'Account manager'],
       cta: 'CONTACTAR VENTAS',
     },
@@ -343,12 +403,12 @@ export function Home() {
             preload="auto"
             onCanPlayThrough={() => setIsVideoLoaded(true)}
             onLoadedData={() => setIsVideoLoaded(true)}
-            className="w-full h-full object-cover opacity-50 bg-[#111]"
+            className="w-full h-full object-cover"
           >
             <source src="/hero1.mp4" type="video/mp4" />
           </video>
-          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/60 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+          {/* Progressive Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent pointer-events-none" />
         </div>
 
         <div className="container mx-auto relative z-10 px-4 md:px-8 lg:px-12 py-32 pt-40">
@@ -362,13 +422,13 @@ export function Home() {
               LA RED DE TRADING B2B N°1 DE ARGENTINA
             </Badge>
 
-            <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-black tracking-tighter uppercase leading-[0.9] text-white break-words">
+            <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-semibold tracking-tighter uppercase leading-none text-white break-words">
               EL <span className="text-primary">FUTURO</span> DEL <br />
               NEGOCIO <br />
               AUTOMOTOR
             </h1>
 
-            <p className="text-base md:text-lg text-white/60 font-medium max-w-lg leading-relaxed">
+            <p className="text-base md:text-lg text-white font-light max-w-lg leading-relaxed">
               Marketplace exclusivo B2B, solo para profesionales verificados.<br />
               Sin intermediarios. Sin público final. Solo negocios reales.
             </p>
@@ -376,18 +436,11 @@ export function Home() {
             <div className="flex flex-col sm:flex-row gap-4 pt-2">
               <Button
                 size="lg"
-                className="h-14 px-10 rounded-full font-black text-base uppercase tracking-tight italic shadow-2xl shadow-primary/30 group bg-primary text-primary-foreground hover:bg-primary/90"
+                className="h-14 px-10 rounded-full font-light text-base uppercase tracking-tight shadow-2xl shadow-primary/30 group bg-primary text-black"
                 onClick={() => setIsAdmissionOpen(true)}
               >
                 SOLICITÀ TU ACCESO
                 <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="h-14 px-10 rounded-full font-black text-base uppercase tracking-tight italic border-white/20 bg-white/5 text-white hover:bg-white/10"
-              >
-                VER VIDEO DEMO
               </Button>
             </div>
           </motion.div>
@@ -398,11 +451,11 @@ export function Home() {
       <section className="pt-24 pb-12 md:pt-32 md:pb-16 bg-[#0a0a0a]">
         <div className="container mx-auto px-4 md:px-8 lg:px-12">
           <div className="mb-16 max-w-3xl">
-            <h2 className="text-4xl md:text-6xl font-black tracking-tighter uppercase leading-none text-white mb-4">
+            <h2 className="text-4xl md:text-6xl font-semibold tracking-tighter uppercase leading-none text-white mb-4">
               HACÉ NEGOCIOS B2B <br />
-              <span className="text-primary italic">RÁPIDOS, SEGUROS Y RENTABLES.</span>
+              <span className="text-primary">RÁPIDOS, SEGUROS Y RENTABLES.</span>
             </h2>
-            <p className="text-sm font-bold uppercase tracking-widest text-white/40 leading-relaxed max-w-sm">
+            <p className="text-sm font-light uppercase tracking-widest text-white leading-relaxed max-w-sm">
               Olvidate del mercado informal y los grupos ruidosos. Bienvenido al estándar profesional.
             </p>
           </div>
@@ -422,8 +475,8 @@ export function Home() {
                   <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
                     <point.icon className="h-5 w-5 text-primary" />
                   </div>
-                  <h3 className="font-black uppercase tracking-widest text-sm text-white">{point.title}</h3>
-                  <p className="text-xs font-bold uppercase tracking-wider text-white/40 leading-relaxed">{point.desc}</p>
+                  <h3 className="font-bold uppercase tracking-widest text-sm text-white">{point.title}</h3>
+                  <p className="text-xs font-light uppercase tracking-wider text-white leading-relaxed">{point.desc}</p>
                 </motion.div>
               ))}
             </div>
@@ -433,8 +486,8 @@ export function Home() {
               <img
                 src="/celular.jpeg"
                 alt="App REVEN"
-                className="absolute inset-0 w-full h-full object-cover object-top"
-                style={{ maskImage: 'linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%), linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)', maskComposite: 'intersect', WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%), linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)', WebkitMaskComposite: 'source-in' }}
+                className="absolute inset-0 w-full h-full object-cover object-bottom"
+                style={{ maskImage: 'linear-gradient(to bottom, transparent 0%, black 8%, black 100%)', maskComposite: 'intersect', WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 8%, black 100%)', WebkitMaskComposite: 'source-in' }}
               />
             </div>
 
@@ -452,8 +505,8 @@ export function Home() {
                   <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
                     <point.icon className="h-5 w-5 text-primary" />
                   </div>
-                  <h3 className="font-black uppercase tracking-widest text-sm text-white">{point.title}</h3>
-                  <p className="text-xs font-bold uppercase tracking-wider text-white/40 leading-relaxed">{point.desc}</p>
+                  <h3 className="font-bold uppercase tracking-widest text-sm text-white">{point.title}</h3>
+                  <p className="text-xs font-light uppercase tracking-wider text-white leading-relaxed">{point.desc}</p>
                 </motion.div>
               ))}
             </div>
@@ -467,12 +520,12 @@ export function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
             <div className="space-y-12 order-2 lg:order-1">
               <div className="space-y-4">
-                <Badge className="bg-primary/10 text-primary border border-primary/30 font-black tracking-widest px-4 py-1.5 rounded-full text-[10px] uppercase">
+                <Badge className="bg-primary/10 text-primary border border-primary/30 font-bold tracking-widest px-4 py-1.5 rounded-full text-[10px] uppercase">
                   PROCESO DE INGRESO
                 </Badge>
-                <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase leading-none text-white">
+                <h2 className="text-4xl md:text-5xl font-semibold tracking-tighter uppercase leading-none text-white">
                   OPERÁ EN LA RED EN <br />
-                  <span className="text-primary italic">3 SIMPLES PASOS</span>
+                  <span className="text-primary">3 SIMPLES PASOS</span>
                 </h2>
               </div>
 
@@ -486,12 +539,12 @@ export function Home() {
                     viewport={{ once: true }}
                     className="flex gap-6 items-start"
                   >
-                    <div className="shrink-0 w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-base font-black shadow-lg shadow-primary/20">
+                    <div className="shrink-0 w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-base font-bold shadow-lg shadow-primary/20">
                       {step.number}
                     </div>
                     <div className="space-y-1.5 pt-1">
-                      <h3 className="text-base font-black tracking-widest uppercase text-white">{step.title}</h3>
-                      <p className="text-xs font-bold uppercase tracking-wider text-white/40 leading-relaxed">{step.desc}</p>
+                      <h3 className="text-base font-bold tracking-widest uppercase text-white">{step.title}</h3>
+                      <p className="text-xs font-light uppercase tracking-wider text-white leading-relaxed">{step.desc}</p>
                     </div>
                   </motion.div>
                 ))}
@@ -499,7 +552,7 @@ export function Home() {
 
               <Button
                 size="lg"
-                className="h-14 px-10 rounded-full font-black uppercase tracking-tight italic bg-primary text-primary-foreground hover:bg-primary/90 shadow-xl shadow-primary/20 group text-base"
+                className="h-14 px-10 rounded-full font-light uppercase tracking-tight bg-primary text-black hover:bg-primary/90 shadow-xl shadow-primary/20 group text-base"
                 onClick={() => setIsAdmissionOpen(true)}
               >
                 COMENZAR AHORA
@@ -539,13 +592,13 @@ export function Home() {
           <div className="container mx-auto px-4 md:px-8 lg:px-12">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-12">
               <div>
-                <h2 className="text-5xl md:text-6xl font-black tracking-tighter uppercase text-white leading-none">
+                <h2 className="text-5xl md:text-6xl font-semibold tracking-tighter uppercase text-white leading-none">
                   ÚLTIMOS <br /><span className="text-primary">INGRESOS.</span>
                 </h2>
               </div>
               <Button
                 variant="outline"
-                className="rounded-full h-12 px-8 font-black text-xs uppercase tracking-widest border-white/20 text-white bg-transparent hover:bg-white/5"
+                className="rounded-full h-12 px-8 font-light text-xs uppercase tracking-widest border-white/20 text-black bg-transparent hover:bg-white/5"
                 asChild
               >
                 <Link to="/login">VER CATÁLOGO COMPLETO</Link>
@@ -554,7 +607,9 @@ export function Home() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {latestVehicles.map((car) => (
-                <HomeCarCard key={car.id} vehicle={car} />
+                <div key={car.id}>
+                  <HomeCarCard vehicle={car} />
+                </div>
               ))}
             </div>
           </div>
@@ -567,9 +622,9 @@ export function Home() {
         </div>
         <div className="container mx-auto px-4 md:px-8 lg:px-12 relative z-10">
           <div className="text-center mb-12 space-y-3">
-            <h2 className="text-4xl md:text-6xl font-black tracking-tighter uppercase text-white leading-none">
+            <h2 className="text-4xl md:text-6xl font-semibold tracking-tighter uppercase text-white leading-none">
               INVERTÍ EN TU <br />
-              <span className="text-primary italic">MAYOR CANAL</span> DE VENTAS.
+              <span className="text-primary">MAYOR CANAL</span> DE VENTAS.
             </h2>
           </div>
 
@@ -577,7 +632,7 @@ export function Home() {
           <div className="flex items-center justify-center gap-5 mb-16">
             <button
               onClick={() => setBillingCycle('monthly')}
-              className={`text-xs font-black uppercase tracking-widest transition-colors ${billingCycle === 'monthly' ? 'text-white' : 'text-white/30'}`}
+              className={`text-xs font-bold uppercase tracking-widest transition-colors ${billingCycle === 'monthly' ? 'text-white' : 'text-white/30'}`}
             >
               MENSUAL
             </button>
@@ -590,11 +645,11 @@ export function Home() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setBillingCycle('annual')}
-                className={`text-xs font-black uppercase tracking-widest transition-colors ${billingCycle === 'annual' ? 'text-white' : 'text-white/30'}`}
+                className={`text-xs font-bold uppercase tracking-widest transition-colors ${billingCycle === 'annual' ? 'text-white' : 'text-white/30'}`}
               >
                 ANUAL
               </button>
-              <span className="bg-primary/20 text-primary border border-primary/30 font-black text-[9px] tracking-wider px-2 py-0.5 rounded-full uppercase">
+              <span className="bg-primary/20 text-primary border border-primary/30 font-bold text-[9px] tracking-wider px-2 py-0.5 rounded-full uppercase">
                 HOT OFF
               </span>
             </div>
@@ -611,29 +666,29 @@ export function Home() {
                 className={`relative p-8 rounded-3xl border flex flex-col transition-all duration-300
                   ${p.popular
                     ? 'bg-primary border-primary text-primary-foreground'
-                    : 'bg-white/5 border-white/10 text-white hover:border-white/20'
+                    : 'bg-white/5 border-white/10 text-white hover:border-white/20 backdrop-blur-md'
                   }`}
               >
                 <div className="mb-8">
-                  <p className={`text-[10px] font-black uppercase tracking-[0.3em] mb-4 ${p.popular ? 'text-primary-foreground/70' : 'text-white/40'}`}>
+                  <p className={`text-[10px] font-bold uppercase tracking-[0.3em] mb-4 ${p.popular ? 'text-primary-foreground/70' : 'text-white/40'}`}>
                     {p.displayName}
                   </p>
                   <div className="flex items-baseline gap-1">
-                    <span className={`text-3xl md:text-4xl font-black tracking-tighter ${p.popular ? 'text-primary-foreground' : 'text-white'}`}>
-                      {formatARS(billingCycle === 'annual' ? p.annual : p.monthly)}
+                    <span className={`text-3xl md:text-4xl font-bold tracking-tighter ${p.popular ? 'text-primary-foreground' : 'text-white'}`}>
+                      {formatARS(billingCycle === 'annual' ? (p.key === 'platinum' ? 500000 : p.annual) : (p.key === 'platinum' ? 500000 : p.monthly))}
                     </span>
                     <span className={`text-xs font-bold uppercase ${p.popular ? 'text-primary-foreground/60' : 'text-white/40'}`}>
                       / {billingCycle === 'annual' ? 'año' : 'mes'}
                     </span>
                   </div>
-                  {billingCycle === 'annual' && (
-                    <p className={`text-[10px] font-black uppercase tracking-wider mt-2 ${p.popular ? 'text-primary-foreground/70' : 'text-primary'}`}>
-                      AHORRÁS {formatARS(p.monthly * 12 - p.annual)}
+                  {p.promo && (
+                    <p className={`text-[9px] font-bold uppercase tracking-wider mt-1 ${p.popular ? 'text-primary-foreground/80' : 'text-primary'}`}>
+                      {p.promo}
                     </p>
                   )}
-                  {(p as any).promo && (
-                    <p className="text-[10px] font-black uppercase tracking-widest mt-3 text-primary">
-                      {(p as any).promo}
+                  {!p.promo && billingCycle === 'annual' && (
+                    <p className={`text-[10px] font-bold uppercase tracking-wider mt-2 ${p.popular ? 'text-primary-foreground/70' : 'text-primary'}`}>
+                      AHORRÁS {formatARS(p.monthly * 12 - (p.key === 'platinum' ? 500000 : p.annual))}
                     </p>
                   )}
                 </div>
@@ -648,10 +703,10 @@ export function Home() {
                 </ul>
 
                 <Button
-                  className={`w-full h-12 rounded-full font-black text-xs uppercase tracking-widest transition-all
+                  className={`w-full h-12 rounded-full font-bold text-xs uppercase tracking-widest transition-all
                     ${p.popular
-                      ? 'bg-primary-foreground text-primary hover:bg-primary-foreground/90'
-                      : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                      ? 'bg-white text-black hover:bg-white/90 shadow-lg'
+                      : 'bg-primary text-black hover:bg-primary/90'
                     }`}
                   onClick={() => setIsAdmissionOpen(true)}
                 >
@@ -664,35 +719,28 @@ export function Home() {
       </section>
 
       {/* ── FAQ ───────────────────────────────────────────────────────────── */}
-      <section className="py-24 md:py-32 bg-[#0a0a0a] border-t border-white/5">
+      <section className="py-24 md:py-32 bg-[#0a0a0a] border-t border-white/5 relative overflow-hidden">
+
         <div className="container mx-auto px-6 md:px-12">
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.4fr] gap-16 items-start">
             {/* Left */}
             <div className="space-y-8 lg:sticky lg:top-32">
               <div>
-                <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase text-white leading-none">
-                  PREGUNTAS <br /><span className="text-primary italic">FRECUENTES.</span>
+                <h2 className="text-4xl md:text-5xl font-semibold tracking-tighter uppercase text-white leading-none">
+                  PREGUNTAS <br /><span className="text-primary">FRECUENTES.</span>
                 </h2>
-                <p className="mt-6 text-xs font-bold uppercase tracking-widest text-white/40 leading-relaxed max-w-xs">
+                <p className="mt-6 text-xs font-light uppercase tracking-widest text-white leading-relaxed max-w-xs">
                   Explorá las dudas más comunes sobre el ecosistema REVEN y maximizá tu experiencia B2B.
                 </p>
-              </div>
-              <div className="space-y-2">
-                <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/30">SOPORTE TÉCNICO 24/7</p>
-                <p className="text-sm font-bold text-white">¿Necesitás hablar con un gestor?</p>
-                <button
-                  className="text-sm font-black uppercase tracking-widest text-primary hover:underline"
-                  onClick={() => setIsAdmissionOpen(true)}
-                >
-                  CHAT EN VIVO AHORA.
-                </button>
               </div>
             </div>
 
             {/* Right */}
             <div className="space-y-3">
               {FAQ_ITEMS.map((item, i) => (
-                <FAQItem key={i} item={item} />
+                <div key={i}>
+                  <FAQItem item={item} />
+                </div>
               ))}
             </div>
           </div>
@@ -700,22 +748,23 @@ export function Home() {
       </section>
 
       {/* ── CTA ───────────────────────────────────────────────────────────── */}
-      <section className="relative py-40 md:py-56 overflow-hidden">
+      <section ref={footerSectionRef} className="relative py-40 md:py-56 overflow-hidden bg-black">
         <div className="absolute inset-0 z-0">
-          {/* Static image base — always visible */}
-          <img
-            src="/aparcadero.jpg"
-            alt="Car lot"
-            className="w-full h-full object-cover opacity-40"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&q=80&w=1920';
-            }}
-          />
-          {/* Video overlay — plays on top if available */}
-          <video autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover opacity-40">
-            <source src="/video3.mp4" type="video/mp4" />
-          </video>
-          <div className="absolute inset-0 bg-black/50" />
+          <motion.div
+            style={{ opacity: footerVideoOpacity, y: footerVideoY }}
+            className="w-full h-full"
+          >
+            <img
+              src="/aparcadero.jpg"
+              alt="Aparcadero"
+              className="w-full h-full object-cover grayscale"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&q=80&w=1920';
+              }}
+            />
+          </motion.div>
+          {/* Progressive Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-10" />
         </div>
         <div className="container mx-auto px-6 md:px-12 relative z-10 text-center">
           <motion.div
@@ -725,14 +774,14 @@ export function Home() {
             viewport={{ once: true }}
             className="space-y-8"
           >
-            <h2 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter uppercase text-white leading-[1]">
+            <h2 className="text-5xl md:text-6xl lg:text-7xl font-semibold tracking-tighter uppercase text-white leading-[1]">
               ¿QUÉ ESPERÁS <br />
               PARA <br />
               SUMARTE?
             </h2>
             <Button
               size="lg"
-              className="h-16 px-14 rounded-full font-black text-base uppercase tracking-tight italic bg-primary text-primary-foreground hover:bg-primary/90 shadow-2xl shadow-primary/30"
+              className="h-16 px-14 rounded-full font-light text-base uppercase tracking-tight bg-primary text-black hover:bg-primary/90 shadow-2xl shadow-primary/30"
               onClick={() => setIsAdmissionOpen(true)}
             >
               SOLICITÀ TU ACCESO AHORA
@@ -750,14 +799,14 @@ export function Home() {
               <div className="z-10">
                 <Logo variant="mono-white" className="text-4xl mb-6" />
                 <h3 className="text-3xl font-black tracking-tighter uppercase leading-[0.9] mb-6">Unite a <br />la Elite</h3>
-                <p className="text-sm font-medium opacity-90 leading-relaxed">Accedé al stock más exclusivo de Argentina y potenciá tu rentabilidad B2B.</p>
+                <p className="text-sm font-light leading-relaxed text-white max-w-sm">Accedé al stock más exclusivo de Argentina y potenciá tu rentabilidad B2B.</p>
               </div>
               <div className="z-10 space-y-4">
                 <div className="flex items-center gap-4 bg-white/10 backdrop-blur-xl p-4 rounded-2xl border border-white/20">
                   <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
                     <ShieldCheck className="h-6 w-6" />
                   </div>
-                  <span className="text-[10px] font-black uppercase tracking-widest">100% Verificado</span>
+                  <span className="text-xs font-light tracking-widest text-white uppercase">100% Verificado</span>
                 </div>
               </div>
             </div>
@@ -765,11 +814,11 @@ export function Home() {
             <div className="md:col-span-8 lg:col-span-9 p-8 md:p-12 bg-background/50">
               <DialogHeader className="mb-10 text-left">
                 <DialogTitle className="text-3xl md:text-5xl font-black tracking-tighter uppercase leading-none">Solicitud de Admisión</DialogTitle>
-                <DialogDescription className="font-medium text-sm mt-3 text-muted-foreground/80">Completá tus datos profesionales para iniciar el proceso de verificación.</DialogDescription>
+                <DialogDescription className="font-medium text-sm font-light text-muted-foreground/80 mt-3 text-white">Completá tus datos profesionales para iniciar el proceso de verificación.</DialogDescription>
               </DialogHeader>
 
               {error && (
-                <div className="p-4 rounded-xl bg-destructive/10 text-destructive text-[10px] font-black uppercase tracking-widest text-center mb-6">{error}</div>
+                <div className="p-4 rounded-xl bg-destructive/10 text-destructive text-xs font-light tracking-widest text-white uppercase text-center mb-6">{error}</div>
               )}
 
               <form className="space-y-6" onSubmit={handleAdmissionSubmit}>
@@ -786,7 +835,27 @@ export function Home() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="pop-cuil" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">CUIL / CUIT</Label>
-                    <Input id="pop-cuil" required value={cuil} onChange={(e) => setCuil(e.target.value)} placeholder="20-XXXXXXXX-X" className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4" />
+                    <div className="relative">
+                      <Input 
+                        id="pop-cuil" 
+                        required 
+                        value={cuil} 
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setCuil(val);
+                          if (val.replace(/\D/g, '').length === 11) checkCuit(val);
+                        }} 
+                        placeholder="20-XXXXXXXX-X" 
+                        className={`h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4 ${cuitStatus === 'VALID' ? 'border-emerald-500/50' : cuitStatus === 'INVALID' ? 'border-destructive/50' : ''}`} 
+                      />
+                      {isCheckingCuit && <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-primary" />}
+                    </div>
+                    {cuitError && <p className="text-[9px] font-bold text-destructive uppercase tracking-widest ml-1">{cuitError}</p>}
+                    {cuitStatus === 'VALID' && !cuitError && (
+                      <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest ml-1 flex items-center gap-1">
+                        <Check className="h-3 w-3" /> Verificado en ARCA: {estadoCuit}
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="pop-phone" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Teléfono</Label>
@@ -865,7 +934,7 @@ export function Home() {
                       type="button"
                       variant="outline"
                       onClick={() => regLogoInputRef.current?.click()}
-                      className="h-10 rounded-xl font-bold text-[10px] uppercase tracking-widest gap-2 border-border"
+                      className="h-10 rounded-xl font-light text-sm uppercase tracking-widest gap-2 border-border"
                     >
                       <Upload className="h-3.5 w-3.5" />
                       {regLogoPreview ? 'Cambiar imagen' : 'Subir imagen'}
@@ -876,7 +945,7 @@ export function Home() {
                 {/* Optional Instagram */}
                 <div className="space-y-2">
                   <Label htmlFor="pop-insta" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">
-                    Instagram <span className="text-muted-foreground/50 normal-case tracking-normal font-medium">(opcional)</span>
+                    Instagram <span className="text-muted-foreground/50 normal-case tracking-normal font-light">(opcional)</span>
                   </Label>
                   <div className="relative">
                     <Instagram className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -888,7 +957,7 @@ export function Home() {
                       autoComplete="off"
                       autoCapitalize="none"
                       spellCheck={false}
-                      className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm pl-10 pr-4"
+                      className="h-12 rounded-xl bg-background/50 border-border font-light text-sm pl-10 pr-4"
                     />
                   </div>
                 </div>
@@ -900,8 +969,8 @@ export function Home() {
                         <SelectValue placeholder="Seleccionar plan" />
                       </SelectTrigger>
                       <SelectContent className="rounded-xl">
-                        <SelectItem value="plata">PLAN PROFESIONAL</SelectItem>
-                        <SelectItem value="oro">PLAN BUSINESS</SelectItem>
+                        <SelectItem value="business">PLAN BUSINESS</SelectItem>
+                        <SelectItem value="profesional">PLAN PROFESIONAL</SelectItem>
                         <SelectItem value="platinum">PLAN ENTERPRISE</SelectItem>
                       </SelectContent>
                     </Select>
@@ -919,12 +988,14 @@ export function Home() {
 
                 <div className={`p-4 rounded-2xl border flex items-center justify-between transition-colors ${isFreeTrial ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-primary/5 border-primary/10'}`}>
                   <div className="space-y-0.5">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Total a pagar</p>
+                    <p className="text-[10px] font-light uppercase tracking-widest text-muted-foreground">Total a pagar</p>
                     {isFreeTrial ? (
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-sm text-muted-foreground line-through">{formatARS(billingCycle === 'monthly' ? currentPlanPrices.monthly : currentPlanPrices.annual)}</span>
-                        <span className="text-2xl font-black tracking-tighter text-emerald-400">A$0</span>
-                        <span className="text-xs text-muted-foreground">/ 60 días</span>
+                      <div className="flex flex-col">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-2xl font-black tracking-tighter text-primary">FREE</span>
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">(2 MESES)</span>
+                        </div>
+                        <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Luego {formatARS(currentPlanPrices.monthly)} / mes</p>
                       </div>
                     ) : (
                       <p className="text-xl font-bold tracking-tighter text-primary">

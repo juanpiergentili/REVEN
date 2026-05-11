@@ -8,6 +8,7 @@ import { Login } from '@/src/pages/Login';
 import { Messages } from '@/src/pages/Messages';
 import { Profile } from '@/src/pages/Profile';
 import { Admin } from '@/src/pages/Admin';
+import { HomeV2 } from '@/src/pages/HomeV2';
 import { Agencies } from '@/src/pages/Agencies';
 import { ProtectedRoute } from '@/src/components/auth/ProtectedRoute';
 import { useEffect } from 'react';
@@ -17,6 +18,7 @@ function AppContent() {
   const isLoginPage = location.pathname === '/login';
   const isHomePage = location.pathname === '/';
   const isAdminPage = location.pathname === '/admin';
+  const isV2Page = location.pathname === '/v2';
 
   useEffect(() => {
     console.log("🚀 REVEN SYSTEM v1.2.0 - API & ACARA Active");
@@ -66,14 +68,20 @@ function AppContent() {
               <Profile />
             </ProtectedRoute>
           } />
+          <Route path="/agencies" element={
+            <ProtectedRoute>
+              <Agencies />
+            </ProtectedRoute>
+          } />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/v2" element={<HomeV2 />} />
           
           {/* Fallback to home */}
           <Route path="*" element={<Home />} />
         </Routes>
       </main>
 
-      {!isLoginPage && !isHomePage && !isAdminPage && (
+      {!isLoginPage && !isHomePage && !isAdminPage && !isV2Page && (
         <footer className="border-t py-6 md:py-0 bg-background">
           <div className="container mx-auto flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row px-4 md:px-8">
             <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">

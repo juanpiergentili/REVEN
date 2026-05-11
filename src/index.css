@@ -52,51 +52,105 @@
 }
 
 :root {
-    --background: oklch(0.94 0.006 80);      /* warm light gray */
-    --foreground: oklch(0.12 0.01 0);         /* near-black, high contrast */
-    --card: oklch(1.0 0 0);                   /* pure white cards */
-    --card-foreground: oklch(0.12 0.01 0);
-    --popover: oklch(1.0 0 0);
-    --popover-foreground: oklch(0.12 0.01 0);
-    --primary: oklch(0.68 0.19 120);          /* REVEN green, deeper for light bg */
-    --primary-foreground: oklch(0.12 0.01 0); /* dark text on green = legible */
-    --secondary: oklch(0.6 0.08 210);
-    --secondary-foreground: oklch(0.98 0 0);
-    --muted: oklch(0.91 0.005 80);
-    --muted-foreground: oklch(0.38 0.01 0);   /* darker muted for readability */
-    --accent: oklch(0.6 0.08 210 / 0.1);
-    --accent-foreground: oklch(0.6 0.08 210);
-    --destructive: oklch(0.6 0.2 25);
-    --border: oklch(0.86 0.01 0);
-    --input: oklch(0.86 0.01 0);
-    --ring: oklch(0.68 0.19 120);
-    --radius: 1.25rem;
-    --card-radius: 2.5rem;
-}
+  /* ── Fondos ── */
+  --bg-primary:        #FFFFFF;
+  --bg-secondary:      #F6F6F8;
+  --bg-tertiary:       #EEEEF1;
+  --bg-elevated:       #E5E5EA;
 
-.capitalize-first::first-letter {
-  text-transform: uppercase;
-}
+  /* ── Textos ── */
+  --text-primary:      #1A1A1E;
+  --text-secondary:    #5C5C66;
+  --text-muted:        #8E8E99;
+  --text-inverse:      #FFFFFF;
 
-  .capitalize-first::first-letter {
-    text-transform: uppercase;
-  }
+  /* ── Lima (marca) ── */
+  --lima-brand:        #d4ef06;
+  --lima-hover:        #B5D000;
+  --lima-pressed:      #9FB800;
+  --lima-text:         #5A6800;
+  --lima-soft:         #F2F9CC;
+  --lima-border:       #DCF240;
+
+  /* ── Púrpura ── */
+  --purple-dark:       #3F2842;
+  --purple-medium:     #6B4670;
+  --purple-soft:       #F3EAF4;
+  --purple-border:     #D4C0D6;
+
+  /* ── Semánticos ── */
+  --success:           #2D8A39;
+  --success-soft:      #E8F5E9;
+  --error:             #D32F2F;
+  --error-soft:        #FDECEA;
+  --warning:           #E68A00;
+  --warning-soft:      #FFF8E1;
+
+  /* ── Bordes y sombras ── */
+  --border-default:    #E5E5EA;
+  --border-strong:     #D1D1D6;
+  --shadow-sm:         0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md:         0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg:         0 8px 24px rgba(0,0,0,0.12);
+
+  /* ── Componentes específicos ── */
+  --cta-bg:            var(--lima-brand);
+  --cta-text:          var(--text-primary);
+  --cta-hover-bg:      var(--lima-hover);
+  --card-bg:           var(--bg-secondary);
+  --card-border:       var(--border-default);
+  --input-bg:          var(--bg-primary);
+  --input-border:      var(--border-strong);
+  --input-focus:       var(--lima-border);
+  --sticky-bar-bg:     var(--lima-brand);
+  --sticky-bar-text:   var(--text-primary);
+  --nav-bg:            rgba(255,255,255,0.85);
+  --nav-blur:          blur(12px);
+
+  /* Shadcn-like compatibility variables */
+  --background: var(--bg-primary);
+  --foreground: var(--text-primary);
+  --card: var(--bg-secondary);
+  --card-foreground: var(--text-primary);
+  --popover: var(--bg-primary);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--lima-brand);
+  --primary-foreground: var(--text-primary);
+  --secondary: var(--bg-tertiary);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--bg-tertiary);
+  --muted-foreground: var(--text-secondary);
+  --accent: var(--bg-tertiary);
+  --accent-foreground: var(--text-primary);
+  --destructive: #ef4444;
+  --destructive-foreground: #f8fafc;
+  --border: var(--border-default);
+  --input: var(--border-default);
+  --ring: var(--lima-brand);
+  --radius: 1.25rem;
+  --card-radius: 2.5rem;
+}
 
 .dark {
-    --background: oklch(0.25 0.01 0); /* #292929 */
-    --foreground: oklch(0.96 0.01 0); /* #f0f0f0 */
-    --card: oklch(0.28 0.01 0);
-    --card-foreground: oklch(0.96 0.01 0);
-    --popover: oklch(0.28 0.01 0);
-    --popover-foreground: oklch(0.96 0.01 0);
-    --primary: oklch(0.88 0.25 130); /* Electric Fluo Green similar to Upmind */
-    --primary-foreground: oklch(0.25 0.01 0);
-    --border: oklch(0.35 0.01 0);
-    --input: oklch(0.35 0.01 0);
-    --muted: oklch(0.3 0.01 0);
-    --muted-foreground: oklch(0.7 0.01 0);
-    --accent: oklch(0.35 0.01 0);
-    --accent-foreground: oklch(0.96 0.01 0);
+    --background: #0e0a14;
+    --foreground: #f8fafc;
+    --card: #1a1020;
+    --card-foreground: #f8fafc;
+    --popover: #1a1020;
+    --popover-foreground: #f8fafc;
+    --primary: #d4ef06;
+    --primary-foreground: #0e0a14;
+    --secondary: #1a1020;
+    --secondary-foreground: #f8fafc;
+    --muted: #1e1e2d;
+    --muted-foreground: #94a3b8;
+    --accent: #1e1e2d;
+    --accent-foreground: #f8fafc;
+    --destructive: #7f1d1d;
+    --destructive-foreground: #f8fafc;
+    --border: rgba(255,255,255,0.1);
+    --input: rgba(255,255,255,0.1);
+    --ring: #d4ef06;
 }
 
 
@@ -113,7 +167,7 @@
     overflow-x: hidden;
     }
   h1, h2, h3, h4, h5, h6 {
-    @apply font-heading font-medium tracking-tight;
+    @apply font-heading font-normal tracking-tight;
   }
   /* card depth in light mode */
   :root .shadow-card {

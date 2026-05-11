@@ -177,7 +177,7 @@ export function Header() {
                 key={item.name}
                 to={item.path}
                 onClick={(e) => handleNavClick(item.path, e)}
-                className={`flex items-center gap-2 text-sm font-bold uppercase tracking-widest transition-colors hover:text-primary ${
+                className={`flex items-center gap-2 text-sm font-light uppercase tracking-widest transition-colors hover:text-primary ${
                   location.pathname === item.path ? 'text-primary' : 'text-muted-foreground'
                 }`}
               >
@@ -235,7 +235,7 @@ export function Header() {
                     {userProfile?.role === 'ADMIN' && (
                       <>
                         <DropdownMenuItem
-                          className="rounded-xl font-bold uppercase tracking-widest text-[10px] px-3 py-2 cursor-pointer text-primary focus:text-primary"
+                          className="rounded-xl font-light uppercase tracking-widest text-[10px] px-3 py-2 cursor-pointer text-primary focus:text-primary"
                           onClick={() => navigate('/admin')}
                         >
                           <Shield className="mr-2 h-4 w-4" />
@@ -245,20 +245,20 @@ export function Header() {
                       </>
                     )}
                     <DropdownMenuItem
-                      className="rounded-xl font-bold uppercase tracking-widest text-[10px] px-3 py-2 cursor-pointer"
+                      className="rounded-xl font-light uppercase tracking-widest text-[10px] px-3 py-2 cursor-pointer"
                       onClick={() => navigate('/profile')}
                     >
                       <Building2 className="mr-2 h-4 w-4" />
                       Mi Concesionaria
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="rounded-xl font-bold uppercase tracking-widest text-[10px] px-3 py-2 cursor-pointer">
+                    <DropdownMenuItem className="rounded-xl font-light uppercase tracking-widest text-[10px] px-3 py-2 cursor-pointer">
                       <ShoppingBag className="mr-2 h-4 w-4" />
                       Últimas Compras
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem 
                       onClick={handleLogout}
-                      className="rounded-xl font-bold uppercase tracking-widest text-[10px] px-3 py-2 cursor-pointer text-destructive focus:text-destructive"
+                      className="rounded-xl font-light uppercase tracking-widest text-[10px] px-3 py-2 cursor-pointer text-destructive focus:text-destructive"
                     >
                       <LogOut className="mr-2 h-4 w-4" />
                       Cerrar Sesión
@@ -267,7 +267,7 @@ export function Header() {
                 </DropdownMenu>
 
                 <Button 
-                  className="rounded-full px-6 font-bold uppercase tracking-widest text-xs h-11 shadow-lg shadow-primary/20 group"
+                  className="rounded-full px-6 font-light uppercase tracking-widest text-xs h-11 shadow-lg shadow-primary/20 group"
                   onClick={() => navigate('/publish')}
                 >
                   PUBLICAR UNIDAD
@@ -278,14 +278,14 @@ export function Header() {
               <>
                 <Button 
                   variant="outline" 
-                  className="rounded-2xl px-6 font-bold uppercase tracking-widest text-xs h-11 border-border hover:bg-primary/10 hover:text-primary transition-all"
+                  className="rounded-2xl px-6 font-light uppercase tracking-widest text-xs h-11 border-border hover:bg-primary/10 hover:text-primary transition-all"
                   onClick={() => setIsLoginOpen(true)}
                 >
                   <User className="mr-2 h-4 w-4" />
                   INGRESAR
                 </Button>
                 <Button
-                  className="rounded-full px-6 font-bold uppercase tracking-widest text-xs h-11 shadow-lg shadow-primary/20 group"
+                  className="rounded-full px-6 font-light uppercase tracking-widest text-xs h-11 shadow-lg shadow-primary/20 group"
                   onClick={() => navigate('/?register=true')}
                 >
                   REGISTRARSE
@@ -321,7 +321,7 @@ export function Header() {
                   key={item.name}
                   to={item.path}
                   onClick={(e) => { handleNavClick(item.path, e); setIsMenuOpen(false); }}
-                  className={`flex items-center gap-3 font-bold uppercase tracking-widest text-xs px-4 py-3 rounded-xl transition-colors ${
+                  className={`flex items-center gap-3 font-light uppercase tracking-widest text-xs px-4 py-3 rounded-xl transition-colors ${
                     location.pathname === item.path
                       ? 'text-primary bg-primary/5'
                       : 'text-muted-foreground hover:text-foreground hover:bg-muted'
@@ -439,8 +439,8 @@ export function Header() {
               <div className="flex justify-center mb-6">
                 <Logo className="text-4xl" variant="auto" />
               </div>
-              <h3 className="text-3xl font-bold tracking-tighter uppercase leading-none">Bienvenido</h3>
-              <p className="text-base text-muted-foreground font-medium mt-2">Accede a la red B2B más exclusiva.</p>
+              <h3 className="text-3xl font-semibold tracking-tighter uppercase leading-none">Bienvenido</h3>
+              <p className="text-base text-muted-foreground font-light mt-2">Accede a la red B2B más exclusiva.</p>
             </div>
 
             {error && (
@@ -485,7 +485,7 @@ export function Header() {
               <Button 
                 type="submit"
                 disabled={loading}
-                className="w-full h-14 rounded-2xl font-bold text-lg shadow-lg shadow-primary/20 group uppercase tracking-tighter"
+                className="w-full h-14 rounded-2xl font-light text-lg shadow-lg shadow-primary/20 group uppercase tracking-tighter"
               >
                 {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : (
                   <>
