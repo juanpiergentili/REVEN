@@ -436,11 +436,19 @@ export function Home() {
             <div className="flex flex-col sm:flex-row gap-4 pt-2">
               <Button
                 size="lg"
-                className="h-14 px-10 rounded-full font-light text-base uppercase tracking-tight shadow-2xl shadow-primary/30 group bg-primary text-black"
+                className="h-14 px-10 rounded-full font-semibold text-base uppercase tracking-tight shadow-2xl shadow-primary/30 group bg-primary text-black"
                 onClick={() => setIsAdmissionOpen(true)}
               >
                 SOLICITÀ TU ACCESO
                 <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-14 px-10 rounded-full font-semibold text-base uppercase tracking-tight border-white/20 text-white hover:bg-white/10 hover:text-white bg-transparent"
+                onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
+              >
+                VER PLANES
               </Button>
             </div>
           </motion.div>
@@ -552,7 +560,7 @@ export function Home() {
 
               <Button
                 size="lg"
-                className="h-14 px-10 rounded-full font-light uppercase tracking-tight bg-primary text-black hover:bg-primary/90 shadow-xl shadow-primary/20 group text-base"
+                className="h-14 px-10 rounded-full font-semibold uppercase tracking-tight bg-primary text-black hover:bg-primary/90 shadow-xl shadow-primary/20 group text-base"
                 onClick={() => setIsAdmissionOpen(true)}
               >
                 COMENZAR AHORA
@@ -781,7 +789,7 @@ export function Home() {
             </h2>
             <Button
               size="lg"
-              className="h-16 px-14 rounded-full font-light text-base uppercase tracking-tight bg-primary text-black hover:bg-primary/90 shadow-2xl shadow-primary/30"
+              className="h-16 px-14 rounded-full font-semibold text-base uppercase tracking-tight bg-primary text-black hover:bg-primary/90 shadow-2xl shadow-primary/30"
               onClick={() => setIsAdmissionOpen(true)}
             >
               SOLICITÀ TU ACCESO AHORA
