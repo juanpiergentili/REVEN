@@ -193,6 +193,13 @@ export function Home() {
     if (searchParams.get('register') === 'true') setIsAdmissionOpen(true);
   }, [searchParams]);
 
+  const handleAdmissionOpenChange = (open: boolean) => {
+    setIsAdmissionOpen(open);
+    if (!open && searchParams.get('register') === 'true') {
+      navigate('/', { replace: true });
+    }
+  };
+
   useEffect(() => {
     if (videoRef.current && videoRef.current.readyState >= 3) {
       setIsVideoLoaded(true);
@@ -791,7 +798,7 @@ export function Home() {
       </section>
 
       {/* ── Admission Dialog ─────────────────────────────────────────────── */}
-      <Dialog open={isAdmissionOpen} onOpenChange={setIsAdmissionOpen}>
+      <Dialog open={isAdmissionOpen} onOpenChange={handleAdmissionOpenChange}>
         <DialogContent className="max-w-[95vw] sm:max-w-4xl p-0 rounded-[2.5rem] border-border bg-card/95 backdrop-blur-2xl shadow-2xl overflow-y-auto max-h-[90dvh]">
           <div className="grid grid-cols-1 md:grid-cols-12 md:min-h-[600px]">
             <div className="hidden md:flex md:col-span-4 lg:col-span-3 bg-primary p-10 flex-col justify-between text-primary-foreground relative overflow-hidden">
