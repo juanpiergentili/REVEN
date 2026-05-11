@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Logo } from '../components/layout/Logo';
 import { Footer } from '../components/layout/Footer';
@@ -72,7 +72,7 @@ const PLAN_PRICES = {
 };
 
 function formatARS(amount: number) {
-  return `A$ ${amount.toLocaleString('es-AR')}`;
+  return `$ ${amount.toLocaleString('es-AR')}`;
 }
 
 function getInitials(name: string) {
@@ -352,7 +352,7 @@ export function Home() {
   const PLANS = [
     {
       key: 'business', displayName: 'BUSINESS', ...PLAN_PRICES.business, popular: false,
-      promo: 'Código REVENFREE60 → 2 meses gratis',
+      promo: null as string | null,
       features: ['Hasta 5 autos publicados', 'Agencias hasta 2 sucursales', '3 destacados por mes', 'Datos de mercado básicos', '1 usuario por cuenta', 'Contacto directo B2B'],
       cta: 'SOLICITÁ TU ACCESO',
     },
@@ -360,7 +360,7 @@ export function Home() {
       key: 'profesional', displayName: 'PROFESIONAL', ...PLAN_PRICES.profesional, popular: true,
       promo: null as string | null,
       features: ['Hasta 15 autos publicados', 'Concesionarias medianas', '15 destacados por mes', 'Datos completos', 'Alertas personalizadas', '3 usuarios', 'Contacto directo B2B'],
-      cta: 'SOLICITÀ TU ACCESO',
+      cta: 'SOLICITÁ TU ACCESO',
     },
     {
       key: 'platinum', displayName: 'ENTERPRISE', ...PLAN_PRICES.platinum, popular: false,
@@ -439,13 +439,12 @@ export function Home() {
                 className="h-14 px-10 rounded-full font-semibold text-base uppercase tracking-tight shadow-2xl shadow-primary/30 group bg-primary text-black"
                 onClick={() => setIsAdmissionOpen(true)}
               >
-                SOLICITÀ TU ACCESO
+                SOLICITÁ TU ACCESO
                 <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </Button>
               <Button
                 size="lg"
-                variant="outline"
-                className="h-14 px-10 rounded-full font-semibold text-base uppercase tracking-tight border-white/20 text-white hover:bg-white/10 hover:text-white bg-transparent"
+                className="h-14 px-10 rounded-full font-semibold text-base uppercase tracking-tight bg-primary text-black hover:bg-primary/90 shadow-2xl shadow-primary/30"
                 onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
               >
                 VER PLANES
@@ -604,13 +603,6 @@ export function Home() {
                   ÚLTIMOS <br /><span className="text-primary">INGRESOS.</span>
                 </h2>
               </div>
-              <Button
-                variant="outline"
-                className="rounded-full h-12 px-8 font-light text-xs uppercase tracking-widest border-white/20 text-black bg-transparent hover:bg-white/5"
-                asChild
-              >
-                <Link to="/login">VER CATÁLOGO COMPLETO</Link>
-              </Button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -792,7 +784,7 @@ export function Home() {
               className="h-16 px-14 rounded-full font-semibold text-base uppercase tracking-tight bg-primary text-black hover:bg-primary/90 shadow-2xl shadow-primary/30"
               onClick={() => setIsAdmissionOpen(true)}
             >
-              SOLICITÀ TU ACCESO AHORA
+              SOLICITÁ TU ACCESO AHORA
             </Button>
           </motion.div>
         </div>
