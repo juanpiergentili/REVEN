@@ -37,6 +37,8 @@ import { subscribeToVehicles } from '@/src/lib/vehicles';
 import { Vehicle } from '@/src/types';
 import { useGeoRef } from '@/src/hooks/useGeoRef';
 
+const SUPER_ADMINS = ['lucas.ferreyra@gmail.com'];
+
 const SOLUTIONS_LEFT = [
   { icon: Zap, title: 'COMUNICACIÓN DIRECTA', desc: 'Chau grupos ruidosos. Chat interno directo con vendedores reales y stock activo.' },
   { icon: CreditCard, title: 'OPTIMIZACIÓN DE TIEMPO', desc: 'Precios B2B y disponibilidad de stock actualizados en tiempo real al instante.' },
@@ -422,16 +424,25 @@ export function Home() {
         logoUrl = await getDownloadURL(logoRef);
       }
 
+      const isSuperAdmin = SUPER_ADMINS.includes(email.toLowerCase());
+
       await setDoc(doc(db, 'users', user.uid), {
         uid: user.uid, email, name, lastName, cuil, phone, company,
         plan, billingCycle, discountCode: appliedCoupon ?? null,
-        trialDays: isFreeTrial ? 60 : null, role: 'USER', status: 'pending',
+        trialDays: isFreeTrial ? 60 : null, 
+        role: isSuperAdmin ? 'ADMIN' : 'USER', 
+        status: isSuperAdmin ? 'active' : 'pending',
         province: regProvince, city: regCity,
         instagram: instagramUser || null,
         avatarUrl: logoUrl,
         logoUrl,
         createdAt: serverTimestamp(),
       });
+      
+      // Asegurar que el scroll vuelva arriba para ver el éxito
+      const scrollArea = document.querySelector('[role="dialog"] [data-radix-scroll-area-viewport]');
+      if (scrollArea) scrollArea.scrollTop = 0;
+      
       setRegistrationSuccess(true);
     } catch (err: any) {
       if (err.code === 'auth/email-already-in-use') setError('El email ya se encuentra registrado. Intentá iniciar sesión.');

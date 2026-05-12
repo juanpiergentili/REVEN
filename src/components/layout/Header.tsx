@@ -43,6 +43,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Logo } from './Logo';
 
+const SUPER_ADMINS = ['lucas.ferreyra@gmail.com'];
+
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
@@ -147,7 +149,9 @@ export function Header() {
         const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
         const userData = userDoc.data();
         
-        if (userData && userData.role !== 'ADMIN') {
+        const isSuperAdmin = userCredential.user.email && SUPER_ADMINS.includes(userCredential.user.email);
+        
+        if (userData && userData.role !== 'ADMIN' && !isSuperAdmin) {
           if (userData.status === 'pending') {
             await signOut(auth);
             setError('Tu cuenta aún está en proceso de revisión.');
@@ -277,7 +281,7 @@ export function Header() {
                       <DropdownMenuLabel className="font-bold uppercase tracking-widest text-[10px] px-3 py-2">Mi Cuenta</DropdownMenuLabel>
                     </DropdownMenuGroup>
                     <DropdownMenuSeparator />
-                    {userProfile?.role === 'ADMIN' && (
+                    {(userProfile?.role === 'ADMIN' || (user?.email && SUPER_ADMINS.includes(user.email))) && (
                       <>
                         <DropdownMenuItem
                           className="rounded-xl font-light uppercase tracking-widest text-[10px] px-3 py-2 cursor-pointer text-primary focus:text-primary"

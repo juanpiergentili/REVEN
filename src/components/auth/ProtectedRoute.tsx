@@ -50,7 +50,9 @@ export function ProtectedRoute({ children, requireApproval = true }: ProtectedRo
     return <Navigate to="/" state={{ from: location }} replace />;
   }
 
-  const status = profile?.role === 'ADMIN' ? 'active' : (profile?.status || 'pending');
+  const SUPER_ADMINS = ['lucas.ferreyra@gmail.com'];
+  const isSuperAdmin = user?.email && SUPER_ADMINS.includes(user.email);
+  const status = (profile?.role === 'ADMIN' || isSuperAdmin) ? 'active' : (profile?.status || 'pending');
 
   if (requireApproval && status === 'pending') {
     return <PendingScreen />;
