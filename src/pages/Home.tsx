@@ -239,44 +239,134 @@ export function Home() {
   const [cuitError, setCuitError] = useState('');
   const [estadoCuit, setEstadoCuit] = useState('');
 
+  // Validación local del dígito verificador CUIT/CUIL argentino
+  const isValidCuitFormat = (cuit: string): boolean => {
+    const c = cuit.replace(/\D/g, '');
+    if (c.length !== 11) return false;
+    const mult = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];
+    const sum = mult.reduce((acc, m, i) => acc + parseInt(c[i]) * m, 0);
+    const rem = sum % 11;
+    const dv = rem === 0 ? 0 : rem === 1 ? 9 : 11 - rem;
+    return dv === parseInt(c[10]);
+  };
+
   const checkCuit = async (val: string) => {
     const cleanCuit = val.replace(/\D/g, '');
     if (cleanCuit.length !== 11) return;
+
+    // Validación de formato antes de llamar a la API
+    if (!isValidCuitFormat(cleanCuit)) {
+      setCuitStatus('INVALID');
+      setCuitError('El CUIT/CUIL ingresado no es válido.');
+      return;
+    }
 
     setIsCheckingCuit(true);
     setCuitError('');
     setCuitStatus('CHECKING');
     
     try {
-      const apiKey = import.meta.env.VITE_CUITALIZER_API_KEY || '';
-      const response = await fetch('https://api.cuitalizer.com.ar/api/v1/contribuyente/consultar', {
+      const apiKey = import.meta.env.VITE_AFIP_API_KEY || '';
+      if (!apiKey) throw new Error('API Key de AFIP no configurada');
+
+      // Detectar si tenemos cert y key para prod
+      const cert = import.meta.env.VITE_AFIP_CERT;
+      const key = import.meta.env.VITE_AFIP_KEY;
+      const cuit = import.meta.env.VITE_AFIP_CUIT || '20409378472';
+      const envMode = cert && key ? 'prod' : 'dev';
+
+      // 1. Obtener Token y Sign
+      const authRes = await fetch('https://app.afipsdk.com/api/v1/afip/auth', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          ...(apiKey && { 'X-API-Key': apiKey })
+          'Authorization': `Bearer ${apiKey}`
         },
-        body: JSON.stringify({ cuit: cleanCuit }),
+        body: JSON.stringify({
+          environment: envMode,
+          tax_id: cuit,
+          wsid: 'ws_sr_padron_a13',
+          ...(cert && key ? { cert, key } : {})
+        })
       });
 
-      if (!response.ok) throw new Error('Error en validación');
-      const data = await response.json();
-      const info = data.data || data;
-      const nombre = info.razonSocial || info.razon_social || info.nombre || '';
-      const estado = info.estadoVigencia || info.estado || info.estadoClave || '';
+      if (!authRes.ok) throw new Error('Error en autenticación AFIP');
+      const authData = await authRes.json();
       
-      if (nombre) {
-        setCompany(nombre);
+      if (!authData.token || !authData.sign) {
+        throw new Error('No se pudo obtener el token de AFIP');
+      }
+
+      // 2. Consultar Padrón
+      const padronRes = await fetch('https://app.afipsdk.com/api/v1/afip/requests', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          environment: envMode,
+          tax_id: cuit,
+          wsid: 'ws_sr_padron_a13',
+          method: 'getPersona',
+          params: {
+            token: authData.token,
+            sign: authData.sign,
+            cuitRepresentada: Number(cuit),
+            idPersona: Number(cleanCuit)
+          }
+        })
+      });
+
+      if (!padronRes.ok) throw new Error('Error en validación AFIP');
+      const data = await padronRes.json();
+      
+      // Manejar posibles errores del SDK
+      if (data.code && data.message) {
+        throw new Error(data.message);
+      }
+
+      // Función auxiliar para buscar recursivamente en el JSON de respuesta
+      const findDeep = (obj: any, key: string): any => {
+        if (!obj || typeof obj !== 'object') return null;
+        if (key in obj) return obj[key];
+        for (const k in obj) {
+          const res = findDeep(obj[k], key);
+          if (res) return res;
+        }
+        return null;
+      };
+
+      const nombre = findDeep(data, 'razonSocial') || findDeep(data, 'nombre') || '';
+      const apellido = findDeep(data, 'apellido') || '';
+      const estado = findDeep(data, 'estadoClave') || '';
+      
+      const nombreCompleto = apellido ? `${nombre} ${apellido}`.trim() : nombre;
+
+      if (nombreCompleto) {
+        setCompany(nombreCompleto);
         setEstadoCuit(estado);
         setCuitStatus('VALID');
         if (estado && !['ACTIVA', 'ACTIVO'].includes(estado.toUpperCase())) {
-          setCuitError(`Estado en ARCA: ${estado} (Se requiere activo)`);
+          setCuitError(`Estado en AFIP: ${estado} (Se requiere activo)`);
         }
       } else {
-        throw new Error('CUIT no encontrado');
+        throw new Error('CUIT no encontrado en AFIP');
       }
-    } catch (e) {
-      setCuitStatus('INVALID');
-      setCuitError('CUIT no válido o no encontrado');
+    } catch (e: any) {
+      const msg: string = e.message || '';
+      const isNotFound = msg.toLowerCase().includes('inexistente') || msg.toLowerCase().includes('no encontrado en afip');
+      
+      if (isNotFound) {
+        // CUIT no existe en AFIP → bloquear
+        setCuitStatus('INVALID');
+        setCuitError('CUIT no encontrado en AFIP. Verificá el número ingresado.');
+      } else {
+        // Error de conexión/API → degradación elegante, permitir ingreso manual
+        setCuitStatus('IDLE');
+        setCuitError('No se pudo verificar en AFIP. Completá la razón social manualmente.');
+      }
+      console.warn('[AFIP SDK]', msg);
     } finally {
       setIsCheckingCuit(false);
     }
@@ -437,7 +527,7 @@ export function Home() {
 
             <p className="text-base md:text-lg text-white font-light max-w-lg leading-relaxed">
               Marketplace exclusivo B2B, solo para profesionales verificados.<br />
-              Sin intermediarios. Sin público final. Solo negocios reales.
+              Sin intermediarios. Solo negocios reales.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 pt-2">
@@ -682,7 +772,7 @@ export function Home() {
                   </p>
                   <div className="flex items-baseline gap-1">
                     <span className={`text-3xl md:text-4xl font-bold tracking-tighter ${p.popular ? 'text-primary-foreground' : 'text-white'}`}>
-                      {formatARS(billingCycle === 'annual' ? (p.key === 'platinum' ? 500000 : p.annual) : (p.key === 'platinum' ? 500000 : p.monthly))}
+                      {formatARS(billingCycle === 'annual' ? p.annual : p.monthly)}
                     </span>
                     <span className={`text-xs font-bold uppercase ${p.popular ? 'text-primary-foreground/60' : 'text-white/40'}`}>
                       / {billingCycle === 'annual' ? 'año' : 'mes'}
@@ -695,7 +785,7 @@ export function Home() {
                   )}
                   {!p.promo && billingCycle === 'annual' && (
                     <p className={`text-[10px] font-bold uppercase tracking-wider mt-2 ${p.popular ? 'text-primary-foreground/70' : 'text-primary'}`}>
-                      AHORRÁS {formatARS(p.monthly * 12 - (p.key === 'platinum' ? 500000 : p.annual))}
+                      AHORRÁS {formatARS(p.monthly * 12 - p.annual)}
                     </p>
                   )}
                 </div>

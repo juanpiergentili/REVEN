@@ -119,7 +119,7 @@ export function Header() {
   ];
 
   const handleNavClick = (path: string, e: MouseEvent) => {
-    if (isLanding && path !== '/') {
+    if (isLanding && path !== '/' && !user) {
       e.preventDefault();
       setIsLoginOpen(true);
     }
