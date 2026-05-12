@@ -1,7 +1,7 @@
 import { motion, AnimatePresence, useScroll, useTransform } from 'motion/react';
 import {
   Zap, Check, ArrowRight, ShieldCheck, FileText, Loader2,
-  Users, Shield, CreditCard, Plus, MapPin, Loader, Instagram, Upload, Camera
+  Users, Shield, CreditCard, Plus, MapPin, Loader, Instagram, Upload, Camera, CheckCircle2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -186,6 +186,7 @@ export function Home() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [isAdmissionOpen, setIsAdmissionOpen] = useState(false);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -195,8 +196,9 @@ export function Home() {
 
   const handleAdmissionOpenChange = (open: boolean) => {
     setIsAdmissionOpen(open);
-    if (!open && searchParams.get('register') === 'true') {
-      navigate('/', { replace: true });
+    if (!open) {
+      setRegistrationSuccess(false);
+      if (searchParams.get('register') === 'true') navigate('/', { replace: true });
     }
   };
 
@@ -430,8 +432,7 @@ export function Home() {
         logoUrl,
         createdAt: serverTimestamp(),
       });
-      setIsAdmissionOpen(false);
-      navigate('/login');
+      setRegistrationSuccess(true);
     } catch (err: any) {
       if (err.code === 'auth/email-already-in-use') setError('El email ya se encuentra registrado. Intentá iniciar sesión.');
       else if (err.code === 'auth/weak-password') setError('La contraseña debe tener al menos 6 caracteres.');
@@ -908,7 +909,51 @@ export function Home() {
               </div>
             </div>
 
-            <div className="md:col-span-8 lg:col-span-9 p-8 md:p-12 bg-background/50">
+            <div className="md:col-span-8 lg:col-span-9 p-8 md:p-12 bg-background/50 flex flex-col">
+
+              {registrationSuccess ? (
+                /* ── SUCCESS / PENDING SCREEN ───────────────────── */
+                <div className="flex flex-col items-center justify-center flex-1 py-12 text-center space-y-8 animate-in fade-in duration-500">
+                  <div className="relative">
+                    <div className="h-28 w-28 rounded-full bg-primary/10 border-2 border-primary/30 flex items-center justify-center shadow-[0_0_60px_rgba(34,197,94,0.15)]">
+                      <CheckCircle2 className="h-14 w-14 text-primary" />
+                    </div>
+                    <div className="absolute inset-0 rounded-full animate-ping bg-primary/10 opacity-60" />
+                  </div>
+
+                  <div className="space-y-3 max-w-sm">
+                    <h2 className="text-3xl font-black tracking-tighter uppercase">¡Solicitud enviada!</h2>
+                    <p className="text-muted-foreground text-sm font-light leading-relaxed">
+                      Tu cuenta para <span className="text-white font-bold">{company}</span> está siendo revisada por nuestro equipo.
+                      Te notificaremos por email cuando sea aprobada.
+                    </p>
+                  </div>
+
+                  <div className="w-full max-w-sm space-y-3">
+                    {[
+                      { step: '01', text: 'Solicitud recibida', done: true },
+                      { step: '02', text: 'Verificación en curso', done: false },
+                      { step: '03', text: 'Acceso habilitado', done: false },
+                    ].map((item) => (
+                      <div key={item.step} className={`flex items-center gap-4 p-4 rounded-xl border ${item.done ? 'border-primary/30 bg-primary/5' : 'border-border bg-background/30'}`}>
+                        <span className={`text-[10px] font-black tracking-widest ${item.done ? 'text-primary' : 'text-muted-foreground'}`}>{item.step}</span>
+                        <span className={`text-xs font-bold uppercase tracking-widest ${item.done ? 'text-white' : 'text-muted-foreground'}`}>{item.text}</span>
+                        {item.done && <CheckCircle2 className="h-4 w-4 text-primary ml-auto" />}
+                      </div>
+                    ))}
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    className="rounded-full px-8 h-11 text-[10px] font-black uppercase tracking-widest border-border"
+                    onClick={() => handleAdmissionOpenChange(false)}
+                  >
+                    Cerrar
+                  </Button>
+                </div>
+              ) : (
+              /* ── FORM ────────────────────────────────────────── */
+              <>
               <DialogHeader className="mb-10 text-left">
                 <DialogTitle className="text-3xl md:text-5xl font-black tracking-tighter uppercase leading-none">Solicitud de Admisión</DialogTitle>
                 <DialogDescription className="font-medium text-sm font-light text-muted-foreground/80 mt-3 text-white">Completá tus datos profesionales para iniciar el proceso de verificación.</DialogDescription>
@@ -919,6 +964,7 @@ export function Home() {
               )}
 
               <form className="space-y-6" onSubmit={handleAdmissionSubmit}>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="pop-name" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Nombre del Dueño / Apoderado</Label>
@@ -1139,6 +1185,8 @@ export function Home() {
                   {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : 'ENVIAR SOLICITUD'}
                 </Button>
               </form>
+              </>
+              )}
             </div>
           </div>
         </DialogContent>

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ChevronLeft, Eye, MessageSquare, Clock, BarChart3, TrendingUp, Award,
   MapPin, Building2, Phone, Mail, Loader2, ShoppingBag, Plus, Settings,
-  Instagram, Facebook, ExternalLink, Trash2, User,
+  Instagram, Facebook, ExternalLink, Trash2, User, Activity,
   Save, Pause, Play, CheckCircle2, Package, Lock, Camera, Upload, Globe,
 } from 'lucide-react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -173,6 +173,35 @@ export function Profile() {
     }
   };
 
+  const handleUpgrade = async (plan: any, cycle: 'monthly' | 'annual') => {
+    if (!user) return;
+    setEditLoading(true);
+    try {
+      // Mock MercadoPago Redirect / Payment
+      const { createMembership } = await import('@/src/lib/memberships');
+      await createMembership({
+        userId: user.uid,
+        plan: plan,
+        billingCycle: cycle,
+        discountPercent: profileData.discountCode === 'REVENFREE60' ? 100 : 0,
+        discountCode: profileData.discountCode
+      });
+      
+      // Update user plan
+      await updateDoc(doc(db, 'users', user.uid), {
+        plan: plan,
+        status: 'active',
+        trialEndDate: null // Remove trial if upgraded
+      });
+      
+      window.location.reload();
+    } catch (err) {
+      console.error('Error upgrading plan:', err);
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
   const handleToggleStatus = async (vehicle: Vehicle) => {
     const next = vehicle.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
     if (next === 'ACTIVE' && isTrialExpired(profileData)) return;
@@ -252,6 +281,11 @@ export function Profile() {
   const soldListings    = allListings.filter(v => v.status === 'SOLD');
   const totalViews      = allListings.reduce((s, v) => s + (v.viewCount || 0), 0);
   const totalContacts   = allListings.reduce((s, v) => s + (v.contactCount || 0), 0);
+  
+  // Computed Advanced Metrics
+  const conversionRate = totalViews > 0 ? (totalContacts / totalViews) * 100 : 0;
+  const leadQuality = conversionRate > 5 ? 'Alta' : conversionRate > 2 ? 'Media' : 'Baja';
+  const rotationIndex = activeListings.length > 0 ? (soldListings.length / (activeListings.length + soldListings.length)) * 100 : 0;
 
   // For public profiles only show active listings
   const visibleListings = isOwnProfile ? allListings : activeListings;
@@ -430,13 +464,110 @@ export function Profile() {
               {isOwnProfile ? 'Métricas de tu Concesionaria' : 'Estadísticas del Vendedor'}
             </h2>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             <StatCard icon={Eye}          label="Vistas totales"     value={totalViews}             accent />
-            <StatCard icon={MessageSquare} label="Consultas recibidas" value={totalContacts}          />
+            <StatCard icon={MessageSquare} label="Consultas"          value={totalContacts}          />
+            <StatCard icon={TrendingUp}    label="Conv. Lead"         value={`${conversionRate.toFixed(1)}%`} accent />
+            <StatCard icon={Activity}      label="Calidad Lead"       value={leadQuality}            />
             <StatCard icon={Package}      label="Stock activo"        value={activeListings.length}  accent />
-            <StatCard icon={CheckCircle2} label="Unidades vendidas"   value={soldListings.length}    />
+            <StatCard icon={CheckCircle2} label="Vendidos"           value={soldListings.length}    />
           </div>
+          {isOwnProfile && (
+            <div className="mt-6 p-6 rounded-3xl border border-primary/10 bg-primary/5 flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                  <BarChart3 className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <p className="font-bold uppercase tracking-widest text-[10px] text-muted-foreground">Índice de Rotación</p>
+                  <p className="text-2xl font-black tracking-tighter">{rotationIndex.toFixed(0)}% de efectividad</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Badge variant="outline" className="rounded-full px-4 py-1.5 border-primary/20 text-primary font-bold uppercase tracking-widest text-[9px]">ROI Positivo</Badge>
+                <Badge variant="outline" className="rounded-full px-4 py-1.5 border-emerald-500/20 text-emerald-400 font-bold uppercase tracking-widest text-[9px]">Market Fit</Badge>
+              </div>
+            </div>
+          )}
         </div>
+
+        {isOwnProfile && (
+          <div className="mb-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <h2 className="text-2xl font-bold tracking-tighter uppercase flex items-center gap-3 mb-8">
+              <CreditCard className="h-6 w-6 text-primary" />
+              Plan y Suscripción
+            </h2>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Current Plan Info */}
+              <div className="lg:col-span-1 bg-card border border-border rounded-[2.5rem] p-8 space-y-6 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform">
+                  <Award className="h-24 w-24 text-primary" />
+                </div>
+                <div className="space-y-2">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Tu Plan Actual</p>
+                  <h3 className="text-4xl font-black tracking-tighter uppercase text-primary italic">
+                    {profileData.plan || 'Plata'}
+                  </h3>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground font-medium uppercase tracking-widest">Publicaciones</span>
+                    <span className="font-bold">{activeListings.length} / {profileData.plan === 'platinum' ? '150' : profileData.plan === 'oro' ? '25' : '5'}</span>
+                  </div>
+                  <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-primary transition-all duration-1000" 
+                      style={{ width: `${(activeListings.length / (profileData.plan === 'platinum' ? 150 : profileData.plan === 'oro' ? 25 : 5)) * 100}%` }} 
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2 pt-2">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Estado de Cuenta</p>
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-xs font-black uppercase tracking-widest text-emerald-400">Activo y Verificado</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* MercadoPago Upgrade Options */}
+              <div className="lg:col-span-2 bg-muted/30 border border-border rounded-[2.5rem] p-8">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+                  <div>
+                    <h4 className="text-xl font-bold tracking-tighter uppercase">Potenciá tu Agencia</h4>
+                    <p className="text-xs text-muted-foreground font-medium">Elegí el plan que mejor se adapte a tu volumen de ventas.</p>
+                  </div>
+                  <div className="flex bg-card p-1 rounded-full border border-border w-fit shrink-0">
+                    <button className="px-4 py-1.5 rounded-full text-[9px] font-black uppercase bg-primary text-primary-foreground">Mensual</button>
+                    <button className="px-4 py-1.5 rounded-full text-[9px] font-black uppercase text-muted-foreground hover:text-white transition-colors">Anual -20%</button>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[
+                    { name: 'oro', price: '180', color: 'text-yellow-400', border: 'border-yellow-500/20' },
+                    { name: 'platinum', price: '300', color: 'text-primary', border: 'border-primary/20' }
+                  ].map(p => (
+                    <div key={p.name} className={`bg-card p-6 rounded-3xl border ${p.border} hover:scale-[1.02] transition-transform cursor-pointer group`}
+                      onClick={() => handleUpgrade(p.name, 'monthly')}>
+                      <div className="flex justify-between items-start mb-4">
+                        <Badge className={`${p.color} bg-white/5 border-current uppercase font-black tracking-widest text-[9px]`}>{p.name}</Badge>
+                        <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-3xl font-black tracking-tighter">${p.price}<span className="text-sm text-muted-foreground font-bold">/mes</span></p>
+                        <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">Pago seguro vía MercadoPago</p>
+                      </div>
+                      <Button variant="outline" className="w-full mt-6 rounded-2xl font-bold uppercase tracking-widest text-[10px] h-11 border-border group-hover:bg-primary group-hover:text-primary-foreground transition-all">
+                        Contratar Ahora
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <Separator className="mb-16" />
 

@@ -141,7 +141,26 @@ export function Header() {
         const type = emailLower.includes('vendedor') ? 'vendedor' : emailLower.includes('comprador') ? 'comprador' : 'demo';
         await loginDemoUser(type);
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        
+        // Verificar status antes de permitir el acceso
+        const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
+        const userData = userDoc.data();
+        
+        if (userData && userData.role !== 'ADMIN') {
+          if (userData.status === 'pending') {
+            await signOut(auth);
+            setError('Tu cuenta aún está en proceso de revisión.');
+            setLoading(false);
+            return;
+          }
+          if (userData.status === 'rejected') {
+            await signOut(auth);
+            setError('Tu solicitud de admisión ha sido rechazada.');
+            setLoading(false);
+            return;
+          }
+        }
       }
       setIsLoginOpen(false);
       navigate('/marketplace');
