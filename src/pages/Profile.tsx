@@ -66,6 +66,8 @@ export function Profile() {
   const { uid } = useParams<{ uid: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
+  const [showUpgradeRequested, setShowUpgradeRequested] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [profileData, setProfileData] = useState<any>(null);
@@ -190,7 +192,7 @@ export function Profile() {
     if (!user) return;
     setEditLoading(true);
     try {
-      // Mock MercadoPago Redirect / Payment
+      // Create membership record
       const { createMembership } = await import('@/src/lib/memberships');
       await createMembership({
         userId: user.uid,
@@ -200,14 +202,14 @@ export function Profile() {
         discountCode: profileData.discountCode
       });
       
-      // Update user plan
+      // Instead of immediate activation, set a pending status for admin approval
       await updateDoc(doc(db, 'users', user.uid), {
-        plan: plan,
-        status: 'active',
-        trialEndDate: null // Remove trial if upgraded
+        pendingPlanUpgrade: plan,
+        pendingBillingCycle: cycle,
+        upgradeRequestedAt: new Date()
       });
       
-      window.location.reload();
+      setShowUpgradeRequested(true);
     } catch (err) {
       console.error('Error upgrading plan:', err);
     } finally {
@@ -578,36 +580,75 @@ export function Profile() {
                     <p className="text-xs text-muted-foreground font-medium">Elegí el plan que mejor se adapte a tu volumen de ventas.</p>
                   </div>
                   <div className="flex bg-card p-1 rounded-full border border-border w-fit shrink-0">
-                    <button className="px-4 py-1.5 rounded-full text-[9px] font-black uppercase bg-primary text-primary-foreground">Mensual</button>
-                    <button className="px-4 py-1.5 rounded-full text-[9px] font-black uppercase text-muted-foreground hover:text-white transition-colors">Anual -20%</button>
+                    <button 
+                      onClick={() => setBillingCycle('monthly')}
+                      className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase transition-all ${billingCycle === 'monthly' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-white'}`}
+                    >
+                      Mensual
+                    </button>
+                    <button 
+                      onClick={() => setBillingCycle('annual')}
+                      className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase transition-all ${billingCycle === 'annual' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-white'}`}
+                    >
+                      Anual -20%
+                    </button>
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {[
-                    { id: 'professional', name: 'Professional', color: 'text-yellow-400', border: 'border-yellow-500/20' },
-                    { id: 'enterprise', name: 'Enterprise', color: 'text-primary', border: 'border-primary/20' }
-                  ].filter(p => {
-                    if (currentPlan === 'business') return true;
-                    if (currentPlan === 'professional') return p.id === 'enterprise';
-                    return false;
-                  }).map(p => (
-                    <div key={p.id} className={`bg-card p-6 rounded-3xl border ${p.border} hover:scale-[1.02] transition-transform cursor-pointer group`}
-                      onClick={() => handleUpgrade(p.id, 'monthly')}>
-                      <div className="flex justify-between items-start mb-4">
-                        <Badge className={`${p.color} bg-white/5 border-current uppercase font-black tracking-widest text-[9px]`}>{p.name}</Badge>
-                        <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                {currentPlan === 'enterprise' ? (
+                  <div className="h-full flex flex-col items-center justify-center py-12 text-center space-y-6 animate-in fade-in zoom-in duration-700">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full scale-150" />
+                      <div className="relative h-20 w-20 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
+                        <Award className="h-10 w-10 text-primary" />
                       </div>
-                      <div className="space-y-1">
-                        <p className="text-3xl font-black tracking-tighter">{formatARS(PLAN_PRICES[p.id as MembershipPlan].monthly)}<span className="text-sm text-muted-foreground font-bold">/mes</span></p>
-                        <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">Pago seguro vía MercadoPago</p>
-                      </div>
-                      <Button variant="outline" className="w-full mt-6 rounded-2xl font-bold uppercase tracking-widest text-[10px] h-11 border-border group-hover:bg-primary group-hover:text-primary-foreground transition-all">
-                        Contratar Ahora
-                      </Button>
                     </div>
-                  ))}
-                </div>
+                    <div className="space-y-2 max-w-sm">
+                      <h4 className="text-2xl font-black tracking-tighter uppercase italic">¡Felicidades!</h4>
+                      <p className="text-sm text-muted-foreground font-medium leading-relaxed">
+                        Ya tenés la mejor opción para impulsar tus ventas. <br />
+                        Tu cuenta <span className="text-primary font-bold uppercase italic">Enterprise</span> está activa con beneficios ilimitados.
+                      </p>
+                    </div>
+                    <Button variant="outline" className="rounded-full border-primary/20 text-primary font-bold uppercase tracking-widest text-[10px] h-10 px-8">
+                      Ver Beneficios Exclusivos
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      { id: 'professional', name: 'Professional', color: 'text-yellow-400', border: 'border-yellow-500/20' },
+                      { id: 'enterprise', name: 'Enterprise', color: 'text-primary', border: 'border-primary/20' }
+                    ].filter(p => {
+                      if (currentPlan === 'business') return true;
+                      if (currentPlan === 'professional') return p.id === 'enterprise';
+                      return false;
+                    }).map(p => (
+                      <div key={p.id} className={`bg-card p-6 rounded-3xl border ${p.border} hover:scale-[1.02] transition-transform cursor-pointer group`}
+                        onClick={() => handleUpgrade(p.id, billingCycle)}>
+                        <div className="flex justify-between items-start mb-4">
+                          <Badge className={`${p.color} bg-white/5 border-current uppercase font-black tracking-widest text-[9px]`}>{p.name}</Badge>
+                          <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-3xl font-black tracking-tighter">
+                            {formatARS(billingCycle === 'annual' ? PLAN_PRICES[p.id as MembershipPlan].annual : PLAN_PRICES[p.id as MembershipPlan].monthly)}
+                            <span className="text-sm text-muted-foreground font-bold">/{billingCycle === 'annual' ? 'año' : 'mes'}</span>
+                          </p>
+                          {billingCycle === 'annual' && (
+                            <p className="text-[10px] font-black text-primary uppercase tracking-wider">
+                              Ahorrás {formatARS(PLAN_PRICES[p.id as MembershipPlan].monthly * 12 - PLAN_PRICES[p.id as MembershipPlan].annual)}
+                            </p>
+                          )}
+                          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">Pago seguro vía MercadoPago</p>
+                        </div>
+                        <Button variant="outline" className="w-full mt-6 rounded-2xl font-bold uppercase tracking-widest text-[10px] h-11 border-border group-hover:bg-primary group-hover:text-primary-foreground transition-all">
+                          Contratar Ahora
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -918,6 +959,30 @@ export function Profile() {
                 Guardar Cambios
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Upgrade Requested Dialog */}
+      <Dialog open={showUpgradeRequested} onOpenChange={setShowUpgradeRequested}>
+        <DialogContent className="sm:max-w-md rounded-3xl">
+          <div className="py-12 text-center space-y-6">
+            <div className="h-20 w-20 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="h-10 w-10 text-emerald-500" />
+            </div>
+            <div className="space-y-2">
+              <h4 className="text-2xl font-black tracking-tighter uppercase italic">Solicitud Enviada</h4>
+              <p className="text-sm text-muted-foreground font-medium leading-relaxed px-4">
+                Tu solicitud de cambio de plan ha sido recibida correctamente. <br />
+                Nuestro equipo comercial se contactará con vos para finalizar la activación.
+              </p>
+            </div>
+            <Button 
+              onClick={() => { setShowUpgradeRequested(false); window.location.reload(); }}
+              className="rounded-full h-12 px-12 font-bold uppercase tracking-widest text-xs"
+            >
+              Entendido
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
