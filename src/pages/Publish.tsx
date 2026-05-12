@@ -885,12 +885,6 @@ export function Publish() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/50 border border-border">
-                      <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                      <p className="text-xs text-muted-foreground font-medium leading-relaxed">
-                        Valores de referencia del mercado para la versión seleccionada según ACARA (Asociación de Concesionarios de Automotores). El precio final lo definís vos.
-                      </p>
-                    </div>
                   </div>
 
                   {/* Cotización Infoauto - DESHABILITADO TEMPORALMENTE
