@@ -5,6 +5,7 @@ import {
   MapPin, Building2, Phone, Mail, Loader2, ShoppingBag, Plus, Settings,
   Instagram, Facebook, ExternalLink, Trash2, User, Activity,
   Save, Pause, Play, CheckCircle2, Package, Lock, Camera, Upload, Globe,
+  CreditCard,
 } from 'lucide-react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '@/src/lib/firebase';
@@ -277,6 +278,7 @@ export function Profile() {
 
   // Real metrics computed from actual vehicle data
   const activeListings  = Array.isArray(allListings) ? allListings.filter(v => v.status === 'ACTIVE') : [];
+  const pausedListings  = Array.isArray(allListings) ? allListings.filter(v => v.status === 'PAUSED') : [];
   const soldListings    = Array.isArray(allListings) ? allListings.filter(v => v.status === 'SOLD') : [];
   
   const totalViews      = Array.isArray(allListings) ? allListings.reduce((s, v) => s + (Number(v.viewCount) || 0), 0) : 0;

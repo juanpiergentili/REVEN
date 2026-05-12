@@ -59,7 +59,10 @@ export function Publish() {
   const { user } = useAuth();
   const photoUpload = usePhotoUpload();
   const { provincias, localidades, loadingProvincias, loadingLocalidades } = useGeoRef(formData.province);
-  const { brands, models, versions, valuations, loadingBrands, loadingModels, loadingVersions } = useArgAutos(formData.brand, formData.model, formData.version);
+  const { 
+    brands, models, versions, valuations, availableYears, 
+    loadingBrands, loadingModels, loadingVersions, loadingYears 
+  } = useArgAutos(formData.brand, formData.model, formData.version);
   const [versionsForYear, setVersionsForYear] = useState<Version[]>([]);
   const [loadingVersionYear, setLoadingVersionYear] = useState(false);
 
@@ -467,12 +470,12 @@ export function Publish() {
 
                     <div className="space-y-3">
                       <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Año</Label>
-                      <Select value={formData.year} onValueChange={handleYearSelect} disabled={!formData.model}>
+                      <Select value={formData.year} onValueChange={handleYearSelect} disabled={!formData.model || loadingYears}>
                         <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
-                          <SelectValue placeholder="Seleccionar año" />
+                          <SelectValue placeholder={loadingYears ? "Cargando años..." : "Seleccionar año"} />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl max-h-72" alignItemWithTrigger={false}>
-                          {YEARS.map(y => (
+                          {(availableYears.length > 0 ? availableYears : YEARS).map(y => (
                             <SelectItem key={y} value={y}>{y}</SelectItem>
                           ))}
                         </SelectContent>

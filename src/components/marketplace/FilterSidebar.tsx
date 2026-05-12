@@ -82,7 +82,7 @@ function FilterSection({ title, children, defaultOpen = true }: { title: string;
 }
 
 export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }: FilterSidebarProps) {
-  const { brands, models, versions, loadingVersions } = useArgAutos(
+  const { brands, models, versions, availableYears, loadingVersions, loadingYears } = useArgAutos(
     filters.brand !== 'todos' ? filters.brand : undefined,
     filters.model !== 'todos' ? filters.model : undefined
   );
@@ -136,37 +136,6 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
 
       <ScrollArea className="flex-1 pr-4 -mr-4">
         <div className="space-y-6 pb-12">
-        {/* Condición */}
-        <FilterSection title="Condición">
-          <div className="grid grid-cols-2 gap-2">
-            {['0KM', 'USADO'].map(c => (
-              <Button
-                key={c}
-                variant="outline"
-                className={`rounded-xl font-bold text-xs transition-all ${filters.condition === c ? 'bg-primary/15 border-primary text-primary shadow-sm shadow-primary/20' : 'bg-muted border-border text-muted-foreground hover:bg-muted/80 hover:border-primary/40 hover:text-foreground'}`}
-                onClick={() => update('condition', filters.condition === c ? null : c)}
-              >
-                {c}
-              </Button>
-            ))}
-          </div>
-        </FilterSection>
-
-        {/* Tipo de vehículo */}
-        <FilterSection title="Tipo de Vehículo">
-          <Select value={filters.bodyType} onValueChange={v => update('bodyType', v)}>
-            <SelectTrigger className="rounded-xl bg-muted border-border h-11 font-bold text-sm text-foreground hover:border-primary/40 transition-all">
-              <SelectValue placeholder="Todos los tipos" />
-            </SelectTrigger>
-            <SelectContent className="rounded-xl">
-              <SelectItem value="todos">Todos</SelectItem>
-              {BODY_TYPES.map(bt => (
-                <SelectItem key={bt.value} value={bt.value}>{bt.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </FilterSection>
-
         {/* Marca */}
         <FilterSection title="Marca">
           <Select value={filters.brand} onValueChange={v => update('brand', v)}>
@@ -199,6 +168,34 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
           </FilterSection>
         )}
 
+        {/* Año */}
+        <FilterSection title="Año">
+          <div className="flex gap-2">
+            <Select value={filters.yearFrom} onValueChange={v => update('yearFrom', v)} disabled={filters.model !== 'todos' && loadingYears}>
+              <SelectTrigger className="rounded-xl bg-muted border-border h-11 font-bold text-sm text-foreground hover:border-primary/40 transition-all">
+                <SelectValue placeholder={loadingYears ? '...' : 'Desde'} />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl max-h-52">
+                <SelectItem value="">Desde</SelectItem>
+                {(filters.model !== 'todos' && availableYears.length > 0 ? availableYears : years).map(y => (
+                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={filters.yearTo} onValueChange={v => update('yearTo', v)} disabled={filters.model !== 'todos' && loadingYears}>
+              <SelectTrigger className="rounded-xl bg-muted border-border h-11 font-bold text-sm text-foreground hover:border-primary/40 transition-all">
+                <SelectValue placeholder={loadingYears ? '...' : 'Hasta'} />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl max-h-52">
+                <SelectItem value="">Hasta</SelectItem>
+                {(filters.model !== 'todos' && availableYears.length > 0 ? availableYears : years).map(y => (
+                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </FilterSection>
+
         {/* Versión */}
         {filters.model !== 'todos' && (
           <FilterSection title="Versión">
@@ -225,32 +222,35 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
           </FilterSection>
         )}
 
-        {/* Año */}
-        <FilterSection title="Año" defaultOpen={false}>
-          <div className="flex gap-2">
-            <Select value={filters.yearFrom} onValueChange={v => update('yearFrom', v)}>
-              <SelectTrigger className="rounded-xl bg-muted border-border h-11 font-bold text-sm text-foreground hover:border-primary/40 transition-all">
-                <SelectValue placeholder="Desde" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl max-h-52">
-                <SelectItem value="">Desde</SelectItem>
-                {years.map(y => (
-                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={filters.yearTo} onValueChange={v => update('yearTo', v)}>
-              <SelectTrigger className="rounded-xl bg-muted border-border h-11 font-bold text-sm text-foreground hover:border-primary/40 transition-all">
-                <SelectValue placeholder="Hasta" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl max-h-52">
-                <SelectItem value="">Hasta</SelectItem>
-                {years.map(y => (
-                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {/* Condición */}
+        <FilterSection title="Condición" defaultOpen={false}>
+          <div className="grid grid-cols-2 gap-2">
+            {['0KM', 'USADO'].map(c => (
+              <Button
+                key={c}
+                variant="outline"
+                className={`rounded-xl font-bold text-xs transition-all ${filters.condition === c ? 'bg-primary/15 border-primary text-primary shadow-sm shadow-primary/20' : 'bg-muted border-border text-muted-foreground hover:bg-muted/80 hover:border-primary/40 hover:text-foreground'}`}
+                onClick={() => update('condition', filters.condition === c ? null : c)}
+              >
+                {c}
+              </Button>
+            ))}
           </div>
+        </FilterSection>
+
+        {/* Tipo de vehículo */}
+        <FilterSection title="Tipo de Vehículo" defaultOpen={false}>
+          <Select value={filters.bodyType} onValueChange={v => update('bodyType', v)}>
+            <SelectTrigger className="rounded-xl bg-muted border-border h-11 font-bold text-sm text-foreground hover:border-primary/40 transition-all">
+              <SelectValue placeholder="Todos los tipos" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl">
+              <SelectItem value="todos">Todos</SelectItem>
+              {BODY_TYPES.map(bt => (
+                <SelectItem key={bt.value} value={bt.value}>{bt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </FilterSection>
 
         {/* Kilometraje */}

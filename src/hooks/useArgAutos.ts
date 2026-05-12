@@ -153,7 +153,64 @@ export function useArgAutos(selectedBrandName?: string, selectedModelName?: stri
     return () => { cancelled = true; };
   }, [selectedModelId, selectedModelName, selectedBrandId]);
 
-  // 4. Fetch Valuations (ACARA)
+  const [availableYears, setAvailableYears] = useState<string[]>([]);
+  const [loadingYears, setLoadingYears] = useState(false);
+
+  // 4. Fetch Available Years for the Model
+  useEffect(() => {
+    const selectedModel = models.find(m => m.name === selectedModelName);
+    const mId = selectedModel?.id;
+
+    if (!mId) {
+      setAvailableYears([]);
+      return;
+    }
+
+    let cancelled = false;
+    const fetchYears = async () => {
+      setLoadingYears(true);
+      try {
+        let currentVersions = versions;
+        if (versions.length === 0 || versions[0]?.model_id !== mId) {
+          const res = await fetch(`${BASE_URL}/models/${mId}/versions?per_page=100`);
+          const d = await res.json();
+          currentVersions = d.data || [];
+        }
+
+        if (currentVersions.length === 0) {
+          setAvailableYears([]);
+          return;
+        }
+
+        const versionsToFetch = currentVersions.slice(0, 5);
+        const yearSets = await Promise.all(
+          versionsToFetch.map(async (v) => {
+            try {
+              const res = await fetch(`${BASE_URL}/versions/${v.id}/valuations?currency=ars&sources=acara`);
+              const d = await res.json();
+              return (d.data || []).map((val: any) => String(val.year));
+            } catch {
+              return [];
+            }
+          })
+        );
+
+        if (!cancelled) {
+          const allYears = Array.from(new Set(yearSets.flat())).sort((a, b) => b.localeCompare(a));
+          setAvailableYears(allYears);
+        }
+      } catch {
+        setAvailableYears([]);
+      } finally {
+        if (!cancelled) setLoadingYears(false);
+      }
+    };
+
+    fetchYears();
+    return () => { cancelled = true; };
+  }, [selectedModelName, models, versions]);
+
+  // 5. Fetch Valuations (ACARA)
   useEffect(() => {
     if (!selectedVersionId || selectedVersionId >= 10000) {
       setValuations([]);
@@ -177,7 +234,7 @@ export function useArgAutos(selectedBrandName?: string, selectedModelName?: stri
   }, [selectedVersionId]);
 
   return {
-    brands, models, versions, valuations,
-    loadingBrands, loadingModels, loadingVersions, loadingValuations,
+    brands, models, versions, valuations, availableYears,
+    loadingBrands, loadingModels, loadingVersions, loadingValuations, loadingYears,
   };
 }
