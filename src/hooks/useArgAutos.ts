@@ -6,7 +6,14 @@ const BASE_URL = 'https://argautos.com/api/v1';
 export type Brand = { id: number; name: string; slug: string };
 export type AutoModel = { id: number; name: string; slug: string; brand_id: number };
 export type Version = { id: number; name: string; slug: string; model_id: number };
-export type Valuation = { id: number; year: number; price: string; currency: string; acara_price?: string | null };
+export type Valuation = { 
+  id: number; 
+  year: number; 
+  price: string; 
+  currency: string; 
+  acara_price?: string | null;
+  infoauto_price?: string | null;
+};
 
 const STATIC_BRANDS: Brand[] = ARG_BRANDS.map((name, i) => ({
   id: i + 5000,
@@ -169,22 +176,28 @@ export function useArgAutos(
     return () => { cancelled = true; };
   }, [selectedModelId, selectedModelName, selectedBrandId, selectedYear]);
 
-  // 4. Fetch Valuations (ACARA)
+  // 4. Fetch Valuations (Infoauto + ACARA)
   useEffect(() => {
     if (!selectedVersionId || selectedVersionId >= 10000) {
       setValuations([]);
       return;
     }
     setLoadingValuations(true);
-    fetch(`${BASE_URL}/versions/${selectedVersionId}/valuations?currency=ars&sources=acara`)
+    // Requesting both infoauto and acara for better coverage, prioritizing infoauto
+    fetch(`${BASE_URL}/versions/${selectedVersionId}/valuations?currency=ars&sources=infoauto,acara`)
       .then(r => r.json())
       .then(d => {
         if (d.data) {
-          const normalized = d.data.map((v: any) => ({
-            ...v,
-            price: v.price ? Math.round(Number(v.price)).toString() : v.price,
-            acara_price: v.acara_price ? Math.round(Number(v.acara_price)).toString() : v.acara_price
-          }));
+          const normalized = d.data.map((v: any) => {
+            // If infoauto_price is present, we use it as the main price
+            const mainPrice = v.infoauto_price || v.price;
+            return {
+              ...v,
+              price: mainPrice ? Math.round(Number(mainPrice)).toString() : v.price,
+              acara_price: v.acara_price ? Math.round(Number(v.acara_price)).toString() : v.acara_price,
+              infoauto_price: v.infoauto_price ? Math.round(Number(v.infoauto_price)).toString() : v.infoauto_price
+            };
+          });
           setValuations(normalized);
         }
       })

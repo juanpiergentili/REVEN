@@ -901,7 +901,7 @@ export function Publish() {
                         onClick={() => setShowAcara(true)}
                         className="w-full h-14 rounded-2xl font-bold uppercase tracking-widest text-xs border-border hover:border-primary/50 gap-2"
                       >
-                        <TrendingUp className="h-4 w-4" /> Consultar cotización ACARA
+                        <TrendingUp className="h-4 w-4" /> Consultar cotización Infoauto
                       </Button>
                     ) : (
                       <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-4">
@@ -909,14 +909,14 @@ export function Publish() {
                           <div className="bg-primary/10 w-10 h-10 rounded-full flex items-center justify-center">
                             <TrendingUp className="h-5 w-5 text-primary" />
                           </div>
-                          <h3 className="text-xl font-bold tracking-tighter uppercase">Cotización ACARA</h3>
+                          <h3 className="text-xl font-bold tracking-tighter uppercase">Cotización Infoauto</h3>
                         </div>
 
                         {valuations.length > 0 ? (
                           <div className="rounded-2xl border border-border overflow-hidden">
                             <div className="grid grid-cols-3 bg-muted/50 px-6 py-3 border-b border-border">
                               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Año</span>
-                              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-right">Valor ACARA</span>
+                              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-right">Valor Infoauto</span>
                               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-right">Moneda</span>
                             </div>
                             {valuations.map((val) => (
@@ -935,7 +935,7 @@ export function Publish() {
                                   )}
                                 </span>
                                 <span className="font-bold text-right tracking-tighter text-lg">
-                                  $ {val.acara_price ? formatArgentineNumber(val.acara_price) : formatArgentineNumber(val.price)}
+                                  $ {val.infoauto_price ? formatArgentineNumber(val.infoauto_price) : formatArgentineNumber(val.price)}
                                 </span>
                                 <span className="text-right text-xs font-bold text-muted-foreground uppercase">
                                   {val.currency || 'ARS'}
@@ -949,11 +949,11 @@ export function Publish() {
                               <DollarSign className="h-7 w-7 text-muted-foreground" />
                             </div>
                             <div className="space-y-1 max-w-sm">
-                              <p className="font-bold uppercase tracking-tighter">Sin cotización ACARA disponible</p>
+                              <p className="font-bold uppercase tracking-tighter">Sin cotización Infoauto disponible</p>
                               <p className="text-xs text-muted-foreground font-medium">
                                 {!formData.version
                                   ? 'Seleccioná una versión en el paso 1 para consultar cotizaciones.'
-                                  : 'Esta versión aún no tiene cotización ACARA. Podés definir tu precio a continuación.'}
+                                  : 'Esta versión aún no tiene cotización Infoauto. Podés definir tu precio a continuación.'}
                               </p>
                             </div>
                           </div>
