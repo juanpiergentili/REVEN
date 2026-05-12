@@ -12,7 +12,7 @@ import { createWantedSearch, getUserActiveWantedCount } from '@/src/lib/wantedSe
 import { useAuth, db } from '@/src/lib/firebase';
 import { getDoc, doc } from 'firebase/firestore';
 import type { VehicleCondition, Currency, MembershipPlan } from '@/src/types';
-import { PLAN_LIMITS } from '@/src/types';
+import { PLAN_LIMITS, normalizePlan } from '@/src/types';
 import { useEffect } from 'react';
 
 interface Props {
@@ -51,7 +51,7 @@ export function PublishWantedSearch({ open, onClose }: Props) {
         ]);
         setActiveCount(count);
         if (userDoc.exists()) {
-          setUserPlan((userDoc.data()?.plan as MembershipPlan) || 'business');
+          setUserPlan(normalizePlan(userDoc.data()?.plan));
         }
       } catch (err) {
         console.error('Error fetching wanted search data:', err);

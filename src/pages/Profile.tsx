@@ -29,7 +29,7 @@ import { isTrialUser, isTrialExpired, getTrialDaysRemaining, getTrialEndDate, TR
 import { useGeoRef } from '@/src/hooks/useGeoRef';
 import { getVehiclePath } from '@/src/lib/seo';
 import type { Vehicle, MembershipPlan } from '../types';
-import { PLAN_LIMITS } from '../types';
+import { PLAN_LIMITS, normalizePlan } from '../types';
 
 function StatCard({ icon: Icon, label, value, accent = false }: { icon: any; label: string; value: string | number; accent?: boolean }) {
   return (
@@ -283,6 +283,7 @@ export function Profile() {
   const trialUserProfile = isTrialUser(profileData);
   const trialDaysLeft    = getTrialDaysRemaining(profileData);
   const trialEndDate     = getTrialEndDate(profileData);
+  const currentPlan      = normalizePlan(profileData?.plan);
 
   // Real metrics computed from actual vehicle data
   const activeListings  = Array.isArray(allListings) ? allListings.filter(v => v.status === 'ACTIVE') : [];
@@ -293,8 +294,12 @@ export function Profile() {
   const totalContacts   = Array.isArray(allListings) ? allListings.reduce((s, v) => s + (Number(v.contactCount) || 0), 0) : 0;
   
   // Computed Advanced Metrics
-  const conversionRate = totalViews > 0 ? (totalContacts / totalViews) * 100 : 0;
-  const leadQuality = conversionRate > 5 ? 'Alta' : conversionRate > 2 ? 'Media' : 'Baja';
+  // conversionRate now represents the "Closing Rate" (Leads to Sales)
+  const conversionRate = totalContacts > 0 
+    ? (soldListings.length / totalContacts) * 100 
+    : (soldListings.length > 0 ? 100 : 0);
+    
+  const leadQuality = conversionRate > 15 ? 'Alta' : conversionRate > 5 ? 'Media' : 'Baja';
   const rotationIndex = (activeListings.length + soldListings.length) > 0 
     ? (soldListings.length / (activeListings.length + soldListings.length)) * 100 
     : 0;
@@ -479,7 +484,7 @@ export function Profile() {
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             <StatCard icon={Eye}          label="Vistas totales"     value={totalViews}             accent />
             <StatCard icon={MessageSquare} label="Consultas"          value={totalContacts}          />
-            <StatCard icon={TrendingUp}    label="Conv. Lead"         value={`${conversionRate.toFixed(1)}%`} accent />
+            <StatCard icon={TrendingUp}    label="Conv. de Leads"     value={`${conversionRate.toFixed(1)}%`} accent />
             <StatCard icon={Activity}      label="Calidad Lead"       value={leadQuality}            />
             <StatCard icon={Package}      label="Stock activo"        value={activeListings.length}  accent />
             <StatCard icon={CheckCircle2} label="Vendidos"           value={soldListings.length}    />
@@ -520,20 +525,20 @@ export function Profile() {
                 <div className="space-y-2">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Tu Plan Actual</p>
                   <h3 className="text-4xl font-black tracking-tighter uppercase text-primary italic">
-                    {profileData.plan || 'business'}
+                    {currentPlan}
                   </h3>
                 </div>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground font-medium uppercase tracking-widest">Publicaciones de Stock</span>
                     <span className="font-bold">
-                      {activeListings.length} / {PLAN_LIMITS[profileData.plan as MembershipPlan]?.maxVehicles || 5}
+                      {activeListings.length} / {PLAN_LIMITS[currentPlan]?.maxVehicles || 5}
                     </span>
                   </div>
                   <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-primary transition-all duration-1000" 
-                      style={{ width: `${Math.min(100, (activeListings.length / (PLAN_LIMITS[profileData.plan as MembershipPlan]?.maxVehicles || 5)) * 100)}%` }} 
+                      style={{ width: `${Math.min(100, (activeListings.length / (PLAN_LIMITS[currentPlan]?.maxVehicles || 5)) * 100)}%` }} 
                     />
                   </div>
                 </div>
@@ -542,13 +547,13 @@ export function Profile() {
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground font-medium uppercase tracking-widest">Búsquedas (Wanted)</span>
                     <span className="font-bold">
-                      {activeWantedCount} / {PLAN_LIMITS[profileData.plan as MembershipPlan]?.maxWantedSearches || 5}
+                      {activeWantedCount} / {PLAN_LIMITS[currentPlan]?.maxWantedSearches || 5}
                     </span>
                   </div>
                   <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-primary/60 transition-all duration-1000" 
-                      style={{ width: `${Math.min(100, (activeWantedCount / (PLAN_LIMITS[profileData.plan as MembershipPlan]?.maxWantedSearches || 5)) * 100)}%` }} 
+                      style={{ width: `${Math.min(100, (activeWantedCount / (PLAN_LIMITS[currentPlan]?.maxWantedSearches || 5)) * 100)}%` }} 
                     />
                   </div>
                 </div>

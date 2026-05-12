@@ -19,7 +19,7 @@ import { useGeoRef } from '@/src/hooks/useGeoRef';
 import { useArgAutos } from '@/src/hooks/useArgAutos';
 import type { Version } from '@/src/hooks/useArgAutos';
 import type { FuelType, BodyType, Transmission, VehicleCondition, MembershipPlan } from '@/src/types';
-import { PLAN_LIMITS } from '@/src/types';
+import { PLAN_LIMITS, normalizePlan } from '@/src/types';
 import { usePhotoUpload } from '@/src/hooks/usePhotoUpload';
 import { StepEstadoTecnico } from '@/src/components/publish/StepEstadoTecnico';
 import { StepPreview } from '@/src/components/publish/StepPreview';
@@ -335,7 +335,7 @@ export function Publish() {
   const trialDaysLeft  = getTrialDaysRemaining(userProfile);
   const trialEndDate   = getTrialEndDate(userProfile);
   
-  const planName       = (userProfile?.plan || 'business') as keyof typeof PLAN_LIMITS;
+  const planName       = normalizePlan(userProfile?.plan);
   const planMax        = PLAN_LIMITS[planName]?.maxVehicles || 5;
   const atPlanLimit    = !trialExpired && activeListingCount >= planMax;
   const isAtLimit      = trialUser ? (activeListingCount >= TRIAL_MAX_LISTINGS) : atPlanLimit;

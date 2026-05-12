@@ -4,6 +4,15 @@ export type Currency         = 'USD' | 'ARS';
 export type UserRole         = 'ADMIN' | 'DEALERSHIP' | 'USER';
 export type UserStatus       = 'pending' | 'approved' | 'rejected' | 'suspended';
 export type MembershipPlan   = 'business' | 'professional' | 'enterprise';
+
+export function normalizePlan(plan: string | undefined): MembershipPlan {
+  if (!plan) return 'business';
+  const p = plan.toLowerCase();
+  if (p === 'plata' || p === 'business') return 'business';
+  if (p === 'oro' || p === 'professional') return 'professional';
+  if (p === 'platinum' || p === 'enterprise') return 'enterprise';
+  return 'business';
+}
 export type BillingCycle     = 'monthly' | 'annual';
 export type MembershipStatus = 'active' | 'past_due' | 'cancelled' | 'trialing';
 export type ReservationStatus= 'pending' | 'confirmed' | 'cancelled' | 'completed';
