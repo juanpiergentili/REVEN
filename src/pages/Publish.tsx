@@ -893,7 +893,7 @@ export function Publish() {
                     </div>
                   </div>
 
-                  {/* ACARA Valuation Toggle */}
+                  {/* Cotización Infoauto - DESHABILITADO TEMPORALMENTE
                   <div className="border-t border-border pt-6">
                     {!showAcara ? (
                       <Button
@@ -961,6 +961,7 @@ export function Publish() {
                       </motion.div>
                     )}
                   </div>
+                  */}
 
                   <div className="flex flex-col-reverse sm:flex-row justify-between pt-4 gap-4">
                     <Button variant="ghost" onClick={prevStep} className="w-full sm:w-auto h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-muted">
