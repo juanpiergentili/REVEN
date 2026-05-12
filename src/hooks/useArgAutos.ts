@@ -14,16 +14,23 @@ const STATIC_BRANDS: Brand[] = ARG_BRANDS.map((name, i) => ({
   slug: name.toLowerCase().replace(/\s+/g, '-')
 }));
 
-export function useArgAutos(selectedBrandName?: string, selectedModelName?: string, selectedVersionName?: string) {
+export function useArgAutos(
+  selectedBrandName?: string, 
+  selectedModelName?: string, 
+  selectedVersionName?: string,
+  selectedYear?: string | number
+) {
   const [brands, setBrands] = useState<Brand[]>(STATIC_BRANDS);
   const [models, setModels] = useState<AutoModel[]>([]);
   const [versions, setVersions] = useState<Version[]>([]);
   const [valuations, setValuations] = useState<Valuation[]>([]);
+  const [availableYears, setAvailableYears] = useState<string[]>([]);
 
   const [loadingBrands, setLoadingBrands] = useState(false);
   const [loadingModels, setLoadingModels] = useState(false);
   const [loadingVersions, setLoadingVersions] = useState(false);
   const [loadingValuations, setLoadingValuations] = useState(false);
+  const [loadingYears, setLoadingYears] = useState(false);
 
   // 1. Fetch Brands (Fallback to Static)
   useEffect(() => {
@@ -33,7 +40,6 @@ export function useArgAutos(selectedBrandName?: string, selectedModelName?: stri
         const res = await fetch(`${BASE_URL}/brands?per_page=100`);
         const d = await res.json();
         if (d.data && d.data.length > 0) {
-          // Normalize to UPPERCASE to match static brand names stored in filters
           const normalized = d.data
             .map((b: Brand) => ({ ...b, name: b.name.toUpperCase() }))
             .sort((a: Brand, b: Brand) => a.name.localeCompare(b.name));
@@ -65,7 +71,6 @@ export function useArgAutos(selectedBrandName?: string, selectedModelName?: stri
 
     const fetchModels = async () => {
       setLoadingModels(true);
-
       if (selectedBrandId && selectedBrandId < 5000) {
         try {
           const res = await fetch(`${BASE_URL}/brands/${selectedBrandId}/models?per_page=100`);
@@ -82,7 +87,6 @@ export function useArgAutos(selectedBrandName?: string, selectedModelName?: stri
         }
       }
 
-      // Fallback to static DB
       const staticModels = EXPANDED_MODELS[selectedBrandName.toUpperCase()] || [];
       setModels(staticModels.map((name, i) => ({
         id: i + 10000,
@@ -96,31 +100,25 @@ export function useArgAutos(selectedBrandName?: string, selectedModelName?: stri
     fetchModels();
   }, [selectedBrandId, selectedBrandName]);
 
-  // 3. Fetch Versions
-  // Strategy:
-  //   a) If we have a real API model ID (< 10000) → fetch directly.
-  //   b) If model ID is static (>= 10000) but brand has a real API ID → do a name-based
-  //      lookup: re-fetch brand's models from API, find the matching model, then fetch versions.
-  //   c) If brand is also static → no versions available from API.
+  // 3. Fetch Versions & Years
   useEffect(() => {
     if (!selectedModelName) {
       setVersions([]);
+      setAvailableYears([]);
       return;
     }
 
     let cancelled = false;
 
-    const fetchVersions = async () => {
+    const fetchData = async () => {
       setLoadingVersions(true);
+      setLoadingYears(true);
 
       try {
         let modelApiId: number | null = null;
-
-        // Fast path: already have a real model ID
         if (selectedModelId && selectedModelId < 10000) {
           modelApiId = selectedModelId;
         } else if (selectedBrandId && selectedBrandId < 5000) {
-          // Slow path: look up real model ID by name in the API
           const res = await fetch(`${BASE_URL}/brands/${selectedBrandId}/models?per_page=100`);
           const d = await res.json();
           const match = d.data?.find((m: AutoModel) =>
@@ -130,87 +128,48 @@ export function useArgAutos(selectedBrandName?: string, selectedModelName?: stri
         }
 
         if (modelApiId) {
-          const res = await fetch(`${BASE_URL}/models/${modelApiId}/versions?per_page=100`);
+          // Construct URL with year filter and years relation
+          let url = `${BASE_URL}/models/${modelApiId}/versions?per_page=100&relations[]=years`;
+          if (selectedYear !== undefined && selectedYear !== '') {
+            url += `&year=${selectedYear}`;
+          }
+
+          const res = await fetch(url);
           const d = await res.json();
+          
           if (!cancelled && d.data) {
-            setVersions(d.data
-              .map((v: any) => ({ ...v, name: (v.name_raw || v.name.toUpperCase()).replace(/,/g, '.') }))
-              .sort((a: Version, b: Version) => a.name.localeCompare(b.name)));
-            return;
+            const apiVersions = d.data.map((v: any) => ({ 
+              ...v, 
+              name: (v.name_raw || v.name.toUpperCase()).replace(/,/g, '.') 
+            }));
+            
+            setVersions(apiVersions.sort((a: Version, b: Version) => a.name.localeCompare(b.name)));
+
+            // Extract unique years from the relations
+            const allYears = new Set<string>();
+            d.data.forEach((v: any) => {
+              if (v.years && Array.isArray(v.years)) {
+                v.years.forEach((y: any) => allYears.add(String(y.year)));
+              }
+            });
+            setAvailableYears(Array.from(allYears).sort((a, b) => b.localeCompare(a)));
           }
         }
-      } catch {
-        // silent — will fall through to setVersions([])
-      }
-
-      if (!cancelled) setVersions([]);
-    };
-
-    fetchVersions().finally(() => {
-      if (!cancelled) setLoadingVersions(false);
-    });
-
-    return () => { cancelled = true; };
-  }, [selectedModelId, selectedModelName, selectedBrandId]);
-
-  const [availableYears, setAvailableYears] = useState<string[]>([]);
-  const [loadingYears, setLoadingYears] = useState(false);
-
-  // 4. Fetch Available Years for the Model
-  useEffect(() => {
-    const selectedModel = models.find(m => m.name === selectedModelName);
-    const mId = selectedModel?.id;
-
-    if (!mId) {
-      setAvailableYears([]);
-      return;
-    }
-
-    let cancelled = false;
-    const fetchYears = async () => {
-      setLoadingYears(true);
-      try {
-        let currentVersions = versions;
-        if (versions.length === 0 || versions[0]?.model_id !== mId) {
-          const res = await fetch(`${BASE_URL}/models/${mId}/versions?per_page=100`);
-          const d = await res.json();
-          currentVersions = d.data || [];
-        }
-
-        if (currentVersions.length === 0) {
-          setAvailableYears([]);
-          return;
-        }
-
-        const versionsToFetch = currentVersions.slice(0, 5);
-        const yearSets = await Promise.all(
-          versionsToFetch.map(async (v) => {
-            try {
-              const res = await fetch(`${BASE_URL}/versions/${v.id}/valuations?currency=ars&sources=acara`);
-              const d = await res.json();
-              return (d.data || []).map((val: any) => String(val.year));
-            } catch {
-              return [];
-            }
-          })
-        );
-
-        if (!cancelled) {
-          const allYears = Array.from(new Set(yearSets.flat())).sort((a, b) => b.localeCompare(a));
-          setAvailableYears(allYears);
-        }
-      } catch {
-        setAvailableYears([]);
+      } catch (err) {
+        console.error('Error fetching versions/years:', err);
       } finally {
-        if (!cancelled) setLoadingYears(false);
+        if (!cancelled) {
+          setLoadingVersions(false);
+          setLoadingYears(false);
+        }
       }
     };
 
-    fetchYears();
+    fetchData();
     return () => { cancelled = true; };
-  }, [selectedModelName, models, versions]);
+  }, [selectedModelId, selectedModelName, selectedBrandId, selectedYear]);
 
-  // 5. Fetch Valuations (ACARA)
+  // 4. Fetch Valuations (ACARA)
   useEffect(() => {
     if (!selectedVersionId || selectedVersionId >= 10000) {
       setValuations([]);

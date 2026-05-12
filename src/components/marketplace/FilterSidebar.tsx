@@ -84,7 +84,9 @@ function FilterSection({ title, children, defaultOpen = true }: { title: string;
 export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }: FilterSidebarProps) {
   const { brands, models, versions, availableYears, loadingVersions, loadingYears } = useArgAutos(
     filters.brand !== 'todos' ? filters.brand : undefined,
-    filters.model !== 'todos' ? filters.model : undefined
+    filters.model !== 'todos' ? filters.model : undefined,
+    undefined, // selectedVersionName not needed here
+    filters.yearFrom && filters.yearFrom !== '' ? filters.yearFrom : undefined
   );
   const { provincias, localidades } = useGeoRef(
     filters.province !== 'todos' ? filters.province : undefined

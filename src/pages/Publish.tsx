@@ -63,9 +63,7 @@ export function Publish() {
   const { 
     brands, models, versions, valuations, availableYears, 
     loadingBrands, loadingModels, loadingVersions, loadingYears 
-  } = useArgAutos(formData.brand, formData.model, formData.version);
-  const [versionsForYear, setVersionsForYear] = useState<Version[]>([]);
-  const [loadingVersionYear, setLoadingVersionYear] = useState(false);
+  } = useArgAutos(formData.brand, formData.model, formData.version, formData.year);
 
   useEffect(() => {
     if (!user) return;
@@ -108,36 +106,6 @@ export function Publish() {
     fetchActiveCount();
   }, [user, editId]);
 
-  useEffect(() => {
-    setVersionsForYear(versions);
-    if (!formData.year || versions.length === 0) return;
-
-    const yearNum = Number(formData.year);
-    const apiVersions = versions.filter(v => v.id < 10000);
-    if (apiVersions.length === 0) return;
-
-    let cancelled = false;
-    setLoadingVersionYear(true);
-
-    Promise.all(
-      apiVersions.map(v =>
-        fetch(`https://argautos.com/api/v1/versions/${v.id}/valuations?currency=ars&sources=acara`)
-          .then(r => r.json())
-          .then(d => ({ version: v, hasYear: (d.data || []).some((val: any) => Number(val.year) === yearNum) }))
-          .catch(() => ({ version: v, hasYear: true }))
-      )
-    ).then(results => {
-      if (cancelled) return;
-      const matched = results.filter(r => r.hasYear).map(r => r.version);
-      const staticVersions = versions.filter(v => v.id >= 10000);
-      const combined = [...matched, ...staticVersions].sort((a, b) => a.name.localeCompare(b.name));
-      setVersionsForYear(combined.length > 0 ? combined : versions);
-    }).finally(() => {
-      if (!cancelled) setLoadingVersionYear(false);
-    });
-
-    return () => { cancelled = true; };
-  }, [versions, formData.year]);
 
   // Load existing vehicle data if editing
   useEffect(() => {
@@ -521,16 +489,25 @@ export function Publish() {
 
                     <div className="space-y-3">
                       <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Versión</Label>
-                      <Select value={formData.version} onValueChange={handleVersionSelect} disabled={!formData.year || loadingVersions || loadingVersionYear}>
+                      <Select 
+                        value={formData.version} 
+                        onValueChange={v => update('version', v)}
+                        disabled={loadingVersions}
+                      >
                         <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
-                          <SelectValue placeholder={loadingVersions || loadingVersionYear ? "Cargando..." : "Seleccionar versión"} />
+                          <SelectValue placeholder={loadingVersions ? "Cargando versiones..." : "Seleccionar versión"} />
                         </SelectTrigger>
-                        <SelectContent className="rounded-xl max-h-72" alignItemWithTrigger={false}>
-                          {versionsForYear.map(v => (
-                            <SelectItem key={v.name} value={v.name}>{v.name}</SelectItem>
+                        <SelectContent className="rounded-xl max-h-80">
+                          {versions.map(v => (
+                            <SelectItem key={v.id} value={v.name}>{v.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
+                      {!loadingVersions && versions.length === 0 && formData.model && (
+                        <p className="text-[10px] text-muted-foreground/50 font-medium text-center pt-1">
+                          Sin versiones encontradas para este modelo y año
+                        </p>
+                      )}
                     </div>
 
                     <div className="space-y-3">
