@@ -18,6 +18,7 @@ import { db, useAuth } from '@/src/lib/firebase';
 import type { Vehicle } from '@/src/types';
 import { extractIdFromSlug } from '@/src/lib/seo';
 import { addPointsToAgency } from '@/src/lib/gamification';
+import { convertTimestamp } from '@/src/lib/firebase';
 
 
 export function VehicleDetail() {
@@ -40,29 +41,60 @@ export function VehicleDetail() {
   const id = slug ? extractIdFromSlug(slug) : undefined;
 
   useEffect(() => {
-    if (!id) { setNotFound(true); setLoading(false); return; }
+    if (!id) {
+      console.warn('[VehicleDetail] No ID found in slug:', slug);
+      setNotFound(true);
+      setLoading(false);
+      return;
+    }
+
+    console.log('[VehicleDetail] Fetching vehicle with ID:', id);
+
+    let isMounted = true;
+    const timeoutId = setTimeout(() => {
+      if (isMounted && loading) {
+        console.error('[VehicleDetail] Fetch timeout for ID:', id);
+        setLoading(false);
+        setNotFound(true);
+      }
+    }, 10000); // 10s safety timeout
 
     async function fetchVehicle() {
       try {
         const snap = await getDoc(doc(db, 'vehicles', id));
+        if (!isMounted) return;
+
         if (snap.exists()) {
           const data = snap.data();
-          setVehicle({ ...data, id: snap.id } as Vehicle);
+          console.log('[VehicleDetail] Vehicle found:', data.brand, data.model);
+          setVehicle({
+            ...data,
+            id: snap.id,
+            createdAt: convertTimestamp(data.createdAt)
+          } as Vehicle);
           updateDoc(snap.ref, { viewCount: increment(1) }).catch(() => {});
           setLoading(false);
           return;
         }
 
+        console.warn('[VehicleDetail] Vehicle not found in Firestore:', id);
         setNotFound(true);
         setLoading(false);
       } catch (err) {
-        setNotFound(true);
-        setLoading(false);
+        console.error('[VehicleDetail] Error fetching vehicle:', err);
+        if (isMounted) {
+          setNotFound(true);
+          setLoading(false);
+        }
       }
     }
 
     fetchVehicle();
-  }, [id]);
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
+  }, [id, slug]);
 
   const isOwner = !!user && !!vehicle && vehicle.sellerId === user.uid;
 
