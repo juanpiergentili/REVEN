@@ -363,7 +363,7 @@ export const PLAN_LIMITS: Record<MembershipPlan, { maxVehicles: number; maxWante
 };
 
 export const PLAN_PRICES: Record<MembershipPlan, { monthly: number; annual: number }> = {
-  business:     { monthly: 120,  annual: 999  },
-  professional: { monthly: 180,  annual: 1500 },
-  enterprise:   { monthly: 300,  annual: 2500 },
+  business:     { monthly: 200000, annual: 1920000 },
+  professional: { monthly: 350000, annual: 3360000 },
+  enterprise:   { monthly: 500000, annual: 4800000 },
 };

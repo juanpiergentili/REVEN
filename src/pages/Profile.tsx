@@ -29,7 +29,11 @@ import { isTrialUser, isTrialExpired, getTrialDaysRemaining, getTrialEndDate, TR
 import { useGeoRef } from '@/src/hooks/useGeoRef';
 import { getVehiclePath } from '@/src/lib/seo';
 import type { Vehicle, MembershipPlan } from '../types';
-import { PLAN_LIMITS, normalizePlan } from '../types';
+import { PLAN_LIMITS, normalizePlan, PLAN_PRICES } from '../types';
+
+function formatARS(amount: number) {
+  return `$ ${amount.toLocaleString('es-AR')}`;
+}
 
 function StatCard({ icon: Icon, label, value, accent = false }: { icon: any; label: string; value: string | number; accent?: boolean }) {
   return (
@@ -581,9 +585,13 @@ export function Profile() {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[
-                    { id: 'professional', name: 'Professional', price: '180', color: 'text-yellow-400', border: 'border-yellow-500/20' },
-                    { id: 'enterprise', name: 'Enterprise', price: '300', color: 'text-primary', border: 'border-primary/20' }
-                  ].map(p => (
+                    { id: 'professional', name: 'Professional', color: 'text-yellow-400', border: 'border-yellow-500/20' },
+                    { id: 'enterprise', name: 'Enterprise', color: 'text-primary', border: 'border-primary/20' }
+                  ].filter(p => {
+                    if (currentPlan === 'business') return true;
+                    if (currentPlan === 'professional') return p.id === 'enterprise';
+                    return false;
+                  }).map(p => (
                     <div key={p.id} className={`bg-card p-6 rounded-3xl border ${p.border} hover:scale-[1.02] transition-transform cursor-pointer group`}
                       onClick={() => handleUpgrade(p.id, 'monthly')}>
                       <div className="flex justify-between items-start mb-4">
@@ -591,7 +599,7 @@ export function Profile() {
                         <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                       <div className="space-y-1">
-                        <p className="text-3xl font-black tracking-tighter">${p.price}<span className="text-sm text-muted-foreground font-bold">/mes</span></p>
+                        <p className="text-3xl font-black tracking-tighter">{formatARS(PLAN_PRICES[p.id as MembershipPlan].monthly)}<span className="text-sm text-muted-foreground font-bold">/mes</span></p>
                         <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">Pago seguro vía MercadoPago</p>
                       </div>
                       <Button variant="outline" className="w-full mt-6 rounded-2xl font-bold uppercase tracking-widest text-[10px] h-11 border-border group-hover:bg-primary group-hover:text-primary-foreground transition-all">

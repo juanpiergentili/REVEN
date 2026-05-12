@@ -34,7 +34,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { subscribeToVehicles } from '@/src/lib/vehicles';
-import { Vehicle } from '@/src/types';
+import { Vehicle, PLAN_PRICES } from '@/src/types';
 import { useGeoRef } from '@/src/hooks/useGeoRef';
 
 const SUPER_ADMINS = ['lucas.ferreyra@gmail.com'];
@@ -67,11 +67,6 @@ const FAQ_ITEMS = [
   { q: '¿Puedo usar REVEN si ya uso otro sistema de gestión?', a: 'Sí. REVEN funciona como canal de venta adicional, complementario a cualquier sistema de gestión que ya uses.' },
 ];
 
-const PLAN_PRICES = {
-  business: { monthly: 200000, annual: 1920000 },
-  profesional: { monthly: 350000, annual: 3360000 },
-  platinum: { monthly: 500000, annual: 4800000 },
-};
 
 function formatARS(amount: number) {
   return `$ ${amount.toLocaleString('es-AR')}`;
@@ -466,13 +461,13 @@ export function Home() {
       cta: 'SOLICITÁ TU ACCESO',
     },
     {
-      key: 'profesional', displayName: 'PROFESIONAL', ...PLAN_PRICES.profesional, popular: true,
+      key: 'professional', displayName: 'PROFESIONAL', ...PLAN_PRICES.professional, popular: true,
       promo: null as string | null,
       features: ['Hasta 15 autos publicados', 'Concesionarias medianas', '15 destacados por mes', 'Datos completos', 'Alertas personalizadas', '3 usuarios', 'Contacto directo B2B'],
       cta: 'SOLICITÁ TU ACCESO',
     },
     {
-      key: 'platinum', displayName: 'ENTERPRISE', ...PLAN_PRICES.platinum, popular: false,
+      key: 'enterprise', displayName: 'ENTERPRISE', ...PLAN_PRICES.enterprise, popular: false,
       promo: null as string | null,
       features: ['Autos ilimitados', 'Grupos automotrices', 'Destacados ilimitados', 'Acceso API', 'Alertas personalizadas', 'Usuarios ilimitados', 'Account manager'],
       cta: 'SOLICITÁ ACCESO',
