@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -276,16 +276,18 @@ export function Profile() {
   const trialEndDate     = getTrialEndDate(profileData);
 
   // Real metrics computed from actual vehicle data
-  const activeListings  = allListings.filter(v => v.status === 'ACTIVE');
-  const pausedListings  = allListings.filter(v => v.status === 'PAUSED');
-  const soldListings    = allListings.filter(v => v.status === 'SOLD');
-  const totalViews      = allListings.reduce((s, v) => s + (v.viewCount || 0), 0);
-  const totalContacts   = allListings.reduce((s, v) => s + (v.contactCount || 0), 0);
+  const activeListings  = Array.isArray(allListings) ? allListings.filter(v => v.status === 'ACTIVE') : [];
+  const soldListings    = Array.isArray(allListings) ? allListings.filter(v => v.status === 'SOLD') : [];
+  
+  const totalViews      = Array.isArray(allListings) ? allListings.reduce((s, v) => s + (Number(v.viewCount) || 0), 0) : 0;
+  const totalContacts   = Array.isArray(allListings) ? allListings.reduce((s, v) => s + (Number(v.contactCount) || 0), 0) : 0;
   
   // Computed Advanced Metrics
   const conversionRate = totalViews > 0 ? (totalContacts / totalViews) * 100 : 0;
   const leadQuality = conversionRate > 5 ? 'Alta' : conversionRate > 2 ? 'Media' : 'Baja';
-  const rotationIndex = activeListings.length > 0 ? (soldListings.length / (activeListings.length + soldListings.length)) * 100 : 0;
+  const rotationIndex = (activeListings.length + soldListings.length) > 0 
+    ? (soldListings.length / (activeListings.length + soldListings.length)) * 100 
+    : 0;
 
   // For public profiles only show active listings
   const visibleListings = isOwnProfile ? allListings : activeListings;
