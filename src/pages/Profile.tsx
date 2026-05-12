@@ -23,11 +23,13 @@ import { getResponseBadge } from '@/src/lib/analytics';
 import { useAuth, db } from '@/src/lib/firebase';
 import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { getVehiclesBySeller, updateVehicleStatus, pauseAllSellerListings, deleteVehicle } from '@/src/lib/vehicles';
+import { getUserActiveWantedCount } from '@/src/lib/wantedSearches';
 import { addPointsToAgency, getAgencyTier, getTierColor } from '@/src/lib/gamification';
 import { isTrialUser, isTrialExpired, getTrialDaysRemaining, getTrialEndDate, TRIAL_MAX_LISTINGS } from '@/src/lib/trial';
 import { useGeoRef } from '@/src/hooks/useGeoRef';
 import { getVehiclePath } from '@/src/lib/seo';
-import type { Vehicle } from '../types';
+import type { Vehicle, MembershipPlan } from '../types';
+import { PLAN_LIMITS } from '../types';
 
 function StatCard({ icon: Icon, label, value, accent = false }: { icon: any; label: string; value: string | number; accent?: boolean }) {
   return (
@@ -69,6 +71,7 @@ export function Profile() {
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
   const [soldDialogVehicle, setSoldDialogVehicle] = useState<Vehicle | null>(null);
   const [isAddingPoints, setIsAddingPoints] = useState(false);
+  const [activeWantedCount, setActiveWantedCount] = useState(0);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
@@ -121,6 +124,11 @@ export function Profile() {
           vehicles = vehicles.map(v => v.status === 'ACTIVE' ? { ...v, status: 'PAUSED' as Vehicle['status'] } : v);
         }
         setAllListings(vehicles);
+        
+        if (isOwnProfile) {
+          const wantedCount = await getUserActiveWantedCount(targetUid);
+          setActiveWantedCount(wantedCount);
+        }
       } catch (err) {
         console.error('Error fetching profile:', err);
       } finally {
@@ -484,7 +492,9 @@ export function Profile() {
                 </div>
                 <div>
                   <p className="font-bold uppercase tracking-widest text-[10px] text-muted-foreground">Índice de Rotación</p>
-                  <p className="text-2xl font-black tracking-tighter">{rotationIndex.toFixed(0)}% de efectividad</p>
+                  <p className="text-2xl font-semibold tracking-tighter lowercase">
+                    {rotationIndex.toFixed(0)}% de efectividad
+                  </p>
                 </div>
               </div>
               <div className="flex gap-2">
@@ -510,18 +520,35 @@ export function Profile() {
                 <div className="space-y-2">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Tu Plan Actual</p>
                   <h3 className="text-4xl font-black tracking-tighter uppercase text-primary italic">
-                    {profileData.plan || 'Plata'}
+                    {profileData.plan || 'business'}
                   </h3>
                 </div>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground font-medium uppercase tracking-widest">Publicaciones</span>
-                    <span className="font-bold">{activeListings.length} / {profileData.plan === 'platinum' ? '150' : profileData.plan === 'oro' ? '25' : '5'}</span>
+                    <span className="text-muted-foreground font-medium uppercase tracking-widest">Publicaciones de Stock</span>
+                    <span className="font-bold">
+                      {activeListings.length} / {PLAN_LIMITS[profileData.plan as MembershipPlan]?.maxVehicles || 5}
+                    </span>
                   </div>
                   <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-primary transition-all duration-1000" 
-                      style={{ width: `${(activeListings.length / (profileData.plan === 'platinum' ? 150 : profileData.plan === 'oro' ? 25 : 5)) * 100}%` }} 
+                      style={{ width: `${Math.min(100, (activeListings.length / (PLAN_LIMITS[profileData.plan as MembershipPlan]?.maxVehicles || 5)) * 100)}%` }} 
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground font-medium uppercase tracking-widest">Búsquedas (Wanted)</span>
+                    <span className="font-bold">
+                      {activeWantedCount} / {PLAN_LIMITS[profileData.plan as MembershipPlan]?.maxWantedSearches || 5}
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-primary/60 transition-all duration-1000" 
+                      style={{ width: `${Math.min(100, (activeWantedCount / (PLAN_LIMITS[profileData.plan as MembershipPlan]?.maxWantedSearches || 5)) * 100)}%` }} 
                     />
                   </div>
                 </div>
@@ -549,11 +576,11 @@ export function Profile() {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[
-                    { name: 'oro', price: '180', color: 'text-yellow-400', border: 'border-yellow-500/20' },
-                    { name: 'platinum', price: '300', color: 'text-primary', border: 'border-primary/20' }
+                    { id: 'professional', name: 'Professional', price: '180', color: 'text-yellow-400', border: 'border-yellow-500/20' },
+                    { id: 'enterprise', name: 'Enterprise', price: '300', color: 'text-primary', border: 'border-primary/20' }
                   ].map(p => (
-                    <div key={p.name} className={`bg-card p-6 rounded-3xl border ${p.border} hover:scale-[1.02] transition-transform cursor-pointer group`}
-                      onClick={() => handleUpgrade(p.name, 'monthly')}>
+                    <div key={p.id} className={`bg-card p-6 rounded-3xl border ${p.border} hover:scale-[1.02] transition-transform cursor-pointer group`}
+                      onClick={() => handleUpgrade(p.id, 'monthly')}>
                       <div className="flex justify-between items-start mb-4">
                         <Badge className={`${p.color} bg-white/5 border-current uppercase font-black tracking-widest text-[9px]`}>{p.name}</Badge>
                         <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />

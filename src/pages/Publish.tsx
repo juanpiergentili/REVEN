@@ -18,7 +18,8 @@ import { BODY_TYPES, FUEL_TYPES, TRANSMISSIONS, COLORS } from '@/src/data/vehicl
 import { useGeoRef } from '@/src/hooks/useGeoRef';
 import { useArgAutos } from '@/src/hooks/useArgAutos';
 import type { Version } from '@/src/hooks/useArgAutos';
-import type { FuelType, BodyType, Transmission, VehicleCondition } from '@/src/types';
+import type { FuelType, BodyType, Transmission, VehicleCondition, MembershipPlan } from '@/src/types';
+import { PLAN_LIMITS } from '@/src/types';
 import { usePhotoUpload } from '@/src/hooks/usePhotoUpload';
 import { StepEstadoTecnico } from '@/src/components/publish/StepEstadoTecnico';
 import { StepPreview } from '@/src/components/publish/StepPreview';
@@ -87,6 +88,24 @@ export function Publish() {
       }
     };
     fetchProfile();
+  }, [user, editId]);
+
+  useEffect(() => {
+    if (!user || editId) return;
+    const fetchActiveCount = async () => {
+      try {
+        const q = query(
+          collection(db, 'vehicles'),
+          where('sellerId', '==', user.uid),
+          where('status', '==', 'ACTIVE')
+        );
+        const snap = await getDocs(q);
+        setActiveListingCount(snap.size);
+      } catch (e) {
+        console.error('Error fetching active count', e);
+      }
+    };
+    fetchActiveCount();
   }, [user, editId]);
 
   useEffect(() => {
@@ -315,7 +334,11 @@ export function Publish() {
   const trialUser      = isTrialUser(userProfile);
   const trialDaysLeft  = getTrialDaysRemaining(userProfile);
   const trialEndDate   = getTrialEndDate(userProfile);
-  const atTrialLimit   = trialUser && !trialExpired && activeListingCount >= TRIAL_MAX_LISTINGS;
+  
+  const planName       = (userProfile?.plan || 'business') as keyof typeof PLAN_LIMITS;
+  const planMax        = PLAN_LIMITS[planName]?.maxVehicles || 5;
+  const atPlanLimit    = !trialExpired && activeListingCount >= planMax;
+  const isAtLimit      = trialUser ? (activeListingCount >= TRIAL_MAX_LISTINGS) : atPlanLimit;
 
   if (loadingEdit) {
     return (
@@ -368,34 +391,34 @@ export function Publish() {
         </Card>
       )}
 
-      {!trialExpired && atTrialLimit && (
+      {!trialExpired && isAtLimit && (
         <Card className="border-yellow-500/20 bg-card backdrop-blur-xl shadow-2xl rounded-[3.5rem] overflow-hidden">
           <CardContent className="p-10 flex flex-col items-center text-center space-y-6">
             <div className="w-20 h-20 rounded-full bg-yellow-500/10 flex items-center justify-center">
               <Clock className="h-10 w-10 text-yellow-400" />
             </div>
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold tracking-tighter uppercase">Límite de prueba alcanzado</h2>
+              <h2 className="text-2xl font-bold tracking-tighter uppercase">Límite alcanzado</h2>
               <p className="text-muted-foreground font-medium max-w-md">
-                Tu período de prueba permite un máximo de <span className="text-foreground font-bold">{TRIAL_MAX_LISTINGS} publicaciones activas</span> simultáneas.
+                Tu plan <span className="text-primary font-bold uppercase">{planName}</span> permite un máximo de <span className="text-foreground font-bold">{planMax} publicaciones activas</span> simultáneas.
               </p>
               <p className="text-muted-foreground font-medium max-w-md">
-                Pausá una publicación existente para liberar un espacio, o activá tu plan para publicar sin límites.
+                Pausá una publicación existente para liberar un espacio, o mejorá tu plan para publicar más unidades.
               </p>
             </div>
             <div className="flex gap-3">
               <Button variant="outline" onClick={() => navigate('/profile')} className="rounded-full px-8 h-12 font-bold uppercase tracking-widest border-border">
                 Gestionar stock
               </Button>
-              <Button onClick={() => navigate('/')} className="rounded-full px-8 h-12 font-black uppercase tracking-widest shadow-lg shadow-primary/20">
-                Ver planes
+              <Button onClick={() => navigate('/profile')} className="rounded-full px-8 h-12 font-black uppercase tracking-widest shadow-lg shadow-primary/20">
+                Mejorar Plan
               </Button>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {!trialExpired && !atTrialLimit && (
+      {!trialExpired && !isAtLimit && (
         <>
           {trialUser && (
             <div className="mb-8 flex items-center justify-between gap-4 px-6 py-4 rounded-2xl bg-primary/5 border border-primary/20">
@@ -408,6 +431,20 @@ export function Publish() {
               <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground shrink-0">
                 {trialDaysLeft} día{trialDaysLeft !== 1 ? 's' : ''} restante{trialDaysLeft !== 1 ? 's' : ''}
               </span>
+            </div>
+          )}
+
+          {!trialUser && userProfile?.plan && (
+            <div className="mb-8 flex items-center justify-between gap-4 px-6 py-4 rounded-2xl bg-primary/5 border border-primary/20">
+              <div className="flex items-center gap-3">
+                <TrendingUp className="h-4 w-4 text-primary shrink-0" />
+                <span className="text-sm font-bold">
+                  Plan {planName} — {activeListingCount}/{planMax} publicaciones activas
+                </span>
+              </div>
+              <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-widest border-primary/20 text-primary">
+                Suscripción Activa
+              </Badge>
             </div>
           )}
 

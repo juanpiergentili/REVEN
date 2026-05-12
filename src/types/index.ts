@@ -3,7 +3,7 @@
 export type Currency         = 'USD' | 'ARS';
 export type UserRole         = 'ADMIN' | 'DEALERSHIP' | 'USER';
 export type UserStatus       = 'pending' | 'approved' | 'rejected' | 'suspended';
-export type MembershipPlan   = 'plata' | 'oro' | 'platinum' | 'enterprise';
+export type MembershipPlan   = 'business' | 'professional' | 'enterprise';
 export type BillingCycle     = 'monthly' | 'annual';
 export type MembershipStatus = 'active' | 'past_due' | 'cancelled' | 'trialing';
 export type ReservationStatus= 'pending' | 'confirmed' | 'cancelled' | 'completed';
@@ -347,16 +347,14 @@ export interface Notification {
 
 // ─── Plan limits (constantes de negocio) ─────────────────────────────────────
 
-export const PLAN_LIMITS: Record<MembershipPlan, { maxVehicles: number; canFeatureListing: boolean }> = {
-  plata:      { maxVehicles: 5,   canFeatureListing: false },
-  oro:        { maxVehicles: 25,  canFeatureListing: true  },
-  platinum:   { maxVehicles: 150, canFeatureListing: true  },
-  enterprise: { maxVehicles: Infinity, canFeatureListing: true },
+export const PLAN_LIMITS: Record<MembershipPlan, { maxVehicles: number; maxWantedSearches: number; canFeatureListing: boolean }> = {
+  business:     { maxVehicles: 5,   maxWantedSearches: 5,   canFeatureListing: false },
+  professional: { maxVehicles: 15,  maxWantedSearches: 15,  canFeatureListing: true  },
+  enterprise:   { maxVehicles: 150, maxWantedSearches: 150, canFeatureListing: true  },
 };
 
 export const PLAN_PRICES: Record<MembershipPlan, { monthly: number; annual: number }> = {
-  plata:      { monthly: 120,  annual: 999  },
-  oro:        { monthly: 180,  annual: 1500 },
-  platinum:   { monthly: 300,  annual: 2500 },
-  enterprise: { monthly: 0,    annual: 0    }, // precio a consultar
+  business:     { monthly: 120,  annual: 999  },
+  professional: { monthly: 180,  annual: 1500 },
+  enterprise:   { monthly: 300,  annual: 2500 },
 };
