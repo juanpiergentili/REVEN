@@ -480,7 +480,12 @@ export function Publish() {
                           <SelectValue placeholder={loadingYears ? "Cargando años..." : "Seleccionar año"} />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl max-h-72" alignItemWithTrigger={false}>
-                          {(availableYears.length > 0 ? availableYears : YEARS).map(y => (
+                          {(availableYears.length > 0 
+                            ? availableYears 
+                            : (['BYD', 'BAIC', 'HAVAL', 'JETOUR', 'GAC', 'FORTHING', 'SKYWELL'].includes(formData.brand) 
+                                ? YEARS.filter(y => Number(y) >= 2010) 
+                                : YEARS)
+                          ).map(y => (
                             <SelectItem key={y} value={y}>{y}</SelectItem>
                           ))}
                         </SelectContent>

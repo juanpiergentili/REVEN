@@ -107,18 +107,72 @@ export function useArgAutos(
     fetchModels();
   }, [selectedBrandId, selectedBrandName]);
 
-  // 3. Fetch Versions & Years
+  // 3. Fetch Versions (Depends on Model + Year)
   useEffect(() => {
     if (!selectedModelName) {
       setVersions([]);
+      return;
+    }
+
+    let cancelled = false;
+
+    const fetchVersions = async () => {
+      setLoadingVersions(true);
+
+      try {
+        let modelApiId: number | null = null;
+        if (selectedModelId && selectedModelId < 10000) {
+          modelApiId = selectedModelId;
+        } else if (selectedBrandId && selectedBrandId < 5000) {
+          const res = await fetch(`${BASE_URL}/brands/${selectedBrandId}/models?per_page=100`);
+          const d = await res.json();
+          const match = d.data?.find((m: AutoModel) =>
+            m.name.toLowerCase() === selectedModelName.toLowerCase()
+          );
+          if (match) modelApiId = match.id;
+        }
+
+        if (modelApiId) {
+          let url = `${BASE_URL}/models/${modelApiId}/versions?per_page=100`;
+          if (selectedYear !== undefined && selectedYear !== '') {
+            url += `&year=${selectedYear}`;
+          }
+
+          const res = await fetch(url);
+          const d = await res.json();
+          
+          if (!cancelled && d.data) {
+            const apiVersions = d.data.map((v: any) => ({ 
+              ...v, 
+              name: (v.name_raw || v.name.toUpperCase()).replace(/,/g, '.') 
+            }));
+            
+            setVersions(apiVersions.sort((a: Version, b: Version) => a.name.localeCompare(b.name)));
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching versions:', err);
+      } finally {
+        if (!cancelled) {
+          setLoadingVersions(false);
+        }
+      }
+    };
+
+    fetchVersions();
+    return () => { cancelled = true; };
+  }, [selectedModelId, selectedModelName, selectedBrandId, selectedYear]);
+
+  // 4. Fetch Available Years for Model (Independent of selectedYear)
+  useEffect(() => {
+    if (!selectedModelName) {
       setAvailableYears([]);
       return;
     }
 
     let cancelled = false;
 
-    const fetchData = async () => {
-      setLoadingVersions(true);
+    const fetchYears = async () => {
       setLoadingYears(true);
 
       try {
@@ -135,46 +189,35 @@ export function useArgAutos(
         }
 
         if (modelApiId) {
-          // Construct URL with year filter and years relation
-          let url = `${BASE_URL}/models/${modelApiId}/versions?per_page=100&relations[]=years`;
-          if (selectedYear !== undefined && selectedYear !== '') {
-            url += `&year=${selectedYear}`;
-          }
-
+          // Fetch ALL versions with years relation to populate the dropdown
+          const url = `${BASE_URL}/models/${modelApiId}/versions?per_page=100&relations[]=years`;
           const res = await fetch(url);
           const d = await res.json();
           
           if (!cancelled && d.data) {
-            const apiVersions = d.data.map((v: any) => ({ 
-              ...v, 
-              name: (v.name_raw || v.name.toUpperCase()).replace(/,/g, '.') 
-            }));
-            
-            setVersions(apiVersions.sort((a: Version, b: Version) => a.name.localeCompare(b.name)));
-
-            // Extract unique years from the relations
             const allYears = new Set<string>();
             d.data.forEach((v: any) => {
               if (v.years && Array.isArray(v.years)) {
                 v.years.forEach((y: any) => allYears.add(String(y.year)));
               }
             });
-            setAvailableYears(Array.from(allYears).sort((a, b) => b.localeCompare(a)));
+            const sortedYears = Array.from(allYears).sort((a, b) => b.localeCompare(a));
+            console.log(`[useArgAutos] Found ${sortedYears.length} years for model ${selectedModelName}`);
+            setAvailableYears(sortedYears);
           }
         }
       } catch (err) {
-        console.error('Error fetching versions/years:', err);
+        console.error('Error fetching available years:', err);
       } finally {
         if (!cancelled) {
-          setLoadingVersions(false);
           setLoadingYears(false);
         }
       }
     };
 
-    fetchData();
+    fetchYears();
     return () => { cancelled = true; };
-  }, [selectedModelId, selectedModelName, selectedBrandId, selectedYear]);
+  }, [selectedModelId, selectedModelName, selectedBrandId]);
 
   // 4. Fetch Valuations (Infoauto + ACARA)
   useEffect(() => {
