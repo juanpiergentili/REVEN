@@ -1,7 +1,7 @@
 import { motion, AnimatePresence, useScroll, useTransform } from 'motion/react';
 import {
   Zap, Check, ArrowRight, ShieldCheck, FileText, Loader2,
-  Users, Shield, CreditCard, Plus, MapPin, Loader, Instagram, Upload, Camera
+  Users, Shield, CreditCard, Plus, MapPin, Loader, Instagram, Upload, Camera, CheckCircle2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,8 +34,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { subscribeToVehicles } from '@/src/lib/vehicles';
-import { Vehicle } from '@/src/types';
+import { Vehicle, PLAN_PRICES } from '@/src/types';
 import { useGeoRef } from '@/src/hooks/useGeoRef';
+
+const SUPER_ADMINS = ['lucas.ferreyra@gmail.com'];
 
 const SOLUTIONS_LEFT = [
   { icon: Zap, title: 'COMUNICACIÓN DIRECTA', desc: 'Chau grupos ruidosos. Chat interno directo con vendedores reales y stock activo.' },
@@ -65,11 +67,6 @@ const FAQ_ITEMS = [
   { q: '¿Puedo usar REVEN si ya uso otro sistema de gestión?', a: 'Sí. REVEN funciona como canal de venta adicional, complementario a cualquier sistema de gestión que ya uses.' },
 ];
 
-const PLAN_PRICES = {
-  business: { monthly: 200000, annual: 1920000 },
-  profesional: { monthly: 350000, annual: 3360000 },
-  platinum: { monthly: 500000, annual: 4800000 },
-};
 
 function formatARS(amount: number) {
   return `$ ${amount.toLocaleString('es-AR')}`;
@@ -186,6 +183,7 @@ export function Home() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [isAdmissionOpen, setIsAdmissionOpen] = useState(false);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -195,8 +193,9 @@ export function Home() {
 
   const handleAdmissionOpenChange = (open: boolean) => {
     setIsAdmissionOpen(open);
-    if (!open && searchParams.get('register') === 'true') {
-      navigate('/', { replace: true });
+    if (!open) {
+      setRegistrationSuccess(false);
+      if (searchParams.get('register') === 'true') navigate('/', { replace: true });
     }
   };
 
@@ -239,44 +238,134 @@ export function Home() {
   const [cuitError, setCuitError] = useState('');
   const [estadoCuit, setEstadoCuit] = useState('');
 
+  // Validación local del dígito verificador CUIT/CUIL argentino
+  const isValidCuitFormat = (cuit: string): boolean => {
+    const c = cuit.replace(/\D/g, '');
+    if (c.length !== 11) return false;
+    const mult = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];
+    const sum = mult.reduce((acc, m, i) => acc + parseInt(c[i]) * m, 0);
+    const rem = sum % 11;
+    const dv = rem === 0 ? 0 : rem === 1 ? 9 : 11 - rem;
+    return dv === parseInt(c[10]);
+  };
+
   const checkCuit = async (val: string) => {
     const cleanCuit = val.replace(/\D/g, '');
     if (cleanCuit.length !== 11) return;
+
+    // Validación de formato antes de llamar a la API
+    if (!isValidCuitFormat(cleanCuit)) {
+      setCuitStatus('INVALID');
+      setCuitError('El CUIT/CUIL ingresado no es válido.');
+      return;
+    }
 
     setIsCheckingCuit(true);
     setCuitError('');
     setCuitStatus('CHECKING');
     
     try {
-      const apiKey = import.meta.env.VITE_CUITALIZER_API_KEY || '';
-      const response = await fetch('https://api.cuitalizer.com.ar/api/v1/contribuyente/consultar', {
+      const apiKey = import.meta.env.VITE_AFIP_API_KEY || '';
+      if (!apiKey) throw new Error('API Key de AFIP no configurada');
+
+      // Detectar si tenemos cert y key para prod
+      const cert = import.meta.env.VITE_AFIP_CERT;
+      const key = import.meta.env.VITE_AFIP_KEY;
+      const cuit = import.meta.env.VITE_AFIP_CUIT || '20409378472';
+      const envMode = cert && key ? 'prod' : 'dev';
+
+      // 1. Obtener Token y Sign
+      const authRes = await fetch('https://app.afipsdk.com/api/v1/afip/auth', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          ...(apiKey && { 'X-API-Key': apiKey })
+          'Authorization': `Bearer ${apiKey}`
         },
-        body: JSON.stringify({ cuit: cleanCuit }),
+        body: JSON.stringify({
+          environment: envMode,
+          tax_id: cuit,
+          wsid: 'ws_sr_padron_a13',
+          ...(cert && key ? { cert, key } : {})
+        })
       });
 
-      if (!response.ok) throw new Error('Error en validación');
-      const data = await response.json();
-      const info = data.data || data;
-      const nombre = info.razonSocial || info.razon_social || info.nombre || '';
-      const estado = info.estadoVigencia || info.estado || info.estadoClave || '';
+      if (!authRes.ok) throw new Error('Error en autenticación AFIP');
+      const authData = await authRes.json();
       
-      if (nombre) {
-        setCompany(nombre);
+      if (!authData.token || !authData.sign) {
+        throw new Error('No se pudo obtener el token de AFIP');
+      }
+
+      // 2. Consultar Padrón
+      const padronRes = await fetch('https://app.afipsdk.com/api/v1/afip/requests', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          environment: envMode,
+          tax_id: cuit,
+          wsid: 'ws_sr_padron_a13',
+          method: 'getPersona',
+          params: {
+            token: authData.token,
+            sign: authData.sign,
+            cuitRepresentada: Number(cuit),
+            idPersona: Number(cleanCuit)
+          }
+        })
+      });
+
+      if (!padronRes.ok) throw new Error('Error en validación AFIP');
+      const data = await padronRes.json();
+      
+      // Manejar posibles errores del SDK
+      if (data.code && data.message) {
+        throw new Error(data.message);
+      }
+
+      // Función auxiliar para buscar recursivamente en el JSON de respuesta
+      const findDeep = (obj: any, key: string): any => {
+        if (!obj || typeof obj !== 'object') return null;
+        if (key in obj) return obj[key];
+        for (const k in obj) {
+          const res = findDeep(obj[k], key);
+          if (res) return res;
+        }
+        return null;
+      };
+
+      const nombre = findDeep(data, 'razonSocial') || findDeep(data, 'nombre') || '';
+      const apellido = findDeep(data, 'apellido') || '';
+      const estado = findDeep(data, 'estadoClave') || '';
+      
+      const nombreCompleto = apellido ? `${nombre} ${apellido}`.trim() : nombre;
+
+      if (nombreCompleto) {
+        setCompany(nombreCompleto);
         setEstadoCuit(estado);
         setCuitStatus('VALID');
         if (estado && !['ACTIVA', 'ACTIVO'].includes(estado.toUpperCase())) {
-          setCuitError(`Estado en ARCA: ${estado} (Se requiere activo)`);
+          setCuitError(`Estado en AFIP: ${estado} (Se requiere activo)`);
         }
       } else {
-        throw new Error('CUIT no encontrado');
+        throw new Error('CUIT no encontrado en AFIP');
       }
-    } catch (e) {
-      setCuitStatus('INVALID');
-      setCuitError('CUIT no válido o no encontrado');
+    } catch (e: any) {
+      const msg: string = e.message || '';
+      const isNotFound = msg.toLowerCase().includes('inexistente') || msg.toLowerCase().includes('no encontrado en afip');
+      
+      if (isNotFound) {
+        // CUIT no existe en AFIP → bloquear
+        setCuitStatus('INVALID');
+        setCuitError('CUIT no encontrado en AFIP. Verificá el número ingresado.');
+      } else {
+        // Error de conexión/API → degradación elegante, permitir ingreso manual
+        setCuitStatus('IDLE');
+        setCuitError('No se pudo verificar en AFIP. Completá la razón social manualmente.');
+      }
+      console.warn('[AFIP SDK]', msg);
     } finally {
       setIsCheckingCuit(false);
     }
@@ -330,18 +419,26 @@ export function Home() {
         logoUrl = await getDownloadURL(logoRef);
       }
 
+      const isSuperAdmin = SUPER_ADMINS.includes(email.toLowerCase());
+
       await setDoc(doc(db, 'users', user.uid), {
         uid: user.uid, email, name, lastName, cuil, phone, company,
         plan, billingCycle, discountCode: appliedCoupon ?? null,
-        trialDays: isFreeTrial ? 60 : null, role: 'USER', status: 'pending',
+        trialDays: isFreeTrial ? 60 : null, 
+        role: isSuperAdmin ? 'ADMIN' : 'USER', 
+        status: isSuperAdmin ? 'active' : 'pending',
         province: regProvince, city: regCity,
         instagram: instagramUser || null,
         avatarUrl: logoUrl,
         logoUrl,
         createdAt: serverTimestamp(),
       });
-      setIsAdmissionOpen(false);
-      navigate('/login');
+      
+      // Asegurar que el scroll vuelva arriba para ver el éxito
+      const scrollArea = document.querySelector('[role="dialog"] [data-radix-scroll-area-viewport]');
+      if (scrollArea) scrollArea.scrollTop = 0;
+      
+      setRegistrationSuccess(true);
     } catch (err: any) {
       if (err.code === 'auth/email-already-in-use') setError('El email ya se encuentra registrado. Intentá iniciar sesión.');
       else if (err.code === 'auth/weak-password') setError('La contraseña debe tener al menos 6 caracteres.');
@@ -364,13 +461,13 @@ export function Home() {
       cta: 'SOLICITÁ TU ACCESO',
     },
     {
-      key: 'profesional', displayName: 'PROFESIONAL', ...PLAN_PRICES.profesional, popular: true,
+      key: 'professional', displayName: 'PROFESIONAL', ...PLAN_PRICES.professional, popular: true,
       promo: null as string | null,
       features: ['Hasta 15 autos publicados', 'Concesionarias medianas', '15 destacados por mes', 'Datos completos', 'Alertas personalizadas', '3 usuarios', 'Contacto directo B2B'],
       cta: 'SOLICITÁ TU ACCESO',
     },
     {
-      key: 'platinum', displayName: 'ENTERPRISE', ...PLAN_PRICES.platinum, popular: false,
+      key: 'enterprise', displayName: 'ENTERPRISE', ...PLAN_PRICES.enterprise, popular: false,
       promo: null as string | null,
       features: ['Autos ilimitados', 'Grupos automotrices', 'Destacados ilimitados', 'Acceso API', 'Alertas personalizadas', 'Usuarios ilimitados', 'Account manager'],
       cta: 'SOLICITÁ ACCESO',
@@ -437,7 +534,7 @@ export function Home() {
 
             <p className="text-base md:text-lg text-white font-light max-w-lg leading-relaxed">
               Marketplace exclusivo B2B, solo para profesionales verificados.<br />
-              Sin intermediarios. Sin público final. Solo negocios reales.
+              Sin intermediarios. Solo negocios reales.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 pt-2">
@@ -682,7 +779,7 @@ export function Home() {
                   </p>
                   <div className="flex items-baseline gap-1">
                     <span className={`text-3xl md:text-4xl font-bold tracking-tighter ${p.popular ? 'text-primary-foreground' : 'text-white'}`}>
-                      {formatARS(billingCycle === 'annual' ? (p.key === 'platinum' ? 500000 : p.annual) : (p.key === 'platinum' ? 500000 : p.monthly))}
+                      {formatARS(billingCycle === 'annual' ? p.annual : p.monthly)}
                     </span>
                     <span className={`text-xs font-bold uppercase ${p.popular ? 'text-primary-foreground/60' : 'text-white/40'}`}>
                       / {billingCycle === 'annual' ? 'año' : 'mes'}
@@ -695,7 +792,7 @@ export function Home() {
                   )}
                   {!p.promo && billingCycle === 'annual' && (
                     <p className={`text-[10px] font-bold uppercase tracking-wider mt-2 ${p.popular ? 'text-primary-foreground/70' : 'text-primary'}`}>
-                      AHORRÁS {formatARS(p.monthly * 12 - (p.key === 'platinum' ? 500000 : p.annual))}
+                      AHORRÁS {formatARS(p.monthly * 12 - p.annual)}
                     </p>
                   )}
                 </div>
@@ -818,7 +915,51 @@ export function Home() {
               </div>
             </div>
 
-            <div className="md:col-span-8 lg:col-span-9 p-8 md:p-12 bg-background/50">
+            <div className="md:col-span-8 lg:col-span-9 p-8 md:p-12 bg-background/50 flex flex-col">
+
+              {registrationSuccess ? (
+                /* ── SUCCESS / PENDING SCREEN ───────────────────── */
+                <div className="flex flex-col items-center justify-center flex-1 py-12 text-center space-y-8 animate-in fade-in duration-500">
+                  <div className="relative">
+                    <div className="h-28 w-28 rounded-full bg-primary/10 border-2 border-primary/30 flex items-center justify-center shadow-[0_0_60px_rgba(34,197,94,0.15)]">
+                      <CheckCircle2 className="h-14 w-14 text-primary" />
+                    </div>
+                    <div className="absolute inset-0 rounded-full animate-ping bg-primary/10 opacity-60" />
+                  </div>
+
+                  <div className="space-y-3 max-w-sm">
+                    <h2 className="text-3xl font-black tracking-tighter uppercase">¡Solicitud enviada!</h2>
+                    <p className="text-muted-foreground text-sm font-light leading-relaxed">
+                      Tu cuenta para <span className="text-white font-bold">{company}</span> está siendo revisada por nuestro equipo.
+                      Te notificaremos por email cuando sea aprobada.
+                    </p>
+                  </div>
+
+                  <div className="w-full max-w-sm space-y-3">
+                    {[
+                      { step: '01', text: 'Solicitud recibida', done: true },
+                      { step: '02', text: 'Verificación en curso', done: false },
+                      { step: '03', text: 'Acceso habilitado', done: false },
+                    ].map((item) => (
+                      <div key={item.step} className={`flex items-center gap-4 p-4 rounded-xl border ${item.done ? 'border-primary/30 bg-primary/5' : 'border-border bg-background/30'}`}>
+                        <span className={`text-[10px] font-black tracking-widest ${item.done ? 'text-primary' : 'text-muted-foreground'}`}>{item.step}</span>
+                        <span className={`text-xs font-bold uppercase tracking-widest ${item.done ? 'text-white' : 'text-muted-foreground'}`}>{item.text}</span>
+                        {item.done && <CheckCircle2 className="h-4 w-4 text-primary ml-auto" />}
+                      </div>
+                    ))}
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    className="rounded-full px-8 h-11 text-[10px] font-black uppercase tracking-widest border-border"
+                    onClick={() => handleAdmissionOpenChange(false)}
+                  >
+                    Cerrar
+                  </Button>
+                </div>
+              ) : (
+              /* ── FORM ────────────────────────────────────────── */
+              <>
               <DialogHeader className="mb-10 text-left">
                 <DialogTitle className="text-3xl md:text-5xl font-black tracking-tighter uppercase leading-none">Solicitud de Admisión</DialogTitle>
                 <DialogDescription className="font-medium text-sm font-light text-muted-foreground/80 mt-3 text-white">Completá tus datos profesionales para iniciar el proceso de verificación.</DialogDescription>
@@ -829,6 +970,7 @@ export function Home() {
               )}
 
               <form className="space-y-6" onSubmit={handleAdmissionSubmit}>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="pop-name" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Nombre del Dueño / Apoderado</Label>
@@ -1049,6 +1191,8 @@ export function Home() {
                   {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : 'ENVIAR SOLICITUD'}
                 </Button>
               </form>
+              </>
+              )}
             </div>
           </div>
         </DialogContent>

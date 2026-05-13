@@ -18,7 +18,8 @@ import { BODY_TYPES, FUEL_TYPES, TRANSMISSIONS, COLORS } from '@/src/data/vehicl
 import { useGeoRef } from '@/src/hooks/useGeoRef';
 import { useArgAutos } from '@/src/hooks/useArgAutos';
 import type { Version } from '@/src/hooks/useArgAutos';
-import type { FuelType, BodyType, Transmission, VehicleCondition } from '@/src/types';
+import type { FuelType, BodyType, Transmission, VehicleCondition, MembershipPlan } from '@/src/types';
+import { PLAN_LIMITS, normalizePlan } from '@/src/types';
 import { usePhotoUpload } from '@/src/hooks/usePhotoUpload';
 import { StepEstadoTecnico } from '@/src/components/publish/StepEstadoTecnico';
 import { StepPreview } from '@/src/components/publish/StepPreview';
@@ -59,9 +60,10 @@ export function Publish() {
   const { user } = useAuth();
   const photoUpload = usePhotoUpload();
   const { provincias, localidades, loadingProvincias, loadingLocalidades } = useGeoRef(formData.province);
-  const { brands, models, versions, valuations, loadingBrands, loadingModels, loadingVersions } = useArgAutos(formData.brand, formData.model, formData.version);
-  const [versionsForYear, setVersionsForYear] = useState<Version[]>([]);
-  const [loadingVersionYear, setLoadingVersionYear] = useState(false);
+  const { 
+    brands, models, versions, valuations, availableYears, 
+    loadingBrands, loadingModels, loadingVersions, loadingYears 
+  } = useArgAutos(formData.brand, formData.model, formData.version, formData.year);
 
   useEffect(() => {
     if (!user) return;
@@ -87,35 +89,23 @@ export function Publish() {
   }, [user, editId]);
 
   useEffect(() => {
-    setVersionsForYear(versions);
-    if (!formData.year || versions.length === 0) return;
+    if (!user || editId) return;
+    const fetchActiveCount = async () => {
+      try {
+        const q = query(
+          collection(db, 'vehicles'),
+          where('sellerId', '==', user.uid),
+          where('status', '==', 'ACTIVE')
+        );
+        const snap = await getDocs(q);
+        setActiveListingCount(snap.size);
+      } catch (e) {
+        console.error('Error fetching active count', e);
+      }
+    };
+    fetchActiveCount();
+  }, [user, editId]);
 
-    const yearNum = Number(formData.year);
-    const apiVersions = versions.filter(v => v.id < 10000);
-    if (apiVersions.length === 0) return;
-
-    let cancelled = false;
-    setLoadingVersionYear(true);
-
-    Promise.all(
-      apiVersions.map(v =>
-        fetch(`https://argautos.com/api/v1/versions/${v.id}/valuations?currency=ars&sources=acara`)
-          .then(r => r.json())
-          .then(d => ({ version: v, hasYear: (d.data || []).some((val: any) => Number(val.year) === yearNum) }))
-          .catch(() => ({ version: v, hasYear: true }))
-      )
-    ).then(results => {
-      if (cancelled) return;
-      const matched = results.filter(r => r.hasYear).map(r => r.version);
-      const staticVersions = versions.filter(v => v.id >= 10000);
-      const combined = [...matched, ...staticVersions].sort((a, b) => a.name.localeCompare(b.name));
-      setVersionsForYear(combined.length > 0 ? combined : versions);
-    }).finally(() => {
-      if (!cancelled) setLoadingVersionYear(false);
-    });
-
-    return () => { cancelled = true; };
-  }, [versions, formData.year]);
 
   // Load existing vehicle data if editing
   useEffect(() => {
@@ -312,7 +302,11 @@ export function Publish() {
   const trialUser      = isTrialUser(userProfile);
   const trialDaysLeft  = getTrialDaysRemaining(userProfile);
   const trialEndDate   = getTrialEndDate(userProfile);
-  const atTrialLimit   = trialUser && !trialExpired && activeListingCount >= TRIAL_MAX_LISTINGS;
+  
+  const planName       = normalizePlan(userProfile?.plan);
+  const planMax        = PLAN_LIMITS[planName]?.maxVehicles || 5;
+  const atPlanLimit    = !trialExpired && activeListingCount >= planMax;
+  const isAtLimit      = trialUser ? (activeListingCount >= TRIAL_MAX_LISTINGS) : atPlanLimit;
 
   if (loadingEdit) {
     return (
@@ -365,34 +359,34 @@ export function Publish() {
         </Card>
       )}
 
-      {!trialExpired && atTrialLimit && (
+      {!trialExpired && isAtLimit && (
         <Card className="border-yellow-500/20 bg-card backdrop-blur-xl shadow-2xl rounded-[3.5rem] overflow-hidden">
           <CardContent className="p-10 flex flex-col items-center text-center space-y-6">
             <div className="w-20 h-20 rounded-full bg-yellow-500/10 flex items-center justify-center">
               <Clock className="h-10 w-10 text-yellow-400" />
             </div>
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold tracking-tighter uppercase">Límite de prueba alcanzado</h2>
+              <h2 className="text-2xl font-bold tracking-tighter uppercase">Límite alcanzado</h2>
               <p className="text-muted-foreground font-medium max-w-md">
-                Tu período de prueba permite un máximo de <span className="text-foreground font-bold">{TRIAL_MAX_LISTINGS} publicaciones activas</span> simultáneas.
+                Tu plan <span className="text-primary font-bold uppercase">{planName}</span> permite un máximo de <span className="text-foreground font-bold">{planMax} publicaciones activas</span> simultáneas.
               </p>
               <p className="text-muted-foreground font-medium max-w-md">
-                Pausá una publicación existente para liberar un espacio, o activá tu plan para publicar sin límites.
+                Pausá una publicación existente para liberar un espacio, o mejorá tu plan para publicar más unidades.
               </p>
             </div>
             <div className="flex gap-3">
               <Button variant="outline" onClick={() => navigate('/profile')} className="rounded-full px-8 h-12 font-bold uppercase tracking-widest border-border">
                 Gestionar stock
               </Button>
-              <Button onClick={() => navigate('/')} className="rounded-full px-8 h-12 font-black uppercase tracking-widest shadow-lg shadow-primary/20">
-                Ver planes
+              <Button onClick={() => navigate('/profile')} className="rounded-full px-8 h-12 font-black uppercase tracking-widest shadow-lg shadow-primary/20">
+                Mejorar Plan
               </Button>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {!trialExpired && !atTrialLimit && (
+      {!trialExpired && !isAtLimit && (
         <>
           {trialUser && (
             <div className="mb-8 flex items-center justify-between gap-4 px-6 py-4 rounded-2xl bg-primary/5 border border-primary/20">
@@ -405,6 +399,20 @@ export function Publish() {
               <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground shrink-0">
                 {trialDaysLeft} día{trialDaysLeft !== 1 ? 's' : ''} restante{trialDaysLeft !== 1 ? 's' : ''}
               </span>
+            </div>
+          )}
+
+          {!trialUser && userProfile?.plan && (
+            <div className="mb-8 flex items-center justify-between gap-4 px-6 py-4 rounded-2xl bg-primary/5 border border-primary/20">
+              <div className="flex items-center gap-3">
+                <TrendingUp className="h-4 w-4 text-primary shrink-0" />
+                <span className="text-sm font-bold">
+                  Plan {planName} — {activeListingCount}/{planMax} publicaciones activas
+                </span>
+              </div>
+              <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-widest border-primary/20 text-primary">
+                Suscripción Activa
+              </Badge>
             </div>
           )}
 
@@ -467,12 +475,17 @@ export function Publish() {
 
                     <div className="space-y-3">
                       <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Año</Label>
-                      <Select value={formData.year} onValueChange={handleYearSelect} disabled={!formData.model}>
+                      <Select value={formData.year} onValueChange={handleYearSelect} disabled={!formData.model || loadingYears}>
                         <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
-                          <SelectValue placeholder="Seleccionar año" />
+                          <SelectValue placeholder={loadingYears ? "Cargando años..." : "Seleccionar año"} />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl max-h-72" alignItemWithTrigger={false}>
-                          {YEARS.map(y => (
+                          {(availableYears.length > 0 
+                            ? availableYears 
+                            : (['BYD', 'BAIC', 'HAVAL', 'JETOUR', 'GAC', 'FORTHING', 'SKYWELL'].includes(formData.brand) 
+                                ? YEARS.filter(y => Number(y) >= 2010) 
+                                : YEARS)
+                          ).map(y => (
                             <SelectItem key={y} value={y}>{y}</SelectItem>
                           ))}
                         </SelectContent>
@@ -481,16 +494,25 @@ export function Publish() {
 
                     <div className="space-y-3">
                       <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Versión</Label>
-                      <Select value={formData.version} onValueChange={handleVersionSelect} disabled={!formData.year || loadingVersions || loadingVersionYear}>
+                      <Select 
+                        value={formData.version} 
+                        onValueChange={v => update('version', v)}
+                        disabled={loadingVersions}
+                      >
                         <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
-                          <SelectValue placeholder={loadingVersions || loadingVersionYear ? "Cargando..." : "Seleccionar versión"} />
+                          <SelectValue placeholder={loadingVersions ? "Cargando versiones..." : "Seleccionar versión"} />
                         </SelectTrigger>
-                        <SelectContent className="rounded-xl max-h-72" alignItemWithTrigger={false}>
-                          {versionsForYear.map(v => (
-                            <SelectItem key={v.name} value={v.name}>{v.name}</SelectItem>
+                        <SelectContent className="rounded-xl max-h-80">
+                          {versions.map(v => (
+                            <SelectItem key={v.id} value={v.name}>{v.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
+                      {!loadingVersions && versions.length === 0 && formData.model && (
+                        <p className="text-[10px] text-muted-foreground/50 font-medium text-center pt-1">
+                          Sin versiones encontradas para este modelo y año
+                        </p>
+                      )}
                     </div>
 
                     <div className="space-y-3">
@@ -868,15 +890,9 @@ export function Publish() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/50 border border-border">
-                      <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                      <p className="text-xs text-muted-foreground font-medium leading-relaxed">
-                        Valores de referencia del mercado para la versión seleccionada según ACARA (Asociación de Concesionarios de Automotores). El precio final lo definís vos.
-                      </p>
-                    </div>
                   </div>
 
-                  {/* ACARA Valuation Toggle */}
+                  {/* Cotización Infoauto - DESHABILITADO TEMPORALMENTE
                   <div className="border-t border-border pt-6">
                     {!showAcara ? (
                       <Button
@@ -884,7 +900,7 @@ export function Publish() {
                         onClick={() => setShowAcara(true)}
                         className="w-full h-14 rounded-2xl font-bold uppercase tracking-widest text-xs border-border hover:border-primary/50 gap-2"
                       >
-                        <TrendingUp className="h-4 w-4" /> Consultar cotización ACARA
+                        <TrendingUp className="h-4 w-4" /> Consultar cotización Infoauto
                       </Button>
                     ) : (
                       <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-4">
@@ -892,14 +908,14 @@ export function Publish() {
                           <div className="bg-primary/10 w-10 h-10 rounded-full flex items-center justify-center">
                             <TrendingUp className="h-5 w-5 text-primary" />
                           </div>
-                          <h3 className="text-xl font-bold tracking-tighter uppercase">Cotización ACARA</h3>
+                          <h3 className="text-xl font-bold tracking-tighter uppercase">Cotización Infoauto</h3>
                         </div>
 
                         {valuations.length > 0 ? (
                           <div className="rounded-2xl border border-border overflow-hidden">
                             <div className="grid grid-cols-3 bg-muted/50 px-6 py-3 border-b border-border">
                               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Año</span>
-                              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-right">Valor ACARA</span>
+                              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-right">Valor Infoauto</span>
                               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-right">Moneda</span>
                             </div>
                             {valuations.map((val) => (
@@ -918,7 +934,7 @@ export function Publish() {
                                   )}
                                 </span>
                                 <span className="font-bold text-right tracking-tighter text-lg">
-                                  $ {val.acara_price ? formatArgentineNumber(val.acara_price) : formatArgentineNumber(val.price)}
+                                  $ {val.infoauto_price ? formatArgentineNumber(val.infoauto_price) : formatArgentineNumber(val.price)}
                                 </span>
                                 <span className="text-right text-xs font-bold text-muted-foreground uppercase">
                                   {val.currency || 'ARS'}
@@ -932,11 +948,11 @@ export function Publish() {
                               <DollarSign className="h-7 w-7 text-muted-foreground" />
                             </div>
                             <div className="space-y-1 max-w-sm">
-                              <p className="font-bold uppercase tracking-tighter">Sin cotización ACARA disponible</p>
+                              <p className="font-bold uppercase tracking-tighter">Sin cotización Infoauto disponible</p>
                               <p className="text-xs text-muted-foreground font-medium">
                                 {!formData.version
                                   ? 'Seleccioná una versión en el paso 1 para consultar cotizaciones.'
-                                  : 'Esta versión aún no tiene cotización ACARA. Podés definir tu precio a continuación.'}
+                                  : 'Esta versión aún no tiene cotización Infoauto. Podés definir tu precio a continuación.'}
                               </p>
                             </div>
                           </div>
@@ -944,6 +960,7 @@ export function Publish() {
                       </motion.div>
                     )}
                   </div>
+                  */}
 
                   <div className="flex flex-col-reverse sm:flex-row justify-between pt-4 gap-4">
                     <Button variant="ghost" onClick={prevStep} className="w-full sm:w-auto h-14 px-8 rounded-full font-bold uppercase tracking-tighter text-lg gap-2 hover:bg-muted">

@@ -3,8 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ChevronLeft, Eye, MessageSquare, Clock, BarChart3, TrendingUp, Award,
   MapPin, Building2, Phone, Mail, Loader2, ShoppingBag, Plus, Settings,
-  Instagram, Facebook, ExternalLink, Trash2, User,
+  Instagram, Facebook, ExternalLink, Trash2, User, Activity,
   Save, Pause, Play, CheckCircle2, Package, Lock, Camera, Upload, Globe,
+  CreditCard,
 } from 'lucide-react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '@/src/lib/firebase';
@@ -12,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,11 +23,17 @@ import { getResponseBadge } from '@/src/lib/analytics';
 import { useAuth, db } from '@/src/lib/firebase';
 import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { getVehiclesBySeller, updateVehicleStatus, pauseAllSellerListings, deleteVehicle } from '@/src/lib/vehicles';
+import { getUserActiveWantedCount } from '@/src/lib/wantedSearches';
 import { addPointsToAgency, getAgencyTier, getTierColor } from '@/src/lib/gamification';
 import { isTrialUser, isTrialExpired, getTrialDaysRemaining, getTrialEndDate, TRIAL_MAX_LISTINGS } from '@/src/lib/trial';
 import { useGeoRef } from '@/src/hooks/useGeoRef';
 import { getVehiclePath } from '@/src/lib/seo';
-import type { Vehicle } from '../types';
+import type { Vehicle, MembershipPlan } from '../types';
+import { PLAN_LIMITS, normalizePlan, PLAN_PRICES } from '../types';
+
+function formatARS(amount: number) {
+  return `$ ${amount.toLocaleString('es-AR')}`;
+}
 
 function StatCard({ icon: Icon, label, value, accent = false }: { icon: any; label: string; value: string | number; accent?: boolean }) {
   return (
@@ -59,6 +66,8 @@ export function Profile() {
   const { uid } = useParams<{ uid: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
+  const [showUpgradeRequested, setShowUpgradeRequested] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [profileData, setProfileData] = useState<any>(null);
@@ -68,6 +77,7 @@ export function Profile() {
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
   const [soldDialogVehicle, setSoldDialogVehicle] = useState<Vehicle | null>(null);
   const [isAddingPoints, setIsAddingPoints] = useState(false);
+  const [activeWantedCount, setActiveWantedCount] = useState(0);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
@@ -120,6 +130,11 @@ export function Profile() {
           vehicles = vehicles.map(v => v.status === 'ACTIVE' ? { ...v, status: 'PAUSED' as Vehicle['status'] } : v);
         }
         setAllListings(vehicles);
+        
+        if (isOwnProfile) {
+          const wantedCount = await getUserActiveWantedCount(targetUid);
+          setActiveWantedCount(wantedCount);
+        }
       } catch (err) {
         console.error('Error fetching profile:', err);
       } finally {
@@ -168,6 +183,35 @@ export function Profile() {
     } catch (err: any) {
       console.error('Error updating profile:', err);
       setEditError(err?.message || 'Error al guardar. Verificá tu conexión e intentá de nuevo.');
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handleUpgrade = async (plan: any, cycle: 'monthly' | 'annual') => {
+    if (!user) return;
+    setEditLoading(true);
+    try {
+      // Create membership record
+      const { createMembership } = await import('@/src/lib/memberships');
+      await createMembership({
+        userId: user.uid,
+        plan: plan,
+        billingCycle: cycle,
+        discountPercent: profileData.discountCode === 'REVENFREE60' ? 100 : 0,
+        discountCode: profileData.discountCode
+      });
+      
+      // Instead of immediate activation, set a pending status for admin approval
+      await updateDoc(doc(db, 'users', user.uid), {
+        pendingPlanUpgrade: plan,
+        pendingBillingCycle: cycle,
+        upgradeRequestedAt: new Date()
+      });
+      
+      setShowUpgradeRequested(true);
+    } catch (err) {
+      console.error('Error upgrading plan:', err);
     } finally {
       setEditLoading(false);
     }
@@ -245,13 +289,26 @@ export function Profile() {
   const trialUserProfile = isTrialUser(profileData);
   const trialDaysLeft    = getTrialDaysRemaining(profileData);
   const trialEndDate     = getTrialEndDate(profileData);
+  const currentPlan      = normalizePlan(profileData?.plan);
 
   // Real metrics computed from actual vehicle data
-  const activeListings  = allListings.filter(v => v.status === 'ACTIVE');
-  const pausedListings  = allListings.filter(v => v.status === 'PAUSED');
-  const soldListings    = allListings.filter(v => v.status === 'SOLD');
-  const totalViews      = allListings.reduce((s, v) => s + (v.viewCount || 0), 0);
-  const totalContacts   = allListings.reduce((s, v) => s + (v.contactCount || 0), 0);
+  const activeListings  = Array.isArray(allListings) ? allListings.filter(v => v.status === 'ACTIVE') : [];
+  const pausedListings  = Array.isArray(allListings) ? allListings.filter(v => v.status === 'PAUSED') : [];
+  const soldListings    = Array.isArray(allListings) ? allListings.filter(v => v.status === 'SOLD') : [];
+  
+  const totalViews      = Array.isArray(allListings) ? allListings.reduce((s, v) => s + (Number(v.viewCount) || 0), 0) : 0;
+  const totalContacts   = Array.isArray(allListings) ? allListings.reduce((s, v) => s + (Number(v.contactCount) || 0), 0) : 0;
+  
+  // Computed Advanced Metrics
+  // conversionRate now represents the "Closing Rate" (Leads to Sales)
+  const conversionRate = totalContacts > 0 
+    ? (soldListings.length / totalContacts) * 100 
+    : (soldListings.length > 0 ? 100 : 0);
+    
+  const leadQuality = conversionRate > 15 ? 'Alta' : conversionRate > 5 ? 'Media' : 'Baja';
+  const rotationIndex = (activeListings.length + soldListings.length) > 0 
+    ? (soldListings.length / (activeListings.length + soldListings.length)) * 100 
+    : 0;
 
   // For public profiles only show active listings
   const visibleListings = isOwnProfile ? allListings : activeListings;
@@ -430,13 +487,172 @@ export function Profile() {
               {isOwnProfile ? 'Métricas de tu Concesionaria' : 'Estadísticas del Vendedor'}
             </h2>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             <StatCard icon={Eye}          label="Vistas totales"     value={totalViews}             accent />
-            <StatCard icon={MessageSquare} label="Consultas recibidas" value={totalContacts}          />
+            <StatCard icon={MessageSquare} label="Consultas"          value={totalContacts}          />
+            <StatCard icon={TrendingUp}    label="Conv. de Leads"     value={`${conversionRate.toFixed(1)}%`} accent />
+            <StatCard icon={Activity}      label="Calidad Lead"       value={leadQuality}            />
             <StatCard icon={Package}      label="Stock activo"        value={activeListings.length}  accent />
-            <StatCard icon={CheckCircle2} label="Unidades vendidas"   value={soldListings.length}    />
+            <StatCard icon={CheckCircle2} label="Vendidos"           value={soldListings.length}    />
           </div>
+          {isOwnProfile && (
+            <div className="mt-6 p-6 rounded-3xl border border-primary/10 bg-primary/5 flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                  <BarChart3 className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <p className="font-bold uppercase tracking-widest text-[10px] text-muted-foreground">Índice de Rotación</p>
+                  <p className="text-2xl font-semibold tracking-tighter lowercase">
+                    {rotationIndex.toFixed(0)}% de efectividad
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Badge variant="outline" className="rounded-full px-4 py-1.5 border-primary/20 text-primary font-bold uppercase tracking-widest text-[9px]">ROI Positivo</Badge>
+                <Badge variant="outline" className="rounded-full px-4 py-1.5 border-emerald-500/20 text-emerald-400 font-bold uppercase tracking-widest text-[9px]">Market Fit</Badge>
+              </div>
+            </div>
+          )}
         </div>
+
+        {isOwnProfile && (
+          <div className="mb-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <h2 className="text-2xl font-bold tracking-tighter uppercase flex items-center gap-3 mb-8">
+              <CreditCard className="h-6 w-6 text-primary" />
+              Plan y Suscripción
+            </h2>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Current Plan Info */}
+              <div className="lg:col-span-1 bg-card border border-border rounded-[2.5rem] p-8 space-y-6 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform">
+                  <Award className="h-24 w-24 text-primary" />
+                </div>
+                <div className="space-y-2">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Tu Plan Actual</p>
+                  <h3 className="text-4xl font-black tracking-tighter uppercase text-primary italic">
+                    {currentPlan}
+                  </h3>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground font-medium uppercase tracking-widest">Publicaciones de Stock</span>
+                    <span className="font-bold">
+                      {activeListings.length} / {PLAN_LIMITS[currentPlan]?.maxVehicles || 5}
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-primary transition-all duration-1000" 
+                      style={{ width: `${Math.min(100, (activeListings.length / (PLAN_LIMITS[currentPlan]?.maxVehicles || 5)) * 100)}%` }} 
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground font-medium uppercase tracking-widest">Búsquedas (Wanted)</span>
+                    <span className="font-bold">
+                      {activeWantedCount} / {PLAN_LIMITS[currentPlan]?.maxWantedSearches || 5}
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-primary/60 transition-all duration-1000" 
+                      style={{ width: `${Math.min(100, (activeWantedCount / (PLAN_LIMITS[currentPlan]?.maxWantedSearches || 5)) * 100)}%` }} 
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2 pt-2">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Estado de Cuenta</p>
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-xs font-black uppercase tracking-widest text-emerald-400">Activo y Verificado</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* MercadoPago Upgrade Options */}
+              <div className="lg:col-span-2 bg-muted/30 border border-border rounded-[2.5rem] p-8">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+                  <div>
+                    <h4 className="text-xl font-bold tracking-tighter uppercase">Potenciá tu Agencia</h4>
+                    <p className="text-xs text-muted-foreground font-medium">Elegí el plan que mejor se adapte a tu volumen de ventas.</p>
+                  </div>
+                  <div className="flex bg-card p-1 rounded-full border border-border w-fit shrink-0">
+                    <button 
+                      onClick={() => setBillingCycle('monthly')}
+                      className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase transition-all ${billingCycle === 'monthly' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-white'}`}
+                    >
+                      Mensual
+                    </button>
+                    <button 
+                      onClick={() => setBillingCycle('annual')}
+                      className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase transition-all ${billingCycle === 'annual' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-white'}`}
+                    >
+                      Anual -20%
+                    </button>
+                  </div>
+                </div>
+                
+                {currentPlan === 'enterprise' ? (
+                  <div className="h-full flex flex-col items-center justify-center py-12 text-center space-y-6 animate-in fade-in zoom-in duration-700">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full scale-150" />
+                      <div className="relative h-20 w-20 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
+                        <Award className="h-10 w-10 text-primary" />
+                      </div>
+                    </div>
+                    <div className="space-y-2 max-w-sm">
+                      <h4 className="text-2xl font-black tracking-tighter uppercase italic">¡Felicidades!</h4>
+                      <p className="text-sm text-muted-foreground font-medium leading-relaxed">
+                        Ya tenés la mejor opción para impulsar tus ventas. <br />
+                        Tu cuenta <span className="text-primary font-bold uppercase italic">Enterprise</span> está activa con beneficios ilimitados.
+                      </p>
+                    </div>
+                    <Button variant="outline" className="rounded-full border-primary/20 text-primary font-bold uppercase tracking-widest text-[10px] h-10 px-8">
+                      Ver Beneficios Exclusivos
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      { id: 'professional', name: 'Professional', color: 'text-yellow-400', border: 'border-yellow-500/20' },
+                      { id: 'enterprise', name: 'Enterprise', color: 'text-primary', border: 'border-primary/20' }
+                    ].filter(p => {
+                      if (currentPlan === 'business') return true;
+                      if (currentPlan === 'professional') return p.id === 'enterprise';
+                      return false;
+                    }).map(p => (
+                      <div key={p.id} className={`bg-card p-6 rounded-3xl border ${p.border} hover:scale-[1.02] transition-transform cursor-pointer group`}
+                        onClick={() => handleUpgrade(p.id, billingCycle)}>
+                        <div className="flex justify-between items-start mb-4">
+                          <Badge className={`${p.color} bg-white/5 border-current uppercase font-black tracking-widest text-[9px]`}>{p.name}</Badge>
+                          <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-3xl font-black tracking-tighter">
+                            {formatARS(billingCycle === 'annual' ? PLAN_PRICES[p.id as MembershipPlan].annual : PLAN_PRICES[p.id as MembershipPlan].monthly)}
+                            <span className="text-sm text-muted-foreground font-bold">/{billingCycle === 'annual' ? 'año' : 'mes'}</span>
+                          </p>
+                          {billingCycle === 'annual' && (
+                            <p className="text-[10px] font-black text-primary uppercase tracking-wider">
+                              Ahorrás {formatARS(PLAN_PRICES[p.id as MembershipPlan].monthly * 12 - PLAN_PRICES[p.id as MembershipPlan].annual)}
+                            </p>
+                          )}
+                          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">Pago seguro vía MercadoPago</p>
+                        </div>
+                        <Button variant="outline" className="w-full mt-6 rounded-2xl font-bold uppercase tracking-widest text-[10px] h-11 border-border group-hover:bg-primary group-hover:text-primary-foreground transition-all">
+                          Contratar Ahora
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         <Separator className="mb-16" />
 
@@ -743,6 +959,30 @@ export function Profile() {
                 Guardar Cambios
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Upgrade Requested Dialog */}
+      <Dialog open={showUpgradeRequested} onOpenChange={setShowUpgradeRequested}>
+        <DialogContent className="sm:max-w-md rounded-3xl">
+          <div className="py-12 text-center space-y-6">
+            <div className="h-20 w-20 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="h-10 w-10 text-emerald-500" />
+            </div>
+            <div className="space-y-2">
+              <h4 className="text-2xl font-black tracking-tighter uppercase italic">Solicitud Enviada</h4>
+              <p className="text-sm text-muted-foreground font-medium leading-relaxed px-4">
+                Tu solicitud de cambio de plan ha sido recibida correctamente. <br />
+                Nuestro equipo comercial se contactará con vos para finalizar la activación.
+              </p>
+            </div>
+            <Button 
+              onClick={() => { setShowUpgradeRequested(false); window.location.reload(); }}
+              className="rounded-full h-12 px-12 font-bold uppercase tracking-widest text-xs"
+            >
+              Entendido
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

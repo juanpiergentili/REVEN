@@ -49,3 +49,88 @@ export async function approveUser(uid: string, user?: UserRecord): Promise<void>
 export async function rejectUser(uid: string): Promise<void> {
   await updateDoc(doc(db, 'users', uid), { status: 'rejected' });
 }
+
+export async function deleteUser(uid: string): Promise<void> {
+  const { deleteDoc } = await import('firebase/firestore');
+  await deleteDoc(doc(db, 'users', uid));
+}
+
+export interface PlatformStats {
+  totalVehicles: number;
+  activeVehicles: number;
+  totalConversations: number;
+  activeUsers: number;
+  activationRate: number;
+}
+
+export async function getPlatformStats(): Promise<PlatformStats> {
+  const vehiclesSnap = await getDocs(collection(db, 'vehicles'));
+  const convosSnap = await getDocs(collection(db, 'conversations'));
+  const usersSnap = await getDocs(collection(db, 'users'));
+  
+  const totalVehicles = vehiclesSnap.size;
+  const activeVehicles = vehiclesSnap.docs.filter(d => d.data().status === 'ACTIVE').length;
+  const totalConversations = convosSnap.size;
+  const activeUsers = usersSnap.docs.filter(d => d.data().status === 'active').length;
+  
+  // Activation: Active users with at least 1 vehicle
+  const usersWithVehicles = new Set(vehiclesSnap.docs.map(d => d.data().sellerId));
+  const activeUsersWithVehicles = usersSnap.docs.filter(d => 
+    d.data().status === 'active' && usersWithVehicles.has(d.id)
+  ).length;
+  
+  const activationRate = activeUsers > 0 ? (activeUsersWithVehicles / activeUsers) * 100 : 0;
+
+  return {
+    totalVehicles,
+    activeVehicles,
+    totalConversations,
+    activeUsers,
+    activationRate
+  };
+}
+
+export interface FinancialStats {
+  mrr: number;
+  arr: number;
+  totalRevenue: number;
+  activeSubscriptions: number;
+  recentPayments: any[];
+}
+
+export async function getFinancialStats(): Promise<FinancialStats> {
+  const membershipsSnap = await getDocs(collection(db, 'memberships'));
+  const memberships = membershipsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+  
+  const activeMemberships = memberships.filter((m: any) => m.status === 'active');
+  
+  let mrr = 0;
+  activeMemberships.forEach((m: any) => {
+    if (m.billingCycle === 'annual') {
+      mrr += (m.pricePaid || 0) / 12;
+    } else {
+      mrr += (m.pricePaid || 0);
+    }
+  });
+
+  const arr = mrr * 12;
+  const totalRevenue = memberships.reduce((acc, m: any) => acc + (m.pricePaid || 0), 0);
+
+  return {
+    mrr,
+    arr,
+    totalRevenue,
+    activeSubscriptions: activeMemberships.length,
+    recentPayments: memberships.sort((a: any, b: any) => 
+      (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0)
+    ).slice(0, 10)
+  };
+}
+
+export async function promoteToAdmin(uid: string): Promise<void> {
+  await updateDoc(doc(db, 'users', uid), { 
+    role: 'ADMIN',
+    status: 'active' 
+  });
+}
+

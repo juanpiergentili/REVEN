@@ -6,7 +6,14 @@ const BASE_URL = 'https://argautos.com/api/v1';
 export type Brand = { id: number; name: string; slug: string };
 export type AutoModel = { id: number; name: string; slug: string; brand_id: number };
 export type Version = { id: number; name: string; slug: string; model_id: number };
-export type Valuation = { id: number; year: number; price: string; currency: string; acara_price?: string | null };
+export type Valuation = { 
+  id: number; 
+  year: number; 
+  price: string; 
+  currency: string; 
+  acara_price?: string | null;
+  infoauto_price?: string | null;
+};
 
 const STATIC_BRANDS: Brand[] = ARG_BRANDS.map((name, i) => ({
   id: i + 5000,
@@ -14,16 +21,23 @@ const STATIC_BRANDS: Brand[] = ARG_BRANDS.map((name, i) => ({
   slug: name.toLowerCase().replace(/\s+/g, '-')
 }));
 
-export function useArgAutos(selectedBrandName?: string, selectedModelName?: string, selectedVersionName?: string) {
+export function useArgAutos(
+  selectedBrandName?: string, 
+  selectedModelName?: string, 
+  selectedVersionName?: string,
+  selectedYear?: string | number
+) {
   const [brands, setBrands] = useState<Brand[]>(STATIC_BRANDS);
   const [models, setModels] = useState<AutoModel[]>([]);
   const [versions, setVersions] = useState<Version[]>([]);
   const [valuations, setValuations] = useState<Valuation[]>([]);
+  const [availableYears, setAvailableYears] = useState<string[]>([]);
 
   const [loadingBrands, setLoadingBrands] = useState(false);
   const [loadingModels, setLoadingModels] = useState(false);
   const [loadingVersions, setLoadingVersions] = useState(false);
   const [loadingValuations, setLoadingValuations] = useState(false);
+  const [loadingYears, setLoadingYears] = useState(false);
 
   // 1. Fetch Brands (Fallback to Static)
   useEffect(() => {
@@ -33,7 +47,6 @@ export function useArgAutos(selectedBrandName?: string, selectedModelName?: stri
         const res = await fetch(`${BASE_URL}/brands?per_page=100`);
         const d = await res.json();
         if (d.data && d.data.length > 0) {
-          // Normalize to UPPERCASE to match static brand names stored in filters
           const normalized = d.data
             .map((b: Brand) => ({ ...b, name: b.name.toUpperCase() }))
             .sort((a: Brand, b: Brand) => a.name.localeCompare(b.name));
@@ -65,7 +78,6 @@ export function useArgAutos(selectedBrandName?: string, selectedModelName?: stri
 
     const fetchModels = async () => {
       setLoadingModels(true);
-
       if (selectedBrandId && selectedBrandId < 5000) {
         try {
           const res = await fetch(`${BASE_URL}/brands/${selectedBrandId}/models?per_page=100`);
@@ -82,7 +94,6 @@ export function useArgAutos(selectedBrandName?: string, selectedModelName?: stri
         }
       }
 
-      // Fallback to static DB
       const staticModels = EXPANDED_MODELS[selectedBrandName.toUpperCase()] || [];
       setModels(staticModels.map((name, i) => ({
         id: i + 10000,
@@ -96,12 +107,7 @@ export function useArgAutos(selectedBrandName?: string, selectedModelName?: stri
     fetchModels();
   }, [selectedBrandId, selectedBrandName]);
 
-  // 3. Fetch Versions
-  // Strategy:
-  //   a) If we have a real API model ID (< 10000) → fetch directly.
-  //   b) If model ID is static (>= 10000) but brand has a real API ID → do a name-based
-  //      lookup: re-fetch brand's models from API, find the matching model, then fetch versions.
-  //   c) If brand is also static → no versions available from API.
+  // 3. Fetch Versions (Depends on Model + Year)
   useEffect(() => {
     if (!selectedModelName) {
       setVersions([]);
@@ -115,12 +121,9 @@ export function useArgAutos(selectedBrandName?: string, selectedModelName?: stri
 
       try {
         let modelApiId: number | null = null;
-
-        // Fast path: already have a real model ID
         if (selectedModelId && selectedModelId < 10000) {
           modelApiId = selectedModelId;
         } else if (selectedBrandId && selectedBrandId < 5000) {
-          // Slow path: look up real model ID by name in the API
           const res = await fetch(`${BASE_URL}/brands/${selectedBrandId}/models?per_page=100`);
           const d = await res.json();
           const match = d.data?.find((m: AutoModel) =>
@@ -130,45 +133,114 @@ export function useArgAutos(selectedBrandName?: string, selectedModelName?: stri
         }
 
         if (modelApiId) {
-          const res = await fetch(`${BASE_URL}/models/${modelApiId}/versions?per_page=100`);
+          let url = `${BASE_URL}/models/${modelApiId}/versions?per_page=100`;
+          if (selectedYear !== undefined && selectedYear !== '') {
+            url += `&year=${selectedYear}`;
+          }
+
+          const res = await fetch(url);
           const d = await res.json();
+          
           if (!cancelled && d.data) {
-            setVersions(d.data
-              .map((v: any) => ({ ...v, name: (v.name_raw || v.name.toUpperCase()).replace(/,/g, '.') }))
-              .sort((a: Version, b: Version) => a.name.localeCompare(b.name)));
-            return;
+            const apiVersions = d.data.map((v: any) => ({ 
+              ...v, 
+              name: (v.name_raw || v.name.toUpperCase()).replace(/,/g, '.') 
+            }));
+            
+            setVersions(apiVersions.sort((a: Version, b: Version) => a.name.localeCompare(b.name)));
           }
         }
-      } catch {
-        // silent — will fall through to setVersions([])
+      } catch (err) {
+        console.error('Error fetching versions:', err);
+      } finally {
+        if (!cancelled) {
+          setLoadingVersions(false);
+        }
       }
-
-      if (!cancelled) setVersions([]);
     };
 
-    fetchVersions().finally(() => {
-      if (!cancelled) setLoadingVersions(false);
-    });
+    fetchVersions();
+    return () => { cancelled = true; };
+  }, [selectedModelId, selectedModelName, selectedBrandId, selectedYear]);
 
+  // 4. Fetch Available Years for Model (Independent of selectedYear)
+  useEffect(() => {
+    if (!selectedModelName) {
+      setAvailableYears([]);
+      return;
+    }
+
+    let cancelled = false;
+
+    const fetchYears = async () => {
+      setLoadingYears(true);
+
+      try {
+        let modelApiId: number | null = null;
+        if (selectedModelId && selectedModelId < 10000) {
+          modelApiId = selectedModelId;
+        } else if (selectedBrandId && selectedBrandId < 5000) {
+          const res = await fetch(`${BASE_URL}/brands/${selectedBrandId}/models?per_page=100`);
+          const d = await res.json();
+          const match = d.data?.find((m: AutoModel) =>
+            m.name.toLowerCase() === selectedModelName.toLowerCase()
+          );
+          if (match) modelApiId = match.id;
+        }
+
+        if (modelApiId) {
+          // Fetch ALL versions with years relation to populate the dropdown
+          const url = `${BASE_URL}/models/${modelApiId}/versions?per_page=100&relations[]=years`;
+          const res = await fetch(url);
+          const d = await res.json();
+          
+          if (!cancelled && d.data) {
+            const allYears = new Set<string>();
+            d.data.forEach((v: any) => {
+              if (v.years && Array.isArray(v.years)) {
+                v.years.forEach((y: any) => allYears.add(String(y.year)));
+              }
+            });
+            const sortedYears = Array.from(allYears).sort((a, b) => b.localeCompare(a));
+            console.log(`[useArgAutos] Found ${sortedYears.length} years for model ${selectedModelName}`);
+            setAvailableYears(sortedYears);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching available years:', err);
+      } finally {
+        if (!cancelled) {
+          setLoadingYears(false);
+        }
+      }
+    };
+
+    fetchYears();
     return () => { cancelled = true; };
   }, [selectedModelId, selectedModelName, selectedBrandId]);
 
-  // 4. Fetch Valuations (ACARA)
+  // 4. Fetch Valuations (Infoauto + ACARA)
   useEffect(() => {
     if (!selectedVersionId || selectedVersionId >= 10000) {
       setValuations([]);
       return;
     }
     setLoadingValuations(true);
-    fetch(`${BASE_URL}/versions/${selectedVersionId}/valuations?currency=ars&sources=acara`)
+    // Requesting both infoauto and acara for better coverage, prioritizing infoauto
+    fetch(`${BASE_URL}/versions/${selectedVersionId}/valuations?currency=ars&sources=infoauto,acara`)
       .then(r => r.json())
       .then(d => {
         if (d.data) {
-          const normalized = d.data.map((v: any) => ({
-            ...v,
-            price: v.price ? Math.round(Number(v.price)).toString() : v.price,
-            acara_price: v.acara_price ? Math.round(Number(v.acara_price)).toString() : v.acara_price
-          }));
+          const normalized = d.data.map((v: any) => {
+            // If infoauto_price is present, we use it as the main price
+            const mainPrice = v.infoauto_price || v.price;
+            return {
+              ...v,
+              price: mainPrice ? Math.round(Number(mainPrice)).toString() : v.price,
+              acara_price: v.acara_price ? Math.round(Number(v.acara_price)).toString() : v.acara_price,
+              infoauto_price: v.infoauto_price ? Math.round(Number(v.infoauto_price)).toString() : v.infoauto_price
+            };
+          });
           setValuations(normalized);
         }
       })
@@ -177,7 +249,7 @@ export function useArgAutos(selectedBrandName?: string, selectedModelName?: stri
   }, [selectedVersionId]);
 
   return {
-    brands, models, versions, valuations,
-    loadingBrands, loadingModels, loadingVersions, loadingValuations,
+    brands, models, versions, valuations, availableYears,
+    loadingBrands, loadingModels, loadingVersions, loadingValuations, loadingYears,
   };
 }
