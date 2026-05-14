@@ -995,19 +995,19 @@ export function Profile() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="p-4 rounded-2xl bg-card border border-border text-center space-y-1">
                       <Eye className="h-4 w-4 mx-auto text-primary opacity-50" />
-                      <p className="text-xl font-black tracking-tighter">{userListings.reduce((acc, l) => acc + (l.viewCount || 0), 0)}</p>
+                      <p className="text-xl font-black tracking-tighter">{allListings.reduce((acc, l) => acc + (l.viewCount || 0), 0)}</p>
                       <p className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Vistas</p>
                     </div>
                     <div className="p-4 rounded-2xl bg-card border border-border text-center space-y-1">
                       <MessageSquare className="h-4 w-4 mx-auto text-primary opacity-50" />
-                      <p className="text-xl font-black tracking-tighter">{userListings.reduce((acc, l) => acc + (l.contactCount || 0), 0)}</p>
+                      <p className="text-xl font-black tracking-tighter">{allListings.reduce((acc, l) => acc + (l.contactCount || 0), 0)}</p>
                       <p className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Leads</p>
                     </div>
                     <div className="p-4 rounded-2xl bg-card border border-border text-center space-y-1">
                       <TrendingUp className="h-4 w-4 mx-auto text-primary opacity-50" />
                       <p className="text-xl font-black tracking-tighter">
-                        {userListings.length > 0 
-                          ? Math.round((userListings.reduce((acc, l) => acc + (l.contactCount || 0), 0) / userListings.reduce((acc, l) => acc + (l.viewCount || 0), 1)) * 100) 
+                        {allListings.length > 0 
+                          ? Math.round((allListings.reduce((acc, l) => acc + (l.contactCount || 0), 0) / allListings.reduce((acc, l) => acc + (l.viewCount || 0), 1)) * 100) 
                           : 0}%
                       </p>
                       <p className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Conv.</p>
