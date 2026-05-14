@@ -41,47 +41,67 @@ export function VehicleDetail() {
   const id = slug ? extractIdFromSlug(slug) : undefined;
 
   useEffect(() => {
+    // Reset state when ID or slug changes to avoid showing stale data
+    setVehicle(null);
+    setLoading(true);
+    setNotFound(false);
+
     if (!id) {
-      console.warn('[VehicleDetail] No ID found in slug:', slug);
+      console.warn('[VehicleDetail] No valid ID extracted from slug:', slug);
       setNotFound(true);
       setLoading(false);
       return;
     }
 
-    console.log('[VehicleDetail] Fetching vehicle with ID:', id);
+    console.log(`[VehicleDetail] Attempting to fetch vehicle. ID: "${id}", Slug: "${slug}"`);
 
     let isMounted = true;
     const timeoutId = setTimeout(() => {
       if (isMounted && loading) {
-        console.error('[VehicleDetail] Fetch timeout for ID:', id);
+        console.error('[VehicleDetail] Fetch timeout (10s) for ID:', id);
         setLoading(false);
         setNotFound(true);
       }
-    }, 10000); // 10s safety timeout
+    }, 10000);
 
     async function fetchVehicle() {
+      const id = extractIdFromSlug(slug || '');
+      console.log('[VehicleDetail] Extracted ID:', id, 'from slug:', slug);
+
+      if (!id) {
+        console.warn('[VehicleDetail] No valid ID extracted from slug');
+        if (isMounted) {
+          setNotFound(true);
+          setLoading(false);
+        }
+        return;
+      }
       try {
         const snap = await getDoc(doc(db, 'vehicles', id));
         if (!isMounted) return;
 
         if (snap.exists()) {
           const data = snap.data();
-          console.log('[VehicleDetail] Vehicle found:', data.brand, data.model);
+          console.log('[VehicleDetail] Document found successfully:', data.brand, data.model);
           setVehicle({
             ...data,
             id: snap.id,
             createdAt: convertTimestamp(data.createdAt)
           } as Vehicle);
-          updateDoc(snap.ref, { viewCount: increment(1) }).catch(() => {});
+          
+          // Background update: don't wait for this
+          updateDoc(snap.ref, { viewCount: increment(1) }).catch(e => {
+            console.warn('[VehicleDetail] Failed to increment viewCount:', e);
+          });
+          
           setLoading(false);
-          return;
+        } else {
+          console.warn(`[VehicleDetail] Document does not exist in Firestore. ID: "${id}"`);
+          setNotFound(true);
+          setLoading(false);
         }
-
-        console.warn('[VehicleDetail] Vehicle not found in Firestore:', id);
-        setNotFound(true);
-        setLoading(false);
       } catch (err) {
-        console.error('[VehicleDetail] Error fetching vehicle:', err);
+        console.error('[VehicleDetail] Critical error during fetch:', err);
         if (isMounted) {
           setNotFound(true);
           setLoading(false);

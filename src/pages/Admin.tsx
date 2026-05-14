@@ -128,10 +128,14 @@ export function Admin() {
 
   if (!authorized) return null;
 
-  const pending  = users.filter(u => u.status === 'pending');
+  const pending  = users.filter(u => u.status === 'pending').sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   const active   = users.filter(u => u.status === 'active' && u.role !== 'ADMIN');
   const rejected = users.filter(u => u.status === 'rejected');
-  const displayed = tab === 'pending' ? pending : users.filter(u => u.role !== 'ADMIN');
+  
+  // Sort the full list by request date for the "Usuarios" tab
+  const sortedUsers = [...users].filter(u => u.role !== 'ADMIN').sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  
+  const displayed = tab === 'pending' ? pending : sortedUsers;
 
   const stats = [
     { label: 'Total usuarios', value: users.filter(u => u.role !== 'ADMIN').length, icon: Users, color: 'text-primary' },

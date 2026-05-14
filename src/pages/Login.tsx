@@ -13,7 +13,7 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, OperationType } from '@/src/lib/firebase';
-import { loginDemoUser, registerUserSession } from '@/src/lib/auth';
+import { registerUserSession } from '@/src/lib/auth';
 import {
   Select,
   SelectContent,
@@ -64,22 +64,6 @@ export function Login() {
     }
   };
 
-  const handleDemoMode = async (type: 'demo' | 'vendedor' | 'comprador') => {
-    setLoading(true);
-    setError(null);
-    try {
-      await loginDemoUser(type);
-      navigate('/marketplace');
-    } catch (err: any) {
-      if (err.code === 'auth/email-already-in-use') {
-        setError('El usuario demo ya existe con otra contraseña.');
-      } else {
-        setError(`Error al inicializar acceso: ${err.message}`);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -201,29 +185,6 @@ export function Login() {
                   )}
                 </Button>
 
-                  <div className="space-y-4 pt-4 border-t border-white/5">
-                    <p className="text-[10px] text-center font-bold uppercase tracking-[0.2em] text-muted-foreground mb-4">Accesos Rápidos de Prueba</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      <Button 
-                        type="button"
-                        variant="outline" 
-                        className="rounded-xl h-11 text-[10px] font-bold uppercase tracking-widest border-primary/20 hover:bg-primary/5 hover:text-primary transition-all"
-                        onClick={() => handleDemoMode('vendedor')}
-                        disabled={loading}
-                      >
-                        Rol Vendedor
-                      </Button>
-                      <Button 
-                        type="button"
-                        variant="outline" 
-                        className="rounded-xl h-11 text-[10px] font-bold uppercase tracking-widest border-primary/20 hover:bg-primary/5 hover:text-primary transition-all"
-                        onClick={() => handleDemoMode('comprador')}
-                        disabled={loading}
-                      >
-                        Rol Comprador
-                      </Button>
-                    </div>
-                  </div>
               </form>
             ) : (
               <form

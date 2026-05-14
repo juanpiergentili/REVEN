@@ -29,7 +29,6 @@ import { Label } from '@/components/ui/label';
 import { signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail, User as FirebaseUser } from 'firebase/auth';
 import { auth, db, handleFirestoreError, OperationType } from '@/src/lib/firebase';
 import { subscribeToUnreadCount } from '@/src/lib/chat';
-import { loginDemoUser } from '@/src/lib/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -133,17 +132,9 @@ export function Header() {
     setError(null);
 
     const emailLower = email.toLowerCase();
-    const isDemoAccount =
-      (emailLower === 'demo@reven.com.ar' && password === 'DEMO1234') ||
-      (emailLower === 'vendedor.test@reven.com.ar' && password === 'REVEN2026') ||
-      (emailLower === 'comprador.test@reven.com.ar' && password === 'REVEN2026');
 
     try {
-      if (isDemoAccount) {
-        const type = emailLower.includes('vendedor') ? 'vendedor' : emailLower.includes('comprador') ? 'comprador' : 'demo';
-        await loginDemoUser(type);
-      } else {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
         
         // Verificar status antes de permitir el acceso
         const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
