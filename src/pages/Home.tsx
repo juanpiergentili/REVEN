@@ -533,8 +533,8 @@ export function Home() {
             </h1>
 
             <p className="text-base md:text-lg text-white font-light max-w-lg leading-relaxed">
-              Marketplace exclusivo B2B, solo para profesionales verificados.<br />
-              Sin intermediarios. Solo negocios reales.
+              La Red B2B que Conecta Profesionales del Sector Automotor.<br />
+              Comercio Seguro y Transparente
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 pt-2">

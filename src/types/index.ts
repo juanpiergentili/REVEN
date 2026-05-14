@@ -356,10 +356,10 @@ export interface Notification {
 
 // ─── Plan limits (constantes de negocio) ─────────────────────────────────────
 
-export const PLAN_LIMITS: Record<MembershipPlan, { maxVehicles: number; maxWantedSearches: number; canFeatureListing: boolean }> = {
-  business:     { maxVehicles: 5,   maxWantedSearches: 5,   canFeatureListing: false },
-  professional: { maxVehicles: 15,  maxWantedSearches: 15,  canFeatureListing: true  },
-  enterprise:   { maxVehicles: 150, maxWantedSearches: 150, canFeatureListing: true  },
+export const PLAN_LIMITS: Record<MembershipPlan, { maxVehicles: number; maxWantedSearches: number; maxSessions: number; canFeatureListing: boolean }> = {
+  business:     { maxVehicles: 5,   maxWantedSearches: 5,   maxSessions: 1,  canFeatureListing: false },
+  professional: { maxVehicles: 15,  maxWantedSearches: 15,  maxSessions: 3,  canFeatureListing: true  },
+  enterprise:   { maxVehicles: 150, maxWantedSearches: 150, maxSessions: 10, canFeatureListing: true  },
 };
 
 export const PLAN_PRICES: Record<MembershipPlan, { monthly: number; annual: number }> = {

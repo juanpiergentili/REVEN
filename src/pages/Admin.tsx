@@ -348,113 +348,141 @@ export function Admin() {
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {displayed.map(u => {
-                const statusInfo = STATUS_LABEL[u.status] ?? { label: u.status, color: 'bg-muted text-muted-foreground' };
-                return (
-                  <div key={u.uid} className="bg-card border border-border rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center gap-4">
-                    <Avatar className="h-12 w-12 shrink-0 border-2 border-primary/20">
-                      <AvatarFallback className="bg-primary/10 text-primary font-bold text-sm">
-                        {(u.name?.[0] ?? '') + (u.lastName?.[0] ?? '')}
-                      </AvatarFallback>
-                    </Avatar>
-
-                    <div className="flex-1 min-w-0 space-y-1.5">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-bold uppercase tracking-tight">{u.name} {u.lastName}</span>
-                        <Badge variant="outline" className={`text-[9px] font-bold tracking-wider rounded-full px-2 border ${statusInfo.color}`}>
-                          {statusInfo.label}
-                        </Badge>
-                        <Badge variant="outline" className="text-[9px] font-bold tracking-wider rounded-full px-2 border-border bg-muted">
-                          {PLAN_LABEL[u.plan] ?? u.plan}
-                        </Badge>
-                        {u.discountCode === 'REVENFREE60' && (
-                          <Badge className="text-[9px] font-bold tracking-wider rounded-full px-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                            60 DÍAS GRATIS
+          <div className="bg-card border border-border rounded-3xl overflow-hidden shadow-2xl">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-muted/50 border-b border-border/50">
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground whitespace-nowrap">ID</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground whitespace-nowrap">Solicitud</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground whitespace-nowrap">Razón Social</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground whitespace-nowrap">Nombre y Apellido</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground whitespace-nowrap">Teléfono</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground whitespace-nowrap">Email</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground whitespace-nowrap">Provincia</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground whitespace-nowrap">Localidad</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground whitespace-nowrap text-center">Autos</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground whitespace-nowrap">Plan</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground whitespace-nowrap">Estado</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground whitespace-nowrap text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/30">
+                  {displayed.map((u, index) => {
+                    const statusInfo = STATUS_LABEL[u.status] ?? { label: u.status, color: 'bg-muted text-muted-foreground' };
+                    const shortId = `#${(index + 1).toString().padStart(4, '0')}`;
+                    return (
+                      <tr key={u.uid} className="hover:bg-muted/20 transition-colors group">
+                        <td className="px-6 py-4">
+                          <span className="text-[11px] font-black text-primary/70 tracking-tighter">{shortId}</span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-[11px] font-medium text-muted-foreground">{formatDate(u.createdAt)}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-xs font-bold uppercase tracking-tight text-white">{u.company || '—'}</span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8 shrink-0 border border-primary/20">
+                              <AvatarFallback className="bg-primary/10 text-primary font-bold text-[10px]">
+                                {(u.name?.[0] ?? '') + (u.lastName?.[0] ?? '')}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-xs font-medium">{u.name} {u.lastName}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-xs font-medium text-muted-foreground">{u.phone || '—'}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-xs font-medium text-muted-foreground truncate block max-w-[150px]">{u.email}</span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-xs font-medium text-muted-foreground">{u.provinceDisplay || u.province || '—'}</span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-xs font-medium text-muted-foreground">{u.cityDisplay || u.city || '—'}</span>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <Badge variant="outline" className="text-[10px] font-black rounded-full px-2 border-primary/20 text-primary">
+                            {u.vehicleCount || 0}
                           </Badge>
-                        )}
-                      </div>
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground font-medium">
-                        <span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{u.company}</span>
-                        <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{u.email}</span>
-                        {u.phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{u.phone}</span>}
-                        {u.cuil && <span className="flex items-center gap-1"><CreditCard className="h-3 w-3" />{u.cuil}</span>}
-                      </div>
-                      <p className="text-[10px] text-muted-foreground">Registrado: {formatDate(u.createdAt)}</p>
-                    </div>
-
-                    <div className="flex gap-2 shrink-0">
-                      {u.status === 'pending' && (
-                        <>
-                          <Button
-                            size="sm"
-                            disabled={actionId === u.uid}
-                            onClick={() => handleApprove(u.uid)}
-                            className="rounded-xl h-9 px-4 text-[10px] font-bold uppercase tracking-widest bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20"
-                          >
-                            {actionId === u.uid ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Aprobar'}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={actionId === u.uid}
-                            onClick={() => handleReject(u.uid)}
-                            className="rounded-xl h-9 px-4 text-[10px] font-bold uppercase tracking-widest border-red-500/40 text-red-400 hover:bg-red-500/10"
-                          >
-                            Rechazar
-                          </Button>
-                        </>
-                      )}
-
-                      {u.status === 'active' && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={actionId === u.uid}
-                          onClick={() => handleReject(u.uid)}
-                          className="rounded-xl h-9 px-4 text-[10px] font-bold uppercase tracking-widest border-red-500/40 text-red-400 hover:bg-red-500/10 shrink-0"
-                        >
-                          Suspender
-                        </Button>
-                      )}
-
-                      {u.status === 'rejected' && (
-                        <Button
-                          size="sm"
-                          disabled={actionId === u.uid}
-                          onClick={() => handleApprove(u.uid)}
-                          className="rounded-xl h-9 px-4 text-[10px] font-bold uppercase tracking-widest bg-emerald-500 hover:bg-emerald-600 text-white shrink-0"
-                        >
-                          Reactivar
-                        </Button>
-                      )}
-
-                      {u.role !== 'ADMIN' && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          disabled={actionId === u.uid}
-                          onClick={() => handlePromote(u.uid)}
-                          className="rounded-xl h-9 px-4 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10"
-                        >
-                          Hacer Admin
-                        </Button>
-                      )}
-
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        disabled={actionId === u.uid}
-                        onClick={() => handleDelete(u.uid)}
-                        className="rounded-xl h-9 w-9 text-muted-foreground hover:text-red-400 hover:bg-red-500/10"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <Badge variant="outline" className="text-[9px] font-bold tracking-wider rounded-full px-2 border-border bg-muted/30">
+                            {PLAN_LABEL[u.plan] ?? u.plan}
+                          </Badge>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <Badge variant="outline" className={`text-[9px] font-bold tracking-wider rounded-full px-2 border ${statusInfo.color}`}>
+                            {statusInfo.label}
+                          </Badge>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {u.status === 'pending' && (
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                disabled={actionId === u.uid}
+                                onClick={() => handleApprove(u.uid)}
+                                className="h-8 w-8 text-emerald-400 hover:text-emerald-500 hover:bg-emerald-500/10 rounded-lg"
+                              >
+                                {actionId === u.uid ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+                              </Button>
+                            )}
+                            {(u.status === 'pending' || u.status === 'active') && (
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                disabled={actionId === u.uid}
+                                onClick={() => handleReject(u.uid)}
+                                className="h-8 w-8 text-red-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg"
+                              >
+                                <XCircle className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {u.status === 'rejected' && (
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                disabled={actionId === u.uid}
+                                onClick={() => handleApprove(u.uid)}
+                                className="h-8 w-8 text-emerald-400 hover:text-emerald-500 hover:bg-emerald-500/10 rounded-lg"
+                              >
+                                <TrendingUp className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {u.role !== 'ADMIN' && (
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                disabled={actionId === u.uid}
+                                onClick={() => handlePromote(u.uid)}
+                                className="h-8 w-8 text-primary hover:bg-primary/10 rounded-lg"
+                              >
+                                <ShieldCheck className="h-4 w-4" />
+                              </Button>
+                            )}
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              disabled={actionId === u.uid}
+                              onClick={() => handleDelete(u.uid)}
+                              className="h-8 w-8 text-muted-foreground hover:text-red-400 hover:bg-red-500/10 rounded-lg"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
+          </div>
           )
         )}
       </div>

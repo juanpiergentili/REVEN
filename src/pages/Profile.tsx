@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ChevronLeft, Eye, MessageSquare, Clock, BarChart3, TrendingUp, Award,
   MapPin, Building2, Phone, Mail, Loader2, ShoppingBag, Plus, Settings,
-  Instagram, Facebook, ExternalLink, Trash2, User, Activity,
+  Instagram, Facebook, ExternalLink, Trash2, User, Activity, Fingerprint,
   Save, Pause, Play, CheckCircle2, Package, Lock, Camera, Upload, Globe,
   CreditCard,
 } from 'lucide-react';
@@ -806,144 +806,255 @@ export function Profile() {
               </div>
             </div>
 
-            {/* Datos principales */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-3 col-span-1 md:col-span-2">
-                <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-primary">Nombre de la Agencia / Concesionaria</Label>
-                <Input
-                  value={editForm.company}
-                  onChange={e => setEditForm(prev => ({ ...prev, company: e.target.value }))}
-                  placeholder="Automotores Reven S.A."
-                  className="h-14 rounded-[2.5rem] bg-muted border-border font-bold px-6"
-                />
-              </div>
-
-              <div className="space-y-3">
-                <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-primary">Provincia</Label>
-                <Select value={editForm.province} onValueChange={v => setEditForm(prev => ({ ...prev, province: v, city: '' }))} disabled={loadingProvincias}>
-                  <SelectTrigger className="h-14 rounded-[2.5rem] bg-muted border-border font-bold px-6">
-                    <SelectValue>{loadingProvincias ? 'Cargando...' : (provincias.find(p => p.id === editForm.province)?.nombre || 'Seleccionar')}</SelectValue>
-                  </SelectTrigger>
-                  <SelectContent className="rounded-[2.5rem]">
-                    {provincias.map(p => (
-                      <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Localidad</Label>
-                <Select value={editForm.city} onValueChange={v => setEditForm(prev => ({ ...prev, city: v }))} disabled={!editForm.province || loadingLocalidades}>
-                  <SelectTrigger className="h-14 rounded-[2.5rem] bg-muted border-border font-bold px-6">
-                    <SelectValue>{loadingLocalidades ? 'Cargando...' : (localidades.find(l => l.id === editForm.city)?.nombre || 'Seleccionar')}</SelectValue>
-                  </SelectTrigger>
-                  <SelectContent className="rounded-[2.5rem]">
-                    {localidades.map(l => (
-                      <SelectItem key={l.id} value={l.id}>{l.nombre}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-primary">Nombre del Dueño / Apoderado</Label>
-                <Input
-                  value={editForm.name}
-                  onChange={e => setEditForm(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Nombre"
-                  className="h-12 rounded-xl bg-muted border-border font-bold"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Teléfono Público</Label>
-                <Input
-                  value={editForm.phone}
-                  onChange={e => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
-                  placeholder="+54 9 11 ..."
-                  className="h-12 rounded-xl bg-muted border-border font-bold"
-                />
-              </div>
-
-              <div className="space-y-2 col-span-1 md:col-span-2">
-                <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-primary">CUIT</Label>
-                <Input
-                  value={editForm.cuit}
-                  onChange={e => setEditForm(prev => ({ ...prev, cuit: e.target.value }))}
-                  placeholder="20-12345678-9"
-                  className="h-12 rounded-xl bg-muted border-border font-bold"
-                />
-              </div>
+          <Tabs defaultValue="general" className="flex-1 flex flex-col overflow-hidden">
+            <div className="px-8 border-b border-border shrink-0">
+              <TabsList className="bg-transparent border-none p-0 h-12 gap-6">
+                <TabsTrigger value="general" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 font-bold uppercase tracking-widest text-[10px]">General</TabsTrigger>
+                <TabsTrigger value="plan" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 font-bold uppercase tracking-widest text-[10px]">Mi Plan</TabsTrigger>
+              </TabsList>
             </div>
 
-            {/* Visibilidad de contacto */}
-            <div className="space-y-3">
-              <Label className="text-[10px] font-bold uppercase tracking-widest text-primary">Visibilidad en el Perfil Público</Label>
-              <div className="flex flex-col gap-3 p-4 rounded-xl bg-muted/40 border border-border">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={editForm.showName}
-                    onChange={e => setEditForm(prev => ({ ...prev, showName: e.target.checked }))}
-                    className="w-4 h-4 rounded accent-primary"
-                  />
-                  <span className="text-xs font-bold uppercase tracking-widest">Mostrar nombre del apoderado</span>
-                </label>
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={editForm.showEmail}
-                    onChange={e => setEditForm(prev => ({ ...prev, showEmail: e.target.checked }))}
-                    className="w-4 h-4 rounded accent-primary"
-                  />
-                  <span className="text-xs font-bold uppercase tracking-widest">Mostrar email en el perfil</span>
-                </label>
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={editForm.showPhone}
-                    onChange={e => setEditForm(prev => ({ ...prev, showPhone: e.target.checked }))}
-                    className="w-4 h-4 rounded accent-primary"
-                  />
-                  <span className="text-xs font-bold uppercase tracking-widest">Mostrar teléfono en el perfil</span>
-                </label>
-              </div>
-            </div>
+            <TabsContent value="general" className="flex-1 overflow-y-auto p-0 m-0">
+              <div className="px-8 py-6 space-y-8">
+                {/* Logo de Agencia */}
+                <div className="space-y-4">
+                  <Label className="text-[10px] font-bold uppercase tracking-widest text-primary">Logo de Agencia</Label>
+                  <div className="flex items-center gap-6">
+                    <div className="h-20 w-20 rounded-[2rem] border-2 border-border overflow-hidden bg-muted flex items-center justify-center shrink-0 shadow-inner">
+                      {logoPreview || editForm.logoUrl ? (
+                        <img src={logoPreview || editForm.logoUrl} alt="logo" className="w-full h-full object-contain p-1" />
+                      ) : (
+                        <Building2 className="h-8 w-8 text-muted-foreground" />
+                      )}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => logoInputRef.current?.click()}
+                      className="rounded-full font-bold uppercase tracking-widest text-[10px] gap-2 border-border h-9"
+                    >
+                      <Upload className="h-3.5 w-3.5" /> Subir logo
+                    </Button>
+                  </div>
+                </div>
 
-            {/* Redes Sociales */}
-            <div className="space-y-4">
-              <Label className="text-[10px] font-bold uppercase tracking-widest text-primary">Redes Sociales</Label>
-              <div className="grid grid-cols-1 gap-4">
-                <div className="relative">
-                  <Instagram className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    value={editForm.instagram}
-                    onChange={e => setEditForm(prev => ({ ...prev, instagram: e.target.value.replace('@', '') }))}
-                    placeholder="usuario de Instagram"
-                    className="h-12 rounded-xl bg-muted border-border font-bold pl-10"
-                  />
+                {/* Datos principales */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-3 col-span-1 md:col-span-2">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-primary">Nombre de la Agencia / Concesionaria</Label>
+                    <Input
+                      value={editForm.company}
+                      onChange={e => setEditForm(prev => ({ ...prev, company: e.target.value }))}
+                      placeholder="Automotores Reven S.A."
+                      className="h-14 rounded-[1.5rem] bg-muted border-border font-bold px-6 focus:ring-primary/20"
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-primary">Provincia</Label>
+                    <Select value={editForm.province} onValueChange={v => setEditForm(prev => ({ ...prev, province: v, city: '' }))} disabled={loadingProvincias}>
+                      <SelectTrigger className="h-14 rounded-[1.5rem] bg-muted border-border font-bold px-6">
+                        <SelectValue>{loadingProvincias ? 'Cargando...' : (provincias.find(p => p.id === editForm.province)?.nombre || 'Seleccionar')}</SelectValue>
+                      </SelectTrigger>
+                      <SelectContent className="rounded-[1.5rem]">
+                        {provincias.map(p => (
+                          <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-primary">Localidad</Label>
+                    <Select value={editForm.city} onValueChange={v => setEditForm(prev => ({ ...prev, city: v }))} disabled={!editForm.province || loadingLocalidades}>
+                      <SelectTrigger className="h-14 rounded-[1.5rem] bg-muted border-border font-bold px-6">
+                        <SelectValue>{loadingLocalidades ? 'Cargando...' : (localidades.find(l => l.id === editForm.city)?.nombre || 'Seleccionar')}</SelectValue>
+                      </SelectTrigger>
+                      <SelectContent className="rounded-[1.5rem]">
+                        {localidades.map(l => (
+                          <SelectItem key={l.id} value={l.id}>{l.nombre}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-primary">Nombre del Dueño / Apoderado</Label>
+                    <Input
+                      value={editForm.name}
+                      onChange={e => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Nombre"
+                      className="h-14 rounded-[1.5rem] bg-muted border-border font-bold px-6"
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-primary">Teléfono Público</Label>
+                    <Input
+                      value={editForm.phone}
+                      onChange={e => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
+                      placeholder="+54 9 11 ..."
+                      className="h-14 rounded-[1.5rem] bg-muted border-border font-bold px-6"
+                    />
+                  </div>
                 </div>
-                <div className="relative">
-                  <Facebook className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    value={editForm.facebook}
-                    onChange={e => setEditForm(prev => ({ ...prev, facebook: e.target.value }))}
-                    placeholder="Página de Facebook"
-                    className="h-12 rounded-xl bg-muted border-border font-bold pl-10"
-                  />
-                </div>
-                <div className="relative">
-                  <Globe className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    value={editForm.whatsapp}
-                    onChange={e => setEditForm(prev => ({ ...prev, whatsapp: e.target.value }))}
-                    placeholder="WhatsApp (ej: 5491112345678)"
-                    className="h-12 rounded-xl bg-muted border-border font-bold pl-10"
-                  />
+
+                {/* Redes Sociales */}
+                <div className="space-y-4">
+                  <Label className="text-[10px] font-bold uppercase tracking-widest text-primary">Redes Sociales</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="relative">
+                      <Instagram className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        value={editForm.instagram}
+                        onChange={e => setEditForm(prev => ({ ...prev, instagram: e.target.value.replace('@', '') }))}
+                        placeholder="Instagram"
+                        className="h-12 rounded-xl bg-muted border-border font-bold pl-11"
+                      />
+                    </div>
+                    <div className="relative">
+                      <Facebook className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        value={editForm.facebook}
+                        onChange={e => setEditForm(prev => ({ ...prev, facebook: e.target.value }))}
+                        placeholder="Facebook"
+                        className="h-12 rounded-xl bg-muted border-border font-bold pl-11"
+                      />
+                    </div>
+                    <div className="relative">
+                      <Globe className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        value={editForm.whatsapp}
+                        onChange={e => setEditForm(prev => ({ ...prev, whatsapp: e.target.value }))}
+                        placeholder="WhatsApp"
+                        className="h-12 rounded-xl bg-muted border-border font-bold pl-11"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            </TabsContent>
+
+            <TabsContent value="plan" className="flex-1 overflow-y-auto p-0 m-0">
+              <div className="px-8 py-6 space-y-8">
+                {/* Current Plan Card */}
+                <div className="p-8 rounded-3xl bg-primary/5 border border-primary/20 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform">
+                    <Award className="h-24 w-24 text-primary" />
+                  </div>
+                  <div className="relative z-10 space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Plan Vigente</p>
+                        <h3 className="text-3xl font-black tracking-tighter uppercase italic text-primary">REVEN {currentPlan}</h3>
+                      </div>
+                      <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 uppercase font-black text-[9px] px-3 py-1 rounded-full">Activo</Badge>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-8">
+                      <div className="space-y-1">
+                        <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Último Pago</p>
+                        <p className="font-bold text-sm">{profileData.lastPaymentDate ? new Date(profileData.lastPaymentDate).toLocaleDateString('es-AR') : '01/05/2026'}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Vencimiento</p>
+                        <p className="font-bold text-sm text-primary">{profileData.nextPaymentDate ? new Date(profileData.nextPaymentDate).toLocaleDateString('es-AR') : '01/06/2026'}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Usage Stats */}
+                <div className="space-y-4">
+                  <h4 className="text-[10px] font-bold uppercase tracking-widest text-primary ml-1">Límites y Consumo</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-6 rounded-2xl bg-muted/40 border border-border space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold uppercase tracking-tighter">Publicaciones</span>
+                        <span className="text-xs font-black">{activeListings.length} / {PLAN_LIMITS[currentPlan]?.maxVehicles || 5}</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                        <div className="h-full bg-primary" style={{ width: `${Math.min(100, (activeListings.length / (PLAN_LIMITS[currentPlan]?.maxVehicles || 5)) * 100)}%` }} />
+                      </div>
+                    </div>
+                    <div className="p-6 rounded-2xl bg-muted/40 border border-border space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold uppercase tracking-tighter">Búsquedas Wanted</span>
+                        <span className="text-xs font-black">{activeWantedCount} / {PLAN_LIMITS[currentPlan]?.maxWantedSearches || 5}</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                        <div className="h-full bg-blue-500" style={{ width: `${Math.min(100, (activeWantedCount / (PLAN_LIMITS[currentPlan]?.maxWantedSearches || 5)) * 100)}%` }} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Performance Metrics */}
+                <div className="space-y-4">
+                  <h4 className="text-[10px] font-bold uppercase tracking-widest text-primary ml-1">Rendimiento de Cuenta</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="p-4 rounded-2xl bg-card border border-border text-center space-y-1">
+                      <Eye className="h-4 w-4 mx-auto text-primary opacity-50" />
+                      <p className="text-xl font-black tracking-tighter">{userListings.reduce((acc, l) => acc + (l.viewCount || 0), 0)}</p>
+                      <p className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Vistas</p>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-card border border-border text-center space-y-1">
+                      <MessageSquare className="h-4 w-4 mx-auto text-primary opacity-50" />
+                      <p className="text-xl font-black tracking-tighter">{userListings.reduce((acc, l) => acc + (l.contactCount || 0), 0)}</p>
+                      <p className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Leads</p>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-card border border-border text-center space-y-1">
+                      <TrendingUp className="h-4 w-4 mx-auto text-primary opacity-50" />
+                      <p className="text-xl font-black tracking-tighter">
+                        {userListings.length > 0 
+                          ? Math.round((userListings.reduce((acc, l) => acc + (l.contactCount || 0), 0) / userListings.reduce((acc, l) => acc + (l.viewCount || 0), 1)) * 100) 
+                          : 0}%
+                      </p>
+                      <p className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Conv.</p>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-card border border-border text-center space-y-1">
+                      <Clock className="h-4 w-4 mx-auto text-primary opacity-50" />
+                      <p className="text-xl font-black tracking-tighter">
+                        {Math.max(0, Math.ceil((new Date(profileData.nextPaymentDate || '2026-06-01').getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))}
+                      </p>
+                      <p className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Días</p>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-card border border-border text-center space-y-1">
+                      <Fingerprint className="h-4 w-4 mx-auto text-primary opacity-50" />
+                      <p className="text-xl font-black tracking-tighter">
+                        {Object.keys(profileData?.sessions || {}).length} / {PLAN_LIMITS[currentPlan]?.maxSessions || 1}
+                      </p>
+                      <p className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Sesiones</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Invoice Simulation */}
+                <div className="space-y-4">
+                  <h4 className="text-[10px] font-bold uppercase tracking-widest text-primary ml-1">Facturación</h4>
+                  <div className="rounded-2xl border border-border overflow-hidden">
+                    <div className="px-5 py-3 bg-muted/50 border-b border-border flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Factura</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Estado</span>
+                    </div>
+                    <div className="p-5 flex items-center justify-between hover:bg-muted/20 transition-colors">
+                      <div className="flex items-center gap-4">
+                        <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center">
+                          <CreditCard className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold tracking-tight uppercase">Mayo 2026</p>
+                          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">REVEN-{currentPlan.toUpperCase()}</p>
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="rounded-full border-emerald-500/30 text-emerald-400 font-bold text-[9px] uppercase tracking-widest">Pagado</Badge>
+                    </div>
+                  </div>
+                  <p className="text-[9px] text-muted-foreground text-center font-medium uppercase tracking-widest">Las facturas son generadas automáticamente por MercadoPago.</p>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
           </div>
 
           <div className="px-8 py-5 border-t border-border flex flex-col gap-3 shrink-0">

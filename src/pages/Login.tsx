@@ -13,7 +13,7 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, OperationType } from '@/src/lib/firebase';
-import { loginDemoUser } from '@/src/lib/auth';
+import { loginDemoUser, registerUserSession } from '@/src/lib/auth';
 import {
   Select,
   SelectContent,
@@ -47,7 +47,8 @@ export function Login() {
     setLoading(true);
     setError(null);
     try {
-      await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
+      const cred = await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
+      await registerUserSession(cred.user.uid);
       navigate('/marketplace');
     } catch (err: any) {
       console.error(err);

@@ -47,12 +47,21 @@ export function ProtectedRoute({ children, requireApproval = true }: ProtectedRo
   }
 
   if (!user) {
-    return <Navigate to="/" state={{ from: location }} replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   const SUPER_ADMINS = ['lucas.ferreyra@gmail.com'];
   const isSuperAdmin = user?.email && SUPER_ADMINS.includes(user.email);
-  const status = (profile?.role === 'ADMIN' || isSuperAdmin) ? 'active' : (profile?.status || 'pending');
+  
+  // Single Session Check
+  const localSessionId = localStorage.getItem(`reven_session_${user.uid}`);
+  const hasSessionConflict = localSessionId && profile?.sessions && !profile.sessions[localSessionId];
+
+  const status = (profile?.role === 'ADMIN' || isSuperAdmin) ? 'active' : (hasSessionConflict ? 'conflict' : (profile?.status || 'pending'));
+
+  if (status === 'conflict') {
+    return <ConflictScreen />;
+  }
 
   if (requireApproval && status === 'pending') {
     return <PendingScreen />;
@@ -63,6 +72,31 @@ export function ProtectedRoute({ children, requireApproval = true }: ProtectedRo
   }
 
   return <>{children}</>;
+}
+
+function ConflictScreen() {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center text-center space-y-8 px-4 bg-background">
+      <div className="w-20 h-20 rounded-full bg-orange-500/10 flex items-center justify-center animate-pulse">
+        <ShieldAlert className="h-10 w-10 text-orange-500" />
+      </div>
+      <div className="space-y-3 max-w-md">
+        <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-orange-500">Sesión duplicada</p>
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tighter uppercase leading-none">Acceso Desplazado</h1>
+        <p className="text-muted-foreground font-medium leading-relaxed">
+          Se ha iniciado sesión en otro dispositivo con esta cuenta.<br />
+          Por seguridad, solo se permite una sesión activa a la vez.
+        </p>
+      </div>
+      <Button
+        variant="outline"
+        onClick={() => signOut(auth)}
+        className="rounded-full px-10 h-12 font-bold uppercase tracking-widest text-xs border-border bg-orange-500/5 hover:bg-orange-500/10"
+      >
+        Cerrar sesión e ingresar aquí
+      </Button>
+    </div>
+  );
 }
 
 function PendingScreen() {

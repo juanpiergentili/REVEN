@@ -14,6 +14,13 @@ export interface UserRecord {
   status: string;
   phone?: string;
   cuil?: string;
+  province?: string;
+  city?: string;
+  provinceDisplay?: string;
+  cityDisplay?: string;
+  vehicleCount?: number;
+  currentSessionId?: string;
+  lastLoginAt?: Timestamp;
   discountCode?: string;
   trialDays?: number;
   trialStartDate?: Timestamp;
@@ -22,8 +29,25 @@ export interface UserRecord {
 }
 
 export async function getAllUsers(): Promise<UserRecord[]> {
-  const snap = await getDocs(collection(db, 'users'));
-  const users = snap.docs.map(d => ({ uid: d.id, ...d.data() } as UserRecord));
+  const [usersSnap, vehiclesSnap] = await Promise.all([
+    getDocs(collection(db, 'users')),
+    getDocs(collection(db, 'vehicles'))
+  ]);
+
+  const vehicleCounts: Record<string, number> = {};
+  vehiclesSnap.docs.forEach(d => {
+    const sellerId = d.data().sellerId;
+    if (sellerId) {
+      vehicleCounts[sellerId] = (vehicleCounts[sellerId] || 0) + 1;
+    }
+  });
+
+  const users = usersSnap.docs.map(d => ({
+    uid: d.id,
+    ...d.data(),
+    vehicleCount: vehicleCounts[d.id] || 0
+  } as UserRecord));
+
   users.sort((a, b) => {
     const tA = a.createdAt?.toMillis() ?? 0;
     const tB = b.createdAt?.toMillis() ?? 0;
