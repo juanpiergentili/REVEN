@@ -156,10 +156,9 @@ export function Header() {
             return;
           }
         }
-      }
-      setIsLoginOpen(false);
-      navigate('/marketplace');
-    } catch (err: any) {
+        setIsLoginOpen(false);
+        navigate('/marketplace');
+      } catch (err: any) {
       if (err.code === 'auth/user-not-found') {
         setError('El usuario no existe.');
       } else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {

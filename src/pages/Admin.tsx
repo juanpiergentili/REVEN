@@ -374,7 +374,7 @@ export function Admin() {
                 <tbody className="divide-y divide-border/30">
                   {displayed.map((u, index) => {
                     const statusInfo = STATUS_LABEL[u.status] ?? { label: u.status, color: 'bg-muted text-muted-foreground' };
-                    const shortId = `#${(index + 1).toString().padStart(4, '0')}`;
+                    const shortId = `#${(index + 500).toString().padStart(5, '0')}`;
                     return (
                       <tr key={u.uid} className="hover:bg-muted/20 transition-colors group">
                         <td className="px-6 py-4">
