@@ -534,7 +534,7 @@ export function Home() {
 
             <p className="text-base md:text-lg text-white font-light max-w-lg leading-relaxed">
               La Red B2B que Conecta Profesionales del Sector Automotor.<br />
-              Comercio Seguro y Transparente
+              Comercio Seguro y Transparente.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 pt-2">
