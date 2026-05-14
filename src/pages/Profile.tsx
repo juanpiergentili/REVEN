@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ChevronLeft, Eye, MessageSquare, Clock, BarChart3, TrendingUp, Award,
   MapPin, Building2, Phone, Mail, Loader2, ShoppingBag, Plus, Settings,
-  Instagram, Facebook, ExternalLink, Trash2, User, Activity, Fingerprint,
+  Instagram, Facebook, ExternalLink, Trash2, User, Activity, Fingerprint, Shield,
   Save, Pause, Play, CheckCircle2, Package, Lock, Camera, Upload, Globe,
   CreditCard,
 } from 'lucide-react';
@@ -296,8 +296,8 @@ export function Profile() {
   const pausedListings  = Array.isArray(allListings) ? allListings.filter(v => v.status === 'PAUSED') : [];
   const soldListings    = Array.isArray(allListings) ? allListings.filter(v => v.status === 'SOLD') : [];
   
-  const totalViews      = Array.isArray(allListings) ? allListings.reduce((s, v) => s + (Number(v.viewCount) || 0), 0) : 0;
-  const totalContacts   = Array.isArray(allListings) ? allListings.reduce((s, v) => s + (Number(v.contactCount) || 0), 0) : 0;
+  const totalViews      = Array.isArray(allListings) ? allListings.reduce((s, v) => s + (Number(v?.viewCount) || 0), 0) : 0;
+  const totalContacts   = Array.isArray(allListings) ? allListings.reduce((s, v) => s + (Number(v?.contactCount) || 0), 0) : 0;
   
   // Computed Advanced Metrics
   // conversionRate now represents the "Closing Rate" (Leads to Sales)
@@ -995,19 +995,23 @@ export function Profile() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="p-4 rounded-2xl bg-card border border-border text-center space-y-1">
                       <Eye className="h-4 w-4 mx-auto text-primary opacity-50" />
-                      <p className="text-xl font-black tracking-tighter">{allListings.reduce((acc, l) => acc + (l.viewCount || 0), 0)}</p>
+                      <p className="text-xl font-black tracking-tighter">
+                        {Array.isArray(allListings) ? allListings.reduce((acc, l) => acc + (Number(l?.viewCount) || 0), 0) : 0}
+                      </p>
                       <p className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Vistas</p>
                     </div>
                     <div className="p-4 rounded-2xl bg-card border border-border text-center space-y-1">
                       <MessageSquare className="h-4 w-4 mx-auto text-primary opacity-50" />
-                      <p className="text-xl font-black tracking-tighter">{allListings.reduce((acc, l) => acc + (l.contactCount || 0), 0)}</p>
+                      <p className="text-xl font-black tracking-tighter">
+                        {Array.isArray(allListings) ? allListings.reduce((acc, l) => acc + (Number(l?.contactCount) || 0), 0) : 0}
+                      </p>
                       <p className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Leads</p>
                     </div>
                     <div className="p-4 rounded-2xl bg-card border border-border text-center space-y-1">
                       <TrendingUp className="h-4 w-4 mx-auto text-primary opacity-50" />
                       <p className="text-xl font-black tracking-tighter">
-                        {allListings.length > 0 
-                          ? Math.round((allListings.reduce((acc, l) => acc + (l.contactCount || 0), 0) / allListings.reduce((acc, l) => acc + (l.viewCount || 0), 1)) * 100) 
+                        {Array.isArray(allListings) && allListings.length > 0 
+                          ? Math.round((allListings.reduce((acc, l) => acc + (Number(l?.contactCount) || 0), 0) / allListings.reduce((acc, l) => acc + (Number(l?.viewCount) || 0), 1)) * 100) 
                           : 0}%
                       </p>
                       <p className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Conv.</p>
@@ -1015,12 +1019,19 @@ export function Profile() {
                     <div className="p-4 rounded-2xl bg-card border border-border text-center space-y-1">
                       <Clock className="h-4 w-4 mx-auto text-primary opacity-50" />
                       <p className="text-xl font-black tracking-tighter">
-                        {Math.max(0, Math.ceil((new Date(profileData.nextPaymentDate || '2026-06-01').getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))}
+                        {(() => {
+                          const nextDate = profileData?.nextPaymentDate;
+                          const dateObj = (nextDate && typeof nextDate === 'object' && 'seconds' in nextDate) 
+                            ? new Date(nextDate.seconds * 1000) 
+                            : new Date(nextDate || '2026-06-01');
+                          const diff = dateObj.getTime() - new Date().getTime();
+                          return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+                        })()}
                       </p>
                       <p className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Días</p>
                     </div>
                     <div className="p-4 rounded-2xl bg-card border border-border text-center space-y-1">
-                      <Fingerprint className="h-4 w-4 mx-auto text-primary opacity-50" />
+                      <Shield className="h-4 w-4 mx-auto text-primary opacity-50" />
                       <p className="text-xl font-black tracking-tighter">
                         {Object.keys(profileData?.sessions || {}).length} / {PLAN_LIMITS[currentPlan]?.maxSessions || 1}
                       </p>
