@@ -62,9 +62,5 @@ export const EXPANDED_MODELS: Record<string, string[]> = {
   "BAIC": ["BJ30", "BJ40", "BJ60", "D20", "EX 260", "SENOVA", "X25", "X35", "X55", "X65"],
   "TOYOTA": ["COROLLA", "HILUX", "SW4", "ETIOS", "YARIS", "RAV4", "CAMRY"],
   "VOLKSWAGEN": ["GOL", "AMAROK", "VENTO", "POLO", "VIRTUS", "T-CROSS", "TAOS", "NIVUS"],
-  "BYD": ["DOLPHIN", "SEAL", "YUAN PLUS", "HAN", "TANG"],
-  "ALFA ROMEO": ["GIULIA", "STELVIO", "GIULIETTA", "MITO", "TONALE"],
-  "GREAT WALL": ["POER", "WINGLE 7", "WINGLE 5"],
-  "HAVAL": ["H6", "JOLION", "H2"],
   // More models can be added here
 };

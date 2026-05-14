@@ -184,6 +184,15 @@ export function Home() {
   const [searchParams] = useSearchParams();
   const [isAdmissionOpen, setIsAdmissionOpen] = useState(false);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
+
+  // If user is already logged in, "Solicitar Acceso" buttons should redirect, not open dialog
+  const handleOpenAdmission = () => {
+    if (auth.currentUser) {
+      navigate('/payment');
+      return;
+    }
+    setIsAdmissionOpen(true);
+  };
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -237,6 +246,7 @@ export function Home() {
   const [cuitStatus, setCuitStatus] = useState<'IDLE' | 'CHECKING' | 'VALID' | 'INVALID'>('IDLE');
   const [cuitError, setCuitError] = useState('');
   const [estadoCuit, setEstadoCuit] = useState('');
+  const [arcaRazonSocial, setArcaRazonSocial] = useState('');
 
   // Validación local del dígito verificador CUIT/CUIL argentino
   const isValidCuitFormat = (cuit: string): boolean => {
@@ -253,119 +263,54 @@ export function Home() {
     const cleanCuit = val.replace(/\D/g, '');
     if (cleanCuit.length !== 11) return;
 
-    // Validación de formato antes de llamar a la API
     if (!isValidCuitFormat(cleanCuit)) {
       setCuitStatus('INVALID');
-      setCuitError('El CUIT/CUIL ingresado no es válido.');
+      setCuitError('El CUIT ingresado no es válido.');
       return;
     }
 
     setIsCheckingCuit(true);
     setCuitError('');
     setCuitStatus('CHECKING');
-    
+
     try {
-      const apiKey = import.meta.env.VITE_AFIP_API_KEY || '';
-      if (!apiKey) throw new Error('API Key de AFIP no configurada');
+      const { getFunctions, httpsCallable } = await import('firebase/functions');
+      const { app } = await import('@/src/lib/firebase');
+      const fns = getFunctions(app, 'us-central1');
+      const consultarCUIT = httpsCallable(fns, 'consultarCUIT');
+      const res: any = await consultarCUIT({ cuit: cleanCuit });
+      const { denominacion, activo, estadoClave, tipoClave, alreadyRegistered } = res.data;
 
-      // Detectar si tenemos cert y key para prod
-      const cert = import.meta.env.VITE_AFIP_CERT;
-      const key = import.meta.env.VITE_AFIP_KEY;
-      const cuit = import.meta.env.VITE_AFIP_CUIT || '20409378472';
-      const envMode = cert && key ? 'prod' : 'dev';
-
-      // 1. Obtener Token y Sign
-      const authRes = await fetch('https://app.afipsdk.com/api/v1/afip/auth', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          environment: envMode,
-          tax_id: cuit,
-          wsid: 'ws_sr_padron_a13',
-          ...(cert && key ? { cert, key } : {})
-        })
-      });
-
-      if (!authRes.ok) throw new Error('Error en autenticación AFIP');
-      const authData = await authRes.json();
-      
-      if (!authData.token || !authData.sign) {
-        throw new Error('No se pudo obtener el token de AFIP');
+      if (tipoClave !== 'CUIT') {
+        setCuitStatus('INVALID');
+        setCuitError('Este número es un CUIL. REVEN requiere un CUIT con actividad comercial registrada en ARCA.');
+        return;
       }
 
-      // 2. Consultar Padrón
-      const padronRes = await fetch('https://app.afipsdk.com/api/v1/afip/requests', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          environment: envMode,
-          tax_id: cuit,
-          wsid: 'ws_sr_padron_a13',
-          method: 'getPersona',
-          params: {
-            token: authData.token,
-            sign: authData.sign,
-            cuitRepresentada: Number(cuit),
-            idPersona: Number(cleanCuit)
-          }
-        })
-      });
-
-      if (!padronRes.ok) throw new Error('Error en validación AFIP');
-      const data = await padronRes.json();
-      
-      // Manejar posibles errores del SDK
-      if (data.code && data.message) {
-        throw new Error(data.message);
+      if (alreadyRegistered) {
+        setCuitStatus('INVALID');
+        setCuitError('Este CUIT ya se encuentra registrado en REVEN.');
+        return;
       }
 
-      // Función auxiliar para buscar recursivamente en el JSON de respuesta
-      const findDeep = (obj: any, key: string): any => {
-        if (!obj || typeof obj !== 'object') return null;
-        if (key in obj) return obj[key];
-        for (const k in obj) {
-          const res = findDeep(obj[k], key);
-          if (res) return res;
-        }
-        return null;
-      };
+      setArcaRazonSocial(denominacion);
+      setCompany(denominacion);
+      setEstadoCuit(estadoClave);
+      setCuitStatus('VALID');
 
-      const nombre = findDeep(data, 'razonSocial') || findDeep(data, 'nombre') || '';
-      const apellido = findDeep(data, 'apellido') || '';
-      const estado = findDeep(data, 'estadoClave') || '';
-      
-      const nombreCompleto = apellido ? `${nombre} ${apellido}`.trim() : nombre;
-
-      if (nombreCompleto) {
-        setCompany(nombreCompleto);
-        setEstadoCuit(estado);
-        setCuitStatus('VALID');
-        if (estado && !['ACTIVA', 'ACTIVO'].includes(estado.toUpperCase())) {
-          setCuitError(`Estado en AFIP: ${estado} (Se requiere activo)`);
-        }
-      } else {
-        throw new Error('CUIT no encontrado en AFIP');
+      if (!activo) {
+        setCuitError(`Estado en ARCA: ${estadoClave} (Se requiere activo)`);
       }
     } catch (e: any) {
       const msg: string = e.message || '';
-      const isNotFound = msg.toLowerCase().includes('inexistente') || msg.toLowerCase().includes('no encontrado en afip');
-      
-      if (isNotFound) {
-        // CUIT no existe en AFIP → bloquear
+      if (msg.includes('no encontrado') || msg.includes('inexistente') || msg.includes('not-found')) {
         setCuitStatus('INVALID');
-        setCuitError('CUIT no encontrado en AFIP. Verificá el número ingresado.');
+        setCuitError('CUIT no encontrado en ARCA. Verificá el número ingresado.');
       } else {
-        // Error de conexión/API → degradación elegante, permitir ingreso manual
         setCuitStatus('IDLE');
-        setCuitError('No se pudo verificar en AFIP. Completá la razón social manualmente.');
+        setCuitError('No se pudo verificar en ARCA. Completá la razón social manualmente.');
       }
-      console.warn('[AFIP SDK]', msg);
+      console.warn('[ARCA]', msg);
     } finally {
       setIsCheckingCuit(false);
     }
@@ -408,6 +353,17 @@ export function Home() {
     setLoading(true);
     setError(null);
     try {
+      // Check for duplicate company name (server-side)
+      const { getFunctions: getFns2, httpsCallable: hc2 } = await import('firebase/functions');
+      const { app: firebaseApp } = await import('@/src/lib/firebase');
+      const fns2 = getFns2(firebaseApp, 'us-central1');
+      const checkCompany: any = await hc2(fns2, 'checkCompanyName')({ company: company.trim() });
+      if (!checkCompany.data.available) {
+        setError('Ya existe una agencia registrada con ese nombre de concesionaria.');
+        setLoading(false);
+        return;
+      }
+
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       await updateProfile(user, { displayName: `${name} ${lastName}` });
@@ -424,13 +380,15 @@ export function Home() {
       await setDoc(doc(db, 'users', user.uid), {
         uid: user.uid, email, name, lastName, cuil, phone, company,
         plan, billingCycle, discountCode: appliedCoupon ?? null,
-        trialDays: isFreeTrial ? 60 : null, 
-        role: isSuperAdmin ? 'ADMIN' : 'USER', 
+        trialDays: isFreeTrial ? 60 : null,
+        role: isSuperAdmin ? 'ADMIN' : 'USER',
         status: isSuperAdmin ? 'active' : 'pending',
         province: regProvince, city: regCity,
         instagram: instagramUser || null,
         avatarUrl: logoUrl,
         logoUrl,
+        arcaRazonSocial: arcaRazonSocial || null,
+        arcaEstadoClave: estadoCuit || null,
         createdAt: serverTimestamp(),
       });
       
@@ -457,19 +415,19 @@ export function Home() {
     {
       key: 'business', displayName: 'BUSINESS', ...PLAN_PRICES.business, popular: false,
       promo: null as string | null,
-      features: ['Hasta 5 autos publicados', 'Agencias hasta 2 sucursales', '3 destacados por mes', 'Datos de mercado básicos', '1 usuario por cuenta', 'Contacto directo B2B'],
+      features: ['Hasta 5 autos publicados', 'Hasta 5 búsquedas activas', 'Métricas de tu agencia', 'Datos de mercado básicos', 'Acceso simultáneo multi-dispositivo', 'Contacto directo B2B'],
       cta: 'SOLICITÁ TU ACCESO',
     },
     {
       key: 'professional', displayName: 'PROFESIONAL', ...PLAN_PRICES.professional, popular: true,
       promo: null as string | null,
-      features: ['Hasta 15 autos publicados', 'Concesionarias medianas', '15 destacados por mes', 'Datos completos', 'Alertas personalizadas', '3 usuarios', 'Contacto directo B2B'],
+      features: ['Hasta 15 autos publicados', 'Hasta 10 búsquedas activas', 'Métricas de tu agencia', 'Datos completos de mercado', 'Alertas personalizadas', 'Acceso simultáneo multi-dispositivo', 'Contacto directo B2B'],
       cta: 'SOLICITÁ TU ACCESO',
     },
     {
       key: 'enterprise', displayName: 'ENTERPRISE', ...PLAN_PRICES.enterprise, popular: false,
       promo: null as string | null,
-      features: ['Autos ilimitados', 'Grupos automotrices', 'Destacados ilimitados', 'Acceso API', 'Alertas personalizadas', 'Usuarios ilimitados', 'Account manager'],
+      features: ['Publicaciones ilimitadas', 'Búsquedas activas ilimitadas', 'Métricas de tu agencia', 'Datos completos de mercado', 'Alertas personalizadas', 'Acceso simultáneo multi-dispositivo', 'Account manager'],
       cta: 'SOLICITÁ ACCESO',
     },
   ];
@@ -541,7 +499,7 @@ export function Home() {
               <Button
                 size="lg"
                 className="h-14 px-10 rounded-full font-semibold text-base uppercase tracking-tight shadow-2xl shadow-primary/30 group bg-primary text-black"
-                onClick={() => setIsAdmissionOpen(true)}
+                onClick={handleOpenAdmission}
               >
                 SOLICITÁ TU ACCESO
                 <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
@@ -664,7 +622,7 @@ export function Home() {
               <Button
                 size="lg"
                 className="h-14 px-10 rounded-full font-semibold uppercase tracking-tight bg-primary text-black hover:bg-primary/90 shadow-xl shadow-primary/20 group text-base"
-                onClick={() => setIsAdmissionOpen(true)}
+                onClick={handleOpenAdmission}
               >
                 COMENZAR AHORA
                 <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
@@ -754,7 +712,7 @@ export function Home() {
                 ANUAL
               </button>
               <span className="bg-primary/20 text-primary border border-primary/30 font-bold text-[9px] tracking-wider px-2 py-0.5 rounded-full uppercase">
-                HOT OFF
+                25% OFF
               </span>
             </div>
           </div>
@@ -812,7 +770,7 @@ export function Home() {
                       ? 'bg-[#161616] text-white hover:bg-[#1f1f1f]'
                       : 'bg-primary text-black hover:bg-primary/90'
                     }`}
-                  onClick={() => setIsAdmissionOpen(true)}
+                  onClick={handleOpenAdmission}
                 >
                   {p.cta}
                 </Button>
@@ -886,7 +844,7 @@ export function Home() {
             <Button
               size="lg"
               className="h-16 px-14 rounded-full font-semibold text-base uppercase tracking-tight bg-primary text-black hover:bg-primary/90 shadow-2xl shadow-primary/30"
-              onClick={() => setIsAdmissionOpen(true)}
+              onClick={handleOpenAdmission}
             >
               SOLICITÁ TU ACCESO AHORA
             </Button>
@@ -896,8 +854,8 @@ export function Home() {
 
       {/* ── Admission Dialog ─────────────────────────────────────────────── */}
       <Dialog open={isAdmissionOpen} onOpenChange={handleAdmissionOpenChange}>
-        <DialogContent className="max-w-[95vw] sm:max-w-4xl p-0 rounded-[2.5rem] border-border bg-card/95 backdrop-blur-2xl shadow-2xl overflow-y-auto max-h-[90dvh]">
-          <div className="grid grid-cols-1 md:grid-cols-12 md:min-h-[600px]">
+        <DialogContent className="max-w-[95vw] sm:max-w-4xl p-0 rounded-[2.5rem] border-border bg-card/95 backdrop-blur-2xl shadow-2xl overflow-hidden max-h-[90dvh] flex flex-col">
+          <div className="grid grid-cols-1 md:grid-cols-12 flex-1 min-h-0 md:h-[90dvh] md:max-h-[800px] md:min-h-[600px]">
             <div className="hidden md:flex md:col-span-4 lg:col-span-3 bg-primary p-10 flex-col justify-between text-black relative overflow-hidden">
               <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-black/10 blur-3xl rounded-full" />
               <div className="z-10">
@@ -905,17 +863,38 @@ export function Home() {
                 <h3 className="text-3xl font-black tracking-tighter uppercase leading-[0.9] mb-6">Unite a <br />la Comunidad<br />Reven</h3>
                 <p className="text-sm font-semibold leading-relaxed text-black/70 max-w-sm">Accedé al stock más exclusivo de Argentina y potenciá tu rentabilidad B2B.</p>
               </div>
-              <div className="z-10 space-y-4">
-                <div className="flex items-center gap-4 bg-black/10 backdrop-blur-xl p-4 rounded-2xl border border-black/20">
-                  <div className="h-10 w-10 rounded-full bg-black/15 flex items-center justify-center shrink-0">
-                    <ShieldCheck className="h-6 w-6 text-black" />
+              <div className="z-10 space-y-3">
+                <div className="flex items-center gap-3 py-3 border-t border-black/20">
+                  <div className="h-9 w-9 rounded-full bg-black flex items-center justify-center shrink-0">
+                    <ShieldCheck className="h-4 w-4 text-primary" />
                   </div>
-                  <span className="text-xs font-bold tracking-widest text-black uppercase">100% Verificado</span>
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-black/50">Verificación</p>
+                    <p className="text-sm font-black uppercase tracking-tight leading-none">100% Seguro</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 py-3 border-t border-black/20">
+                  <div className="h-9 w-9 rounded-full bg-black flex items-center justify-center shrink-0">
+                    <Check className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-black/50">Proceso</p>
+                    <p className="text-sm font-black uppercase tracking-tight leading-none">Manual + ARCA</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 py-3 border-t border-black/20">
+                  <div className="h-9 w-9 rounded-full bg-black flex items-center justify-center shrink-0">
+                    <Users className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-black/50">Acceso</p>
+                    <p className="text-sm font-black uppercase tracking-tight leading-none">Solo B2B</p>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="md:col-span-8 lg:col-span-9 p-8 md:p-12 bg-background/50 flex flex-col">
+            <div className="md:col-span-8 lg:col-span-9 p-8 md:p-12 bg-background/50 flex flex-col overflow-y-auto">
 
               {registrationSuccess ? (
                 /* ── SUCCESS / PENDING SCREEN ───────────────────── */
@@ -983,27 +962,32 @@ export function Home() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="pop-cuil" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">CUIL / CUIT</Label>
+                    <Label htmlFor="pop-cuil" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">CUIT</Label>
                     <div className="relative">
                       <Input 
                         id="pop-cuil" 
                         required 
                         value={cuil} 
                         onChange={(e) => {
-                          const val = e.target.value;
+                          const val = e.target.value.replace(/[\s\-]/g, '');
                           setCuil(val);
                           if (val.replace(/\D/g, '').length === 11) checkCuit(val);
-                        }} 
-                        placeholder="20-XXXXXXXX-X" 
-                        className={`h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4 ${cuitStatus === 'VALID' ? 'border-emerald-500/50' : cuitStatus === 'INVALID' ? 'border-destructive/50' : ''}`} 
+                        }}
+                        placeholder="20XXXXXXXXX"
+                        className={`h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4 ${cuitStatus === 'VALID' ? 'border-emerald-500/50' : cuitStatus === 'INVALID' ? 'border-destructive/50' : ''}`}
                       />
                       {isCheckingCuit && <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-primary" />}
                     </div>
                     {cuitError && <p className="text-[9px] font-bold text-destructive uppercase tracking-widest ml-1">{cuitError}</p>}
                     {cuitStatus === 'VALID' && !cuitError && (
-                      <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest ml-1 flex items-center gap-1">
-                        <Check className="h-3 w-3" /> Verificado en ARCA: {estadoCuit}
-                      </p>
+                      <div className="ml-1 space-y-0.5">
+                        {arcaRazonSocial && (
+                          <p className="text-[10px] font-bold text-white/70 uppercase tracking-widest">{arcaRazonSocial}</p>
+                        )}
+                        <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest flex items-center gap-1">
+                          <Check className="h-3 w-3" /> Verificado en ARCA: {estadoCuit}
+                        </p>
+                      </div>
                     )}
                   </div>
                   <div className="space-y-2">
@@ -1204,20 +1188,69 @@ export function Home() {
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold tracking-tighter uppercase flex items-center gap-2">
               <FileText className="h-6 w-6 text-primary" />
-              Bases Legales B2B REVEN
+              Términos y Condiciones — REVEN
             </DialogTitle>
+            <p className="text-[10px] text-muted-foreground mt-1">Última actualización: mayo 2025 · Vigentes para todos los Miembros</p>
           </DialogHeader>
-          <ScrollArea className="h-[400px] pr-4 mt-4 text-sm font-medium text-muted-foreground leading-relaxed">
-            <section className="space-y-6">
+          <ScrollArea className="h-[440px] pr-4 mt-4 text-sm font-medium text-muted-foreground leading-relaxed">
+            <section className="space-y-7">
               {[
-                { t: '1. Objeto', c: 'REVEN es un ecosistema digital exclusivo para la compra y venta de vehículos entre concesionarias y revendedores profesionales (B2B).' },
-                { t: '2. Verificación', c: 'Cada solicitud de admisión es auditada manualmente. El solicitante debe demostrar actividad comercial lícita mediante CUIT/CUIL.' },
-                { t: '3. Transparencia', c: 'Los vendedores se comprometen a declarar el estado real de las unidades.' },
-                { t: '4. Confidencialidad', c: 'Toda información de precios mayoristas es estrictamente confidencial.' },
+                {
+                  t: '1. Naturaleza del Servicio',
+                  c: 'REVEN es una plataforma digital de comercio mayorista B2B (Business-to-Business) exclusiva para profesionales del sector automotor: concesionarias, agencias, revendedores habilitados y operadores mayoristas. Su acceso es estrictamente privado y está reservado a Miembros verificados. REVEN no es un sitio de ventas al público consumidor final.'
+                },
+                {
+                  t: '2. Condiciones de Admisión',
+                  c: 'Para acceder a REVEN, el solicitante debe: (a) poseer CUIT/CUIL activo ante ARCA (ex AFIP) y actividad comercial lícita en el sector automotor; (b) superar el proceso de verificación manual realizado por el equipo de REVEN; (c) aceptar el presente reglamento en su totalidad. REVEN se reserva el derecho de rechazar o dar de baja cualquier solicitud sin expresión de causa.'
+                },
+                {
+                  t: '3. Visibilidad de Datos entre Miembros',
+                  c: 'Al ingresar a la plataforma, el Miembro acepta y comprende expresamente que: (a) su perfil de agencia (nombre comercial, razón social, provincia y ciudad) es visible para el resto de los Miembros verificados; (b) las publicaciones de vehículos que realice (marca, modelo, año, kilómetros, condición, precio B2B y fotografías) serán visibles para todos los Miembros activos de la red; (c) su historial de actividad pública dentro de la plataforma (publicaciones, operaciones cerradas) podrá ser visible para otros Miembros. Esta visibilidad es consustancial al modelo de negocio de REVEN y constituye la base del valor que ofrece la red.'
+                },
+                {
+                  t: '4. Confidencialidad de Precios B2B',
+                  c: 'Los precios publicados en REVEN son precios mayoristas confidenciales, destinados exclusivamente al uso entre profesionales del sector. El Miembro se compromete a: (a) no divulgar precios B2B de REVEN a consumidores finales, medios de comunicación o plataformas públicas; (b) no utilizar la información de precios con fines distintos al cierre de operaciones mayoristas legítimas; (c) mantener la confidencialidad de la información comercial de otros Miembros a la que acceda en virtud de su membresía. El incumplimiento de estas obligaciones podrá derivar en la suspensión inmediata de la cuenta y acciones legales.'
+                },
+                {
+                  t: '5. Responsabilidad por Publicaciones',
+                  c: 'Cada Miembro es el único y exclusivo responsable de la veracidad, exactitud y licitud del contenido que publica. Al publicar una unidad, el Miembro declara: (a) ser titular o estar legitimado para comercializar el vehículo; (b) que la información publicada (estado, kilómetros, condición, precio) es veraz y actual; (c) que las fotografías corresponden al vehículo real ofrecido. REVEN actúa como plataforma intermediaria y no es parte de ninguna transacción, por lo que no asume responsabilidad por el contenido generado por los Miembros ni por las operaciones que estos realicen entre sí.'
+                },
+                {
+                  t: '6. Suscripción, Facturación y Pagos',
+                  c: 'El acceso a REVEN requiere el pago de una suscripción mensual o anual según el plan seleccionado. (a) Los precios vigentes son los publicados en el sitio al momento de la contratación y pueden ser actualizados con 30 días de preaviso. (b) El pago se procesa a través de Mercado Pago. El Miembro autoriza el débito automático periódico según la modalidad de suscripción elegida. (c) La falta de pago dará lugar a la suspensión inmediata del acceso. (d) No se realizan reembolsos por períodos no utilizados salvo que REVEN cancele el servicio por causas propias. (e) Los períodos de prueba gratuita (código REVENFREE60) se otorgan por única vez por CUIT y no son transferibles.'
+                },
+                {
+                  t: '7. Uso Aceptable — Conductas Prohibidas',
+                  c: 'Queda expresamente prohibido: (a) publicar vehículos inexistentes, con datos falsos o con precio manifiestamente engañoso ("precio gancho"); (b) utilizar la plataforma para operaciones de lavado de activos o cualquier actividad ilícita; (c) extraer, copiar o reutilizar el contenido de la plataforma (precios, datos de Miembros, listados) para alimentar otras plataformas, comparadores o bases de datos propias o de terceros; (d) compartir credenciales de acceso con personas no autorizadas; (e) realizar conductas que interfieran con el normal funcionamiento de la plataforma; (f) utilizar herramientas automatizadas (scrapers, bots) para acceder o extraer datos de REVEN.'
+                },
+                {
+                  t: '8. Protección de Datos Personales',
+                  c: 'REVEN recopila y trata datos personales conforme a la Ley N° 25.326 de Protección de Datos Personales de la República Argentina. Los datos recabados (nombre, CUIT/CUIL, email, teléfono, razón social según ARCA) se utilizan exclusivamente para: verificar la identidad del Miembro, gestionar su cuenta, facilitar las operaciones entre Miembros y cumplir obligaciones fiscales. El Miembro tiene derecho de acceso, rectificación y supresión de sus datos conforme a la ley vigente. REVEN no vende ni cede datos personales a terceros con fines comerciales.'
+                },
+                {
+                  t: '9. Propiedad Intelectual',
+                  c: 'La plataforma REVEN, su diseño, código, marca, logotipos y metodología son propiedad exclusiva de REVEN. El uso de la plataforma no otorga al Miembro ningún derecho sobre la propiedad intelectual de REVEN. Las fotografías e información publicadas por los Miembros son de su exclusiva titularidad, pero al publicarlas otorgan a REVEN una licencia no exclusiva para mostrarlas dentro de la plataforma.'
+                },
+                {
+                  t: '10. Suspensión y Cancelación de Cuenta',
+                  c: 'REVEN podrá suspender o dar de baja una cuenta en forma inmediata, con o sin preaviso, ante: (a) incumplimiento de cualquier punto de estos Términos; (b) falta de pago; (c) conducta que perjudique a otros Miembros o a la plataforma; (d) solicitud de baja voluntaria por parte del Miembro. Al dar de baja una cuenta, las publicaciones activas serán removidas de la plataforma. El Miembro puede solicitar la baja en cualquier momento sin penalidad, pero no dará derecho a reembolso del período en curso.'
+                },
+                {
+                  t: '11. Limitación de Responsabilidad',
+                  c: 'REVEN es un mercado digital que conecta compradores y vendedores profesionales. No es parte en ninguna transacción entre Miembros y no garantiza la concreción de ninguna operación. REVEN no será responsable por: (a) daños derivados de operaciones entre Miembros; (b) inexactitudes en el contenido publicado por Miembros; (c) interrupciones del servicio por causas de fuerza mayor, mantenimiento o fallas técnicas ajenas al control de REVEN. La responsabilidad máxima de REVEN en cualquier circunstancia se limita al importe abonado por el Miembro en el mes inmediato anterior al evento dañoso.'
+                },
+                {
+                  t: '12. Modificaciones',
+                  c: 'REVEN podrá modificar estos Términos en cualquier momento. Los cambios serán comunicados con al menos 15 días de anticipación mediante email al Miembro. El uso continuado de la plataforma después de la entrada en vigencia de los nuevos Términos implicará su aceptación. Si el Miembro no acepta los nuevos Términos, deberá cancelar su suscripción antes de la fecha de entrada en vigencia.'
+                },
+                {
+                  t: '13. Ley Aplicable y Jurisdicción',
+                  c: 'Estos Términos se rigen por la legislación de la República Argentina. Para cualquier controversia derivada de la relación entre REVEN y sus Miembros, ambas partes se someten a la jurisdicción de los Tribunales Ordinarios de la Ciudad Autónoma de Buenos Aires, renunciando expresamente a cualquier otro fuero que pudiera corresponderles.'
+                },
               ].map((s, i) => (
                 <div key={i}>
                   <h4 className="text-foreground font-bold uppercase tracking-widest text-xs mb-2">{s.t}</h4>
-                  <p>{s.c}</p>
+                  <p className="text-[12px] leading-relaxed">{s.c}</p>
                 </div>
               ))}
             </section>
@@ -1228,7 +1261,7 @@ export function Home() {
         </DialogContent>
       </Dialog>
 
-      <Footer onAdmissionClick={() => setIsAdmissionOpen(true)} onTermsClick={() => setShowTerms(true)} />
+      <Footer onAdmissionClick={handleOpenAdmission} onTermsClick={() => setShowTerms(true)} />
     </div>
   );
 }

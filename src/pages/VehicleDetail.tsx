@@ -4,16 +4,17 @@ import {
   ChevronLeft, ChevronRight, Share2, MapPin, Calendar, Gauge, Fuel,
   CheckCircle2, MessageSquare, Eye, ShieldCheck, Users, ArrowRight, Car, Loader2,
   AlertCircle, Wrench, PaintBucket, Settings, X, Expand,
-  Pencil, Pause, Play, CheckSquare, Trash2, Search,
+  Pencil, Pause, Play, CheckSquare, Trash2, Search, AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { useState, useEffect, useCallback } from 'react';
-import { doc, getDoc, updateDoc, deleteDoc, getDocs, collection, increment, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, getDocFromServer, updateDoc, deleteDoc, getDocs, collection, increment, serverTimestamp } from 'firebase/firestore';
 import { db, useAuth } from '@/src/lib/firebase';
 import type { Vehicle } from '@/src/types';
 import { extractIdFromSlug } from '@/src/lib/seo';
@@ -30,6 +31,7 @@ export function VehicleDetail() {
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [notFoundReason, setNotFoundReason] = useState('');
   const [ownerActionLoading, setOwnerActionLoading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [soldDialogOpen, setSoldDialogOpen] = useState(false);
@@ -37,36 +39,30 @@ export function VehicleDetail() {
   const [agencySearch, setAgencySearch] = useState('');
   const [agencies, setAgencies] = useState<{ id: string; company: string; name: string }[]>([]);
   const [selectedBuyer, setSelectedBuyer] = useState<{ id: string; company: string } | null>(null);
+  const [isAdminUser, setIsAdminUser] = useState(false);
+  const [adminPauseOpen, setAdminPauseOpen] = useState(false);
+  const [adminPauseReason, setAdminPauseReason] = useState('');
+  const [adminActionLoading, setAdminActionLoading] = useState(false);
 
   const id = slug ? extractIdFromSlug(slug) : undefined;
 
   useEffect(() => {
     if (!id) {
-      console.warn('[VehicleDetail] No ID found in slug:', slug);
+      setNotFoundReason(`Slug inválido: "${slug}"`);
       setNotFound(true);
       setLoading(false);
       return;
     }
 
-    console.log('[VehicleDetail] Fetching vehicle with ID:', id);
-
     let isMounted = true;
-    const timeoutId = setTimeout(() => {
-      if (isMounted && loading) {
-        console.error('[VehicleDetail] Fetch timeout for ID:', id);
-        setLoading(false);
-        setNotFound(true);
-      }
-    }, 10000); // 10s safety timeout
 
     async function fetchVehicle() {
       try {
-        const snap = await getDoc(doc(db, 'vehicles', id));
+        const snap = await getDocFromServer(doc(db, 'vehicles', id));
         if (!isMounted) return;
 
         if (snap.exists()) {
           const data = snap.data();
-          console.log('[VehicleDetail] Vehicle found:', data.brand, data.model);
           setVehicle({
             ...data,
             id: snap.id,
@@ -77,26 +73,73 @@ export function VehicleDetail() {
           return;
         }
 
-        console.warn('[VehicleDetail] Vehicle not found in Firestore:', id);
+        setNotFoundReason(`ID: ${id}`);
         setNotFound(true);
         setLoading(false);
       } catch (err) {
-        console.error('[VehicleDetail] Error fetching vehicle:', err);
-        if (isMounted) {
-          setNotFound(true);
-          setLoading(false);
-        }
+        if (!isMounted) return;
+        const msg = err instanceof Error ? err.message : String(err);
+        setNotFoundReason(`Error: ${msg}`);
+        setNotFound(true);
+        setLoading(false);
       }
     }
 
     fetchVehicle();
-    return () => {
-      isMounted = false;
-      clearTimeout(timeoutId);
-    };
+    return () => { isMounted = false; };
   }, [id, slug]);
 
+  const SUPER_ADMINS = ['lucas.ferreyra@gmail.com'];
+
+  useEffect(() => {
+    if (!user) { setIsAdminUser(false); return; }
+    if (user.email && SUPER_ADMINS.includes(user.email)) { setIsAdminUser(true); return; }
+    getDoc(doc(db, 'users', user.uid)).then(snap => {
+      setIsAdminUser(snap.exists() && snap.data().role === 'ADMIN');
+    });
+  }, [user]);
+
   const isOwner = !!user && !!vehicle && vehicle.sellerId === user.uid;
+  const isAdmin = isAdminUser;
+
+  const handleAdminPause = async () => {
+    if (!vehicle) return;
+    setAdminActionLoading(true);
+    try {
+      await updateDoc(doc(db, 'vehicles', vehicle.id), {
+        status: 'PAUSED',
+        adminPauseReason: adminPauseReason.trim() || null,
+      });
+      setVehicle(v => v ? { ...v, status: 'PAUSED', adminPauseReason: adminPauseReason.trim() || null } as any : v);
+      setAdminPauseOpen(false);
+      setAdminPauseReason('');
+    } finally {
+      setAdminActionLoading(false);
+    }
+  };
+
+  const handleAdminUnpause = async () => {
+    if (!vehicle) return;
+    setAdminActionLoading(true);
+    try {
+      await updateDoc(doc(db, 'vehicles', vehicle.id), { status: 'ACTIVE', adminPauseReason: null });
+      setVehicle(v => v ? { ...v, status: 'ACTIVE', adminPauseReason: null } as any : v);
+    } finally {
+      setAdminActionLoading(false);
+    }
+  };
+
+  const handleAdminDelete = async () => {
+    if (!vehicle) return;
+    if (!window.confirm('¿Eliminar esta publicación permanentemente?')) return;
+    setAdminActionLoading(true);
+    try {
+      await deleteDoc(doc(db, 'vehicles', vehicle.id));
+      navigate(-1);
+    } finally {
+      setAdminActionLoading(false);
+    }
+  };
 
   const handleStatusChange = async (status: Vehicle['status']) => {
     if (!vehicle || !user) return;
@@ -219,6 +262,9 @@ export function VehicleDetail() {
         <div className="text-center space-y-2">
           <h2 className="text-2xl font-bold tracking-tighter uppercase">Vehículo no encontrado</h2>
           <p className="text-muted-foreground font-medium">Esta publicación no existe o fue eliminada.</p>
+          {notFoundReason && (
+            <p className="text-[11px] font-mono text-orange-400 bg-orange-500/10 border border-orange-500/20 rounded-xl px-4 py-2 mt-2">{notFoundReason}</p>
+          )}
         </div>
         <Button onClick={() => navigate('/marketplace')} className="rounded-full font-bold uppercase tracking-widest text-xs">
           Volver al Marketplace
@@ -700,6 +746,41 @@ export function VehicleDetail() {
                       </Button>
                     </div>
                   </div>
+                ) : isAdmin ? (
+                  <div className="space-y-3">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-orange-400 text-center flex items-center justify-center gap-1.5">
+                      <ShieldCheck className="h-3.5 w-3.5" /> Panel Admin
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {vehicle.status === 'PAUSED' ? (
+                        <Button
+                          variant="outline"
+                          className="h-12 rounded-2xl font-bold uppercase tracking-tighter text-xs gap-2 text-primary border-primary/40"
+                          onClick={handleAdminUnpause}
+                          disabled={adminActionLoading}
+                        >
+                          {adminActionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Play className="h-4 w-4" /> Activar</>}
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          className="h-12 rounded-2xl font-bold uppercase tracking-tighter text-xs gap-2 text-orange-400 border-orange-400/30 hover:bg-orange-500/10"
+                          onClick={() => { setAdminPauseReason(''); setAdminPauseOpen(true); }}
+                          disabled={adminActionLoading || vehicle.status === 'SOLD'}
+                        >
+                          <Pause className="h-4 w-4" /> Pausar
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        className="h-12 rounded-2xl font-bold uppercase tracking-tighter text-xs gap-2 text-red-400 border-red-400/30 hover:bg-red-500/10"
+                        onClick={handleAdminDelete}
+                        disabled={adminActionLoading}
+                      >
+                        {adminActionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Trash2 className="h-4 w-4" /> Eliminar</>}
+                      </Button>
+                    </div>
+                  </div>
                 ) : (
                   <Button
                     size="lg"
@@ -813,6 +894,36 @@ export function VehicleDetail() {
               </Button>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Admin Pause Dialog */}
+      <Dialog open={adminPauseOpen} onOpenChange={open => { setAdminPauseOpen(open); if (!open) setAdminPauseReason(''); }}>
+        <DialogContent className="sm:max-w-md rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="font-black uppercase tracking-tighter text-xl flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-orange-400" /> Pausar publicación
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground font-medium">
+              Ingresá el motivo. El vendedor verá esta advertencia en su panel.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <Textarea
+              placeholder="Ej: Información incompleta, precio incorrecto, imágenes inapropiadas..."
+              className="rounded-2xl resize-none min-h-[100px]"
+              value={adminPauseReason}
+              onChange={e => setAdminPauseReason((e.target as HTMLTextAreaElement).value)}
+              autoFocus
+            />
+            <Button
+              className="w-full h-12 rounded-2xl font-bold uppercase tracking-tighter bg-orange-500 hover:bg-orange-600 text-white"
+              onClick={handleAdminPause}
+              disabled={!adminPauseReason.trim() || adminActionLoading}
+            >
+              {adminActionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Confirmar pausa'}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

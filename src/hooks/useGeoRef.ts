@@ -21,7 +21,9 @@ export function useGeoRef(provinciaId?: string) {
       .then(res => res.json())
       .then(data => {
         if (data.provincias && data.provincias.length > 0) {
-          const sorted = data.provincias.sort((a: GeoItem, b: GeoItem) => a.nombre.localeCompare(b.nombre));
+          const sorted = data.provincias
+            .sort((a: any, b: any) => String(a.nombre).localeCompare(String(b.nombre)))
+            .map((p: any) => ({ id: String(p.id), nombre: String(p.nombre) }));
           setProvincias(sorted);
         }
       })
@@ -43,7 +45,9 @@ export function useGeoRef(provinciaId?: string) {
       .then(res => res.json())
       .then(data => {
         if (data.localidades && data.localidades.length > 0) {
-          const sorted = data.localidades.sort((a: GeoItem, b: GeoItem) => a.nombre.localeCompare(b.nombre));
+          const sorted = data.localidades
+            .sort((a: any, b: any) => String(a.nombre).localeCompare(String(b.nombre)))
+            .map((l: any) => ({ id: String(l.id), nombre: String(l.nombre) }));
           setLocalidades(sorted);
         } else {
           throw new Error('Empty');

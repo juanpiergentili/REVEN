@@ -87,9 +87,9 @@ export function formatLastOnline(lastOnline: string | undefined): string {
 /**
  * Calculate average response time from timestamps array.
  */
-export function getAverageResponseTime(timestamps: any): string {
-  if (!Array.isArray(timestamps) || timestamps.length === 0) return 'Sin datos';
-  const avg = timestamps.reduce((a, b) => a + (Number(b) || 0), 0) / timestamps.length;
+export function getAverageResponseTime(timestamps: number[] | undefined): string {
+  if (!timestamps || timestamps.length === 0) return 'Sin datos';
+  const avg = timestamps.reduce((a, b) => a + b, 0) / timestamps.length;
   if (avg < 60) return `${Math.round(avg)} min`;
   if (avg < 1440) return `${Math.round(avg / 60)} horas`;
   return `${Math.round(avg / 1440)} días`;
@@ -98,9 +98,9 @@ export function getAverageResponseTime(timestamps: any): string {
 /**
  * Get response badge text based on average response time.
  */
-export function getResponseBadge(timestamps: any): { label: string; color: string } {
-  if (!Array.isArray(timestamps) || timestamps.length === 0) return { label: 'Nuevo', color: 'bg-muted' };
-  const avg = timestamps.reduce((a, b) => a + (Number(b) || 0), 0) / timestamps.length;
+export function getResponseBadge(timestamps: number[] | undefined): { label: string; color: string } {
+  if (!timestamps || timestamps.length === 0) return { label: 'Nuevo', color: 'bg-muted' };
+  const avg = timestamps.reduce((a, b) => a + b, 0) / timestamps.length;
   if (avg <= 30) return { label: 'Responde rápido', color: 'bg-emerald-700 text-emerald-100' };
   if (avg <= 120) return { label: 'Buena respuesta', color: 'bg-blue-500' };
   if (avg <= 480) return { label: 'Responde frecuentemente', color: 'bg-yellow-500' };

@@ -189,21 +189,31 @@ export function useArgAutos(
         }
 
         if (modelApiId) {
-          // Fetch ALL versions with years relation to populate the dropdown
           const url = `${BASE_URL}/models/${modelApiId}/versions?per_page=100&relations[]=years`;
           const res = await fetch(url);
           const d = await res.json();
-          
-          if (!cancelled && d.data) {
+
+          if (!cancelled && d.data && d.data.length > 0) {
             const allYears = new Set<string>();
+            const yearRegex = /\b(199\d|20[0-2]\d)\b/;
+
             d.data.forEach((v: any) => {
-              if (v.years && Array.isArray(v.years)) {
-                v.years.forEach((y: any) => allYears.add(String(y.year)));
+              // Primary: available_years field — e.g. [0, 2025] (0 = placeholder, ignore)
+              if (v.available_years && Array.isArray(v.available_years)) {
+                v.available_years.forEach((yr: any) => {
+                  if (yr && Number(yr) >= 1990) allYears.add(String(yr));
+                });
               }
+              // Secondary: year embedded in the version name — e.g. "Se-G AT 2011"
+              const nameHit = (v.name_raw || v.name || '').match(yearRegex);
+              if (nameHit) allYears.add(nameHit[1]);
             });
-            const sortedYears = Array.from(allYears).sort((a, b) => b.localeCompare(a));
-            console.log(`[useArgAutos] Found ${sortedYears.length} years for model ${selectedModelName}`);
-            setAvailableYears(sortedYears);
+
+            if (!cancelled && allYears.size > 0) {
+              const sortedYears = Array.from(allYears)
+                .sort((a, b) => Number(b) - Number(a));
+              setAvailableYears(sortedYears);
+            }
           }
         }
       } catch (err) {

@@ -8,12 +8,10 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { VEHICLE_CATALOG, COLORS } from '@/src/data/vehicle-catalog';
-import { createWantedSearch, getUserActiveWantedCount } from '@/src/lib/wantedSearches';
+import { createWantedSearch } from '@/src/lib/wantedSearches';
 import { useAuth, db } from '@/src/lib/firebase';
 import { getDoc, doc } from 'firebase/firestore';
-import type { VehicleCondition, Currency, MembershipPlan } from '@/src/types';
-import { PLAN_LIMITS, normalizePlan } from '@/src/types';
-import { useEffect } from 'react';
+import type { VehicleCondition, Currency } from '@/src/types';
 
 interface Props {
   open: boolean;
@@ -38,30 +36,6 @@ export function PublishWantedSearch({ open, onClose }: Props) {
   const [priceMax, setPriceMax] = useState('');
   const [currency, setCurrency] = useState<Currency>('USD');
   const [color, setColor] = useState('');
-  const [activeCount, setActiveCount] = useState(0);
-  const [userPlan, setUserPlan] = useState<MembershipPlan>('business');
-
-  useEffect(() => {
-    if (!open || !user) return;
-    const fetchData = async () => {
-      try {
-        const [count, userDoc] = await Promise.all([
-          getUserActiveWantedCount(user.uid),
-          getDoc(doc(db, 'users', user.uid))
-        ]);
-        setActiveCount(count);
-        if (userDoc.exists()) {
-          setUserPlan(normalizePlan(userDoc.data()?.plan));
-        }
-      } catch (err) {
-        console.error('Error fetching wanted search data:', err);
-      }
-    };
-    fetchData();
-  }, [open, user]);
-
-  const planMax = PLAN_LIMITS[userPlan]?.maxWantedSearches || 5;
-  const isAtLimit = activeCount >= planMax;
 
   const selectedBrand = VEHICLE_CATALOG.find(b => b.nombre === brand);
   const selectedModel = selectedBrand?.modelos.find(m => m.nombre === model);
@@ -109,13 +83,6 @@ export function PublishWantedSearch({ open, onClose }: Props) {
 
     setLoading(true);
     setError(null);
-
-    if (isAtLimit) {
-      setError(`Alcanzaste el límite de ${planMax} búsquedas activas para tu plan ${userPlan}.`);
-      setLoading(false);
-      return;
-    }
-
     try {
       const userDoc = await getDoc(doc(db, 'users', user.uid));
       const ud = userDoc.data();
@@ -368,15 +335,10 @@ export function PublishWantedSearch({ open, onClose }: Props) {
               </div>
 
               {/* Footer fijo */}
-              <div className="p-6 border-t border-border shrink-0 space-y-4">
-                {isAtLimit && (
-                  <div className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-[10px] font-bold uppercase tracking-widest text-center">
-                    Límite de {planMax} búsquedas activas alcanzado para tu plan {userPlan}.
-                  </div>
-                )}
+              <div className="p-6 border-t border-border shrink-0">
                 <Button
                   type="submit"
-                  disabled={loading || isAtLimit}
+                  disabled={loading}
                   className="w-full h-14 rounded-xl font-bold uppercase tracking-tighter text-lg shadow-xl shadow-primary/20"
                 >
                   {loading ? (

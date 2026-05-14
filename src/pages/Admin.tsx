@@ -8,8 +8,8 @@ import {
   Building2, Mail, Phone, CreditCard, ArrowLeft, Loader2, Trash2,
   DollarSign, TrendingUp, Activity, BarChart3, ShoppingBag, MessageSquare
 } from 'lucide-react';
-import { 
-  getAllUsers, approveUser, rejectUser, deleteUser, UserRecord,
+import {
+  getAllUsers, approveUser, rejectUser, reactivateUser, deleteUser, UserRecord,
   getPlatformStats, getFinancialStats, PlatformStats, FinancialStats, promoteToAdmin
 } from '@/src/lib/admin';
 
@@ -20,9 +20,11 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 
 const STATUS_LABEL: Record<string, { label: string; color: string }> = {
-  pending:  { label: 'Pendiente', color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' },
-  active:   { label: 'Activo',    color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' },
-  rejected: { label: 'Rechazado', color: 'bg-red-500/20 text-red-400 border-red-500/30' },
+  pending:   { label: 'Pendiente',  color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' },
+  approved:  { label: 'Aprobado',   color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
+  active:    { label: 'Activo',     color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' },
+  rejected:  { label: 'Rechazado',  color: 'bg-red-500/20 text-red-400 border-red-500/30' },
+  suspended: { label: 'Suspendido', color: 'bg-orange-500/20 text-orange-400 border-orange-500/30' },
 };
 
 const PLAN_LABEL: Record<string, string> = {
@@ -89,33 +91,67 @@ export function Admin() {
 
   const handleApprove = async (uid: string) => {
     setActionId(uid);
-    const u = users.find(x => x.uid === uid);
-    await approveUser(uid, u);
-    await loadData();
-    setActionId(null);
+    try {
+      const u = users.find(x => x.uid === uid);
+      await approveUser(uid, u);
+      await loadData();
+    } catch (err) {
+      console.error('Error approving user:', err);
+    } finally {
+      setActionId(null);
+    }
   };
 
   const handleReject = async (uid: string) => {
     setActionId(uid);
-    await rejectUser(uid);
-    await loadData();
-    setActionId(null);
+    try {
+      await rejectUser(uid);
+      await loadData();
+    } catch (err) {
+      console.error('Error rejecting user:', err);
+    } finally {
+      setActionId(null);
+    }
   };
 
   const handleDelete = async (uid: string) => {
     if (!window.confirm('¿Estás seguro de eliminar este usuario? Esta acción borrará su perfil de la base de datos.')) return;
     setActionId(uid);
-    await deleteUser(uid);
-    await loadData();
-    setActionId(null);
+    try {
+      await deleteUser(uid);
+      await loadData();
+    } catch (err) {
+      console.error('Error deleting user:', err);
+      alert('No se pudo eliminar el usuario. Verificá los permisos.');
+    } finally {
+      setActionId(null);
+    }
+  };
+
+  const handleReactivate = async (uid: string) => {
+    if (!window.confirm('¿Reactivar este usuario? Se reactivarán sus publicaciones y búsquedas pausadas.')) return;
+    setActionId(uid);
+    try {
+      await reactivateUser(uid);
+      await loadData();
+    } catch (err) {
+      console.error('Error reactivating user:', err);
+    } finally {
+      setActionId(null);
+    }
   };
 
   const handlePromote = async (uid: string) => {
     if (!window.confirm('¿Estás seguro de otorgar permisos de ADMINISTRADOR a este usuario?')) return;
     setActionId(uid);
-    await promoteToAdmin(uid);
-    await loadData();
-    setActionId(null);
+    try {
+      await promoteToAdmin(uid);
+      await loadData();
+    } catch (err) {
+      console.error('Error promoting user:', err);
+    } finally {
+      setActionId(null);
+    }
   };
 
   if (authLoading) {
@@ -380,6 +416,18 @@ export function Admin() {
                         {u.phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{u.phone}</span>}
                         {u.cuil && <span className="flex items-center gap-1"><CreditCard className="h-3 w-3" />{u.cuil}</span>}
                       </div>
+                      {(u.arcaRazonSocial || u.arcaEstadoClave) && (
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-medium mt-0.5">
+                          {u.arcaRazonSocial && (
+                            <span className="text-white/60 uppercase tracking-wide">ARCA: {u.arcaRazonSocial}</span>
+                          )}
+                          {u.arcaEstadoClave && (
+                            <span className={`font-bold uppercase tracking-widest ${u.arcaEstadoClave === 'ACTIVO' ? 'text-emerald-400' : 'text-red-400'}`}>
+                              {u.arcaEstadoClave}
+                            </span>
+                          )}
+                        </div>
+                      )}
                       <p className="text-[10px] text-muted-foreground">Registrado: {formatDate(u.createdAt)}</p>
                     </div>
 
@@ -426,6 +474,17 @@ export function Admin() {
                           className="rounded-xl h-9 px-4 text-[10px] font-bold uppercase tracking-widest bg-emerald-500 hover:bg-emerald-600 text-white shrink-0"
                         >
                           Reactivar
+                        </Button>
+                      )}
+
+                      {u.status === 'suspended' && (
+                        <Button
+                          size="sm"
+                          disabled={actionId === u.uid}
+                          onClick={() => handleReactivate(u.uid)}
+                          className="rounded-xl h-9 px-4 text-[10px] font-bold uppercase tracking-widest bg-emerald-500 hover:bg-emerald-600 text-white shrink-0"
+                        >
+                          {actionId === u.uid ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Reactivar'}
                         </Button>
                       )}
 

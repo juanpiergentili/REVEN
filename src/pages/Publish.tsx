@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Camera, ArrowRight, ArrowLeft, CheckCircle2, X, Loader2, AlertCircle, ImageOff, Lock, Clock, Save, DollarSign, TrendingUp, Info, Upload, Car, SkipForward } from 'lucide-react';
+import { Camera, ArrowRight, ArrowLeft, CheckCircle2, X, Loader2, AlertCircle, Lock, Clock, Save, DollarSign, TrendingUp, Info, Upload, Car, MapPin } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'motion/react';
@@ -14,7 +14,7 @@ import { useAuth, db } from '@/src/lib/firebase';
 import { getDoc, doc, getDocs, collection, query, where } from 'firebase/firestore';
 import { isTrialUser, isTrialExpired, getTrialDaysRemaining, getTrialEndDate, TRIAL_MAX_LISTINGS } from '@/src/lib/trial';
 import { createVehicle, updateVehiclePhotos, getVehicleById, updateVehicleDetailed } from '@/src/lib/vehicles';
-import { BODY_TYPES, FUEL_TYPES, TRANSMISSIONS, COLORS } from '@/src/data/vehicle-catalog';
+import { BODY_TYPES, FUEL_TYPES, TRANSMISSIONS } from '@/src/data/vehicle-catalog';
 import { useGeoRef } from '@/src/hooks/useGeoRef';
 import { useArgAutos } from '@/src/hooks/useArgAutos';
 import type { Version } from '@/src/hooks/useArgAutos';
@@ -51,7 +51,6 @@ export function Publish() {
   const [loadingEdit, setLoadingEdit] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
-  const [showNoPhotosDialog, setShowNoPhotosDialog] = useState(false);
   const [activeListingCount, setActiveListingCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -76,8 +75,8 @@ export function Publish() {
           if (!editId) {
             setFormData(prev => ({
               ...prev,
-              province: prev.province || data.province || '',
-              city: prev.city || data.city || ''
+              province: prev.province || data.province || data.provinceDisplay || '',
+              city: prev.city || data.city || data.cityDisplay || ''
             }));
           }
         }
@@ -106,6 +105,35 @@ export function Publish() {
     fetchActiveCount();
   }, [user, editId]);
 
+
+  // Re-sync province when provincias load (handles accounts that stored display names instead of IDs)
+  useEffect(() => {
+    if (!userProfile?.province || editId || !provincias.length) return;
+    const stored = userProfile.province;
+    const validId = provincias.find(p => p.id === stored);
+    if (validId) {
+      setFormData(prev => prev.province ? prev : { ...prev, province: stored });
+    } else {
+      const byName = provincias.find(p => p.nombre.toLowerCase() === stored.toLowerCase());
+      if (byName) setFormData(prev => prev.province ? prev : { ...prev, province: byName.id, city: '' });
+    }
+  }, [provincias, userProfile?.province, editId]);
+
+  // Re-sync city when localidades load (handles timing mismatch and display-name-stored values)
+  useEffect(() => {
+    if (loadingLocalidades || !userProfile?.city || editId) return;
+    if (localidades.length === 0) return;
+    const stored = userProfile.city;
+    const alreadyValid = localidades.some(l => l.id === formData.city);
+    if (alreadyValid) return;
+    const byId = localidades.find(l => l.id === stored);
+    if (byId) {
+      setFormData(prev => ({ ...prev, city: byId.id }));
+    } else {
+      const byName = localidades.find(l => l.nombre.toLowerCase() === stored.toLowerCase());
+      if (byName) setFormData(prev => ({ ...prev, city: byName.id }));
+    }
+  }, [loadingLocalidades, localidades, userProfile?.city, editId]);
 
   // Load existing vehicle data if editing
   useEffect(() => {
@@ -146,7 +174,6 @@ export function Publish() {
           }
           if (vehicle.photos) {
             setExistingPhotos(vehicle.photos);
-            setPhotoPreviews(vehicle.photos);
           }
         }
       } catch (err) {
@@ -188,7 +215,7 @@ export function Publish() {
 
   const addPhotos = (files: FileList | null) => {
     if (!files) return;
-    const remaining = 15 - photos.length;
+    const remaining = 20 - photos.length;
     const newFiles = Array.from(files).slice(0, remaining);
     const newPreviews = newFiles.map(f => URL.createObjectURL(f));
     setPhotos(prev => [...prev, ...newFiles]);
@@ -202,18 +229,14 @@ export function Publish() {
   };
 
   const nextStep = () => {
-    if (step === 2 && photos.length === 0) {
-      setShowNoPhotosDialog(true);
-      return;
+    if (step === 2 && existingPhotos.length === 0) {
+      if (photos.length < 5) {
+        setError(`Cargá al menos 5 fotos (tenés ${photos.length}). Incluí exteriores, interiores y detalles si los hay.`);
+        return;
+      }
     }
     const err = validateStep(step, formData, photos);
     if (err) { setError(err); return; }
-    setError(null);
-    setStep(s => s + 1);
-  };
-
-  const confirmNoPhotos = () => {
-    setShowNoPhotosDialog(false);
     setError(null);
     setStep(s => s + 1);
   };
@@ -279,9 +302,10 @@ export function Publish() {
         });
       }
 
-      if (photos.length > 0) {
+      const allPhotos = photos;
+      if (allPhotos.length > 0) {
         try {
-          const urls = await photoUpload.uploadPhotos(photos, vId, user.uid);
+          const urls = await photoUpload.uploadPhotos(allPhotos, vId, user.uid);
           await updateVehiclePhotos(vId, urls);
         } catch (uploadErr: unknown) {
           setError(`Vehículo ${isEditMode ? 'actualizado' : 'publicado'}, pero hubo un error al subir las fotos: ${getFirebaseErrorMessage(uploadErr)}`);
@@ -302,7 +326,12 @@ export function Publish() {
   const trialUser      = isTrialUser(userProfile);
   const trialDaysLeft  = getTrialDaysRemaining(userProfile);
   const trialEndDate   = getTrialEndDate(userProfile);
-  
+
+  const profileHasLocation = !!(
+    userProfile?.province || userProfile?.provinceDisplay
+  );
+  const locationIsFromProfile = !editId && profileHasLocation && !!formData.province;
+
   const planName       = normalizePlan(userProfile?.plan);
   const planMax        = PLAN_LIMITS[planName]?.maxVehicles || 5;
   const atPlanLimit    = !trialExpired && activeListingCount >= planMax;
@@ -480,11 +509,13 @@ export function Publish() {
                           <SelectValue placeholder={loadingYears ? "Cargando años..." : "Seleccionar año"} />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl max-h-72" alignItemWithTrigger={false}>
-                          {(availableYears.length > 0 
-                            ? availableYears 
-                            : (['BYD', 'BAIC', 'HAVAL', 'JETOUR', 'GAC', 'FORTHING', 'SKYWELL'].includes(formData.brand) 
-                                ? YEARS.filter(y => Number(y) >= 2010) 
-                                : YEARS)
+                          {(availableYears.length > 0
+                            ? availableYears
+                            : loadingYears
+                              ? []
+                              : (['BYD', 'BAIC', 'HAVAL', 'JETOUR', 'GAC', 'FORTHING', 'SKYWELL'].includes(formData.brand)
+                                  ? YEARS.filter(y => Number(y) >= 2010)
+                                  : YEARS)
                           ).map(y => (
                             <SelectItem key={y} value={y}>{y}</SelectItem>
                           ))}
@@ -502,9 +533,9 @@ export function Publish() {
                         <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
                           <SelectValue placeholder={loadingVersions ? "Cargando versiones..." : "Seleccionar versión"} />
                         </SelectTrigger>
-                        <SelectContent className="rounded-xl max-h-80">
+                        <SelectContent className="rounded-xl max-h-80 w-max min-w-[var(--radix-select-trigger-width)] max-w-[min(560px,90vw)]">
                           {versions.map(v => (
-                            <SelectItem key={v.id} value={v.name}>{v.name}</SelectItem>
+                            <SelectItem key={v.id} value={v.name} className="whitespace-nowrap">{v.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -595,39 +626,20 @@ export function Publish() {
                     </div>
 
                     <div className="space-y-3">
-                      <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Color</Label>
-                      <Select value={formData.color} onValueChange={v => update('color', v)}>
-                        <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
-                          <SelectValue placeholder="Seleccionar" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl">
-                          {COLORS.map(c => (
-                            <SelectItem key={c.value} value={c.value}>
-                              <span className="flex items-center gap-2">
-                                <span className="w-3 h-3 rounded-full border border-border" style={{ background: c.hex }} />
-                                {c.label}
-                              </span>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Provincia</Label>
-                        {userProfile?.province && (
-                          <span className="text-[8px] font-bold text-primary uppercase">Vinculado a tu Agencia</span>
+                      <div className="flex items-center gap-2 ml-1">
+                        <Label className="text-[10px] font-bold uppercase tracking-widest">Provincia</Label>
+                        {locationIsFromProfile && (
+                          <span className="text-[9px] font-bold uppercase tracking-widest text-primary/70 border border-primary/30 rounded-full px-2 py-0.5">De tu agencia</span>
                         )}
                       </div>
-                      <Select 
-                        value={formData.province} 
+                      <Select
+                        value={formData.province}
                         onValueChange={v => { update('province', v); update('city', ''); }}
-                        disabled={!!userProfile?.province || loadingProvincias}
+                        disabled={loadingProvincias}
                       >
-                        <SelectTrigger className={`h-14 rounded-xl bg-muted border-border font-bold ${userProfile?.province ? 'opacity-70' : ''}`}>
+                        <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
                           <SelectValue>
-                            {loadingProvincias ? 'Cargando provincias...' : (provincias.find(p => p.id === formData.province)?.nombre || 'Seleccionar provincia')}
+                            {loadingProvincias ? 'Cargando...' : (provincias.find(p => p.id === formData.province)?.nombre || 'Seleccionar provincia')}
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent className="rounded-xl max-h-72" alignItemWithTrigger={false}>
@@ -639,20 +651,20 @@ export function Publish() {
                     </div>
 
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Localidad</Label>
-                        {userProfile?.city && (
-                          <span className="text-[8px] font-bold text-primary uppercase">Vinculado a tu Agencia</span>
+                      <div className="flex items-center gap-2 ml-1">
+                        <Label className="text-[10px] font-bold uppercase tracking-widest">Localidad</Label>
+                        {locationIsFromProfile && (
+                          <span className="text-[9px] font-bold uppercase tracking-widest text-primary/70 border border-primary/30 rounded-full px-2 py-0.5">De tu agencia</span>
                         )}
                       </div>
                       <Select
                         value={formData.city}
                         onValueChange={v => update('city', v)}
-                        disabled={!formData.province || !!userProfile?.city || loadingLocalidades}
+                        disabled={!formData.province || loadingLocalidades}
                       >
-                        <SelectTrigger className={`h-14 rounded-xl bg-muted border-border font-bold ${userProfile?.city ? 'opacity-70' : ''}`}>
+                        <SelectTrigger className="h-14 rounded-xl bg-muted border-border font-bold">
                           <SelectValue>
-                            {loadingLocalidades ? 'Cargando localidades...' : (localidades.find(l => l.id === formData.city)?.nombre || (formData.province ? 'Seleccionar localidad' : 'Primero elegí provincia'))}
+                            {loadingLocalidades ? 'Cargando...' : (localidades.find(l => l.id === formData.city)?.nombre || (formData.province ? 'Seleccionar localidad' : 'Primero elegí provincia'))}
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent className="rounded-xl max-h-72" alignItemWithTrigger={false}>
@@ -662,6 +674,19 @@ export function Publish() {
                         </SelectContent>
                       </Select>
                     </div>
+
+                    {!editId && !profileHasLocation && userProfile && (
+                      <div className="col-span-full flex items-center gap-2 text-[11px] text-muted-foreground border border-border rounded-xl px-4 py-3">
+                        <MapPin className="h-4 w-4 shrink-0 text-primary/60" />
+                        <span>
+                          Tu perfil no tiene ubicación configurada.{' '}
+                          <a href="/profile" className="text-primary underline-offset-2 hover:underline font-semibold">
+                            Configurala en tu perfil
+                          </a>
+                          {' '}para pre-llenarla automáticamente en cada publicación.
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex justify-end pt-4">
@@ -674,24 +699,20 @@ export function Publish() {
 
               {step === 2 && (
                 <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-8">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={e => addPhotos(e.target.files)}
-                  />
-                  {/* Camera input for mobile - capture from device camera */}
-                  <input
-                    ref={cameraInputRef}
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="hidden"
-                    onChange={e => addPhotos(e.target.files)}
-                  />
+                  <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={e => addPhotos(e.target.files)} />
+                  <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => addPhotos(e.target.files)} />
 
+                  {/* Instrucción */}
+                  <div className="p-5 rounded-2xl bg-primary/5 border border-primary/20 space-y-2">
+                    <p className="text-sm font-black uppercase tracking-widest text-primary">Mínimo 5 fotos requeridas</p>
+                    <ul className="text-xs text-muted-foreground font-medium space-y-1">
+                      <li>• <span className="text-foreground font-bold">3 exteriores:</span> delantera, lateral y trasera</li>
+                      <li>• <span className="text-foreground font-bold">2 interiores:</span> tablero y asientos</li>
+                      <li>• <span className="text-foreground font-semibold">+ Si tiene detalles</span> (rayones, abolladuras, etc.), también subí fotos — genera más confianza</li>
+                    </ul>
+                  </div>
+
+                  {/* Zona de carga única */}
                   <div
                     className={`border-4 border-dashed rounded-[2rem] p-12 text-center space-y-6 cursor-pointer transition-all group ${
                       isDragging ? 'border-primary/60 bg-primary/5' : 'border-border bg-muted hover:border-primary/30'
@@ -708,11 +729,11 @@ export function Publish() {
                       <p className="text-xl font-bold tracking-tighter uppercase">Subir fotografías</p>
                       <p className="text-sm text-muted-foreground font-medium">
                         {photos.length === 0
-                          ? 'Arrastrá tus fotos aquí o hacé clic para buscar (Máx 15)'
-                          : `${photos.length}/15 fotos seleccionadas — hacé clic para agregar más`}
+                          ? 'Arrastrá tus fotos aquí o hacé clic para buscar (Máx. 20)'
+                          : `${photos.length}/20 fotos — hacé clic para agregar más`}
                       </p>
                     </div>
-                    {photos.length < 15 && (
+                    {photos.length < 20 && (
                       <div className="flex flex-wrap gap-3 justify-center">
                         <Button variant="outline" className="rounded-full px-8 border-border font-bold uppercase tracking-widest text-xs gap-2" onClick={e => { e.stopPropagation(); fileInputRef.current?.click(); }}>
                           <Upload className="h-4 w-4" /> Seleccionar archivos
@@ -724,13 +745,14 @@ export function Publish() {
                     )}
                   </div>
 
+                  {/* Previews */}
                   {photoPreviews.length > 0 && (
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
                       {photoPreviews.map((url, i) => (
                         <div key={i} className="relative aspect-square rounded-xl overflow-hidden group">
                           <img src={url} alt={`foto ${i + 1}`} className="w-full h-full object-cover" />
                           {i === 0 && (
-                            <div className="absolute bottom-1 left-1 bg-primary/90 text-primary-foreground text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">
+                            <div className="absolute bottom-1 left-1 bg-primary/90 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full text-black">
                               Principal
                             </div>
                           )}
@@ -745,21 +767,16 @@ export function Publish() {
                     </div>
                   )}
 
-                  {showNoPhotosDialog && (
-                    <div className="p-6 rounded-3xl bg-amber-500/5 border border-amber-500/20 space-y-4">
-                      <div className="flex items-center gap-3">
-                        <ImageOff className="h-5 w-5 text-amber-500" />
-                        <p className="text-sm font-bold uppercase tracking-widest">¿Publicar sin fotos?</p>
-                      </div>
-                      <p className="text-xs text-muted-foreground font-medium">Las publicaciones sin fotos tienen mucha menos visibilidad. ¿Estás seguro?</p>
-                      <div className="flex gap-3">
-                        <Button variant="outline" onClick={() => setShowNoPhotosDialog(false)} className="rounded-full px-6 border-border font-bold uppercase tracking-widest text-xs">
-                          Volver
-                        </Button>
-                        <Button onClick={confirmNoPhotos} className="rounded-full px-6 font-bold uppercase tracking-widest text-xs bg-amber-500 hover:bg-amber-600">
-                          <span className="hidden sm:inline">Continuar sin fotos</span>
-                          <span className="sm:hidden">Continuar</span>
-                        </Button>
+                  {/* Existing photos (edit mode) */}
+                  {existingPhotos.length > 0 && (
+                    <div className="space-y-3">
+                      <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Fotos actuales ({existingPhotos.length})</p>
+                      <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+                        {existingPhotos.map((url, i) => (
+                          <div key={i} className="relative aspect-square rounded-xl overflow-hidden">
+                            <img src={url} alt={`foto ${i + 1}`} className="w-full h-full object-cover" />
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
@@ -978,8 +995,8 @@ export function Publish() {
                   <StepPreview 
                     formData={formData} 
                     inspection={inspection} 
-                    photoPreviews={photoPreviews} 
-                    photosCount={photos.length} 
+                    photoPreviews={photoPreviews}
+                    photosCount={photos.length}
                     locationStr={localidades.find(l => l.id === formData.city)?.nombre ? `${localidades.find(l => l.id === formData.city)?.nombre}, ${provincias.find(p => p.id === formData.province)?.nombre || formData.province}` : (provincias.find(p => p.id === formData.province)?.nombre || formData.province || '')}
                   />
 

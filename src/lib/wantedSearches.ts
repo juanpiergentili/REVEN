@@ -2,7 +2,6 @@ import { db, convertTimestamp } from './firebase';
 import {
   collection, addDoc, deleteDoc, doc,
   query, orderBy, limit, onSnapshot, serverTimestamp,
-  getDocs, where
 } from 'firebase/firestore';
 import type { WantedSearch } from '../types';
 
@@ -44,14 +43,4 @@ export function subscribeToWantedSearches(
     });
     onUpdate(searches);
   }, onError);
-}
-
-export async function getUserActiveWantedCount(userId: string): Promise<number> {
-  const q = query(
-    collection(db, 'wanted_searches'),
-    where('userId', '==', userId),
-    where('status', '==', 'active')
-  );
-  const snap = await getDocs(q);
-  return snap.size;
 }

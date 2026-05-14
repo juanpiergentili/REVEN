@@ -1,6 +1,6 @@
 import { db } from './firebase';
 import {
-  collection, getDocs, doc, updateDoc, Timestamp,
+  collection, getDocs, doc, updateDoc, deleteDoc, Timestamp, query, where,
 } from 'firebase/firestore';
 
 export interface UserRecord {
@@ -19,6 +19,8 @@ export interface UserRecord {
   trialStartDate?: Timestamp;
   trialEndDate?: Timestamp;
   createdAt?: Timestamp;
+  arcaRazonSocial?: string;
+  arcaEstadoClave?: string;
 }
 
 export async function getAllUsers(): Promise<UserRecord[]> {
@@ -33,27 +35,45 @@ export async function getAllUsers(): Promise<UserRecord[]> {
 }
 
 export async function approveUser(uid: string, user?: UserRecord): Promise<void> {
-  const update: Record<string, any> = { status: 'active' };
-
-  if (user?.discountCode === 'REVENFREE60' && user.trialDays) {
-    const start = new Date();
-    const end = new Date();
-    end.setDate(end.getDate() + user.trialDays);
-    update.trialStartDate = Timestamp.fromDate(start);
-    update.trialEndDate = Timestamp.fromDate(end);
-  }
-
-  await updateDoc(doc(db, 'users', uid), update);
+  await updateDoc(doc(db, 'users', uid), { status: 'approved' });
 }
 
 export async function rejectUser(uid: string): Promise<void> {
+  const [vehiclesSnap, wantedSnap] = await Promise.all([
+    getDocs(query(collection(db, 'vehicles'), where('sellerId', '==', uid), where('status', '==', 'ACTIVE'))),
+    getDocs(query(collection(db, 'wanted_searches'), where('userId', '==', uid), where('status', '==', 'active'))),
+  ]);
+  await Promise.all([
+    ...vehiclesSnap.docs.map(d => updateDoc(d.ref, { status: 'PAUSED' })),
+    ...wantedSnap.docs.map(d => updateDoc(d.ref, { status: 'paused' })),
+  ]);
   await updateDoc(doc(db, 'users', uid), { status: 'rejected' });
 }
 
+export async function reactivateUser(uid: string): Promise<void> {
+  const [vehiclesSnap, wantedSnap] = await Promise.all([
+    getDocs(query(collection(db, 'vehicles'), where('sellerId', '==', uid), where('status', '==', 'PAUSED'))),
+    getDocs(query(collection(db, 'wanted_searches'), where('userId', '==', uid), where('status', '==', 'paused'))),
+  ]);
+  await Promise.all([
+    ...vehiclesSnap.docs.map(d => updateDoc(d.ref, { status: 'ACTIVE' })),
+    ...wantedSnap.docs.map(d => updateDoc(d.ref, { status: 'active' })),
+  ]);
+  await updateDoc(doc(db, 'users', uid), { status: 'active' });
+}
+
 export async function deleteUser(uid: string): Promise<void> {
-  const { deleteDoc } = await import('firebase/firestore');
+  const [vehiclesSnap, wantedSnap] = await Promise.all([
+    getDocs(query(collection(db, 'vehicles'), where('sellerId', '==', uid))),
+    getDocs(query(collection(db, 'wanted_searches'), where('userId', '==', uid))),
+  ]);
+  await Promise.all([
+    ...vehiclesSnap.docs.map(d => deleteDoc(d.ref)),
+    ...wantedSnap.docs.map(d => deleteDoc(d.ref)),
+  ]);
   await deleteDoc(doc(db, 'users', uid));
 }
+
 
 export interface PlatformStats {
   totalVehicles: number;

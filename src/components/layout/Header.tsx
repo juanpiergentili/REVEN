@@ -43,8 +43,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Logo } from './Logo';
 
-const SUPER_ADMINS = ['lucas.ferreyra@gmail.com'];
-
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
@@ -121,7 +119,7 @@ export function Header() {
   ];
 
   const handleNavClick = (path: string, e: MouseEvent) => {
-    if (isLanding && path !== '/' && !user) {
+    if (isLanding && path !== '/') {
       e.preventDefault();
       setIsLoginOpen(true);
     }
@@ -143,28 +141,7 @@ export function Header() {
         const type = emailLower.includes('vendedor') ? 'vendedor' : emailLower.includes('comprador') ? 'comprador' : 'demo';
         await loginDemoUser(type);
       } else {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        
-        // Verificar status antes de permitir el acceso
-        const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
-        const userData = userDoc.data();
-        
-        const isSuperAdmin = userCredential.user.email && SUPER_ADMINS.includes(userCredential.user.email);
-        
-        if (userData && userData.role !== 'ADMIN' && !isSuperAdmin) {
-          if (userData.status === 'pending') {
-            await signOut(auth);
-            setError('Tu cuenta aún está en proceso de revisión.');
-            setLoading(false);
-            return;
-          }
-          if (userData.status === 'rejected') {
-            await signOut(auth);
-            setError('Tu solicitud de admisión ha sido rechazada.');
-            setLoading(false);
-            return;
-          }
-        }
+        await signInWithEmailAndPassword(auth, email, password);
       }
       setIsLoginOpen(false);
       navigate('/marketplace');
@@ -281,7 +258,7 @@ export function Header() {
                       <DropdownMenuLabel className="font-bold uppercase tracking-widest text-[10px] px-3 py-2">Mi Cuenta</DropdownMenuLabel>
                     </DropdownMenuGroup>
                     <DropdownMenuSeparator />
-                    {(userProfile?.role === 'ADMIN' || (user?.email && SUPER_ADMINS.includes(user.email))) && (
+                    {userProfile?.role === 'ADMIN' && (
                       <>
                         <DropdownMenuItem
                           className="rounded-xl font-light uppercase tracking-widest text-[10px] px-3 py-2 cursor-pointer text-primary focus:text-primary"

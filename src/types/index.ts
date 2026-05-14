@@ -206,7 +206,7 @@ export interface WantedSearch {
   description?: string;
 
   // Estado
-  status: 'active' | 'fulfilled' | 'expired';
+  status: 'active' | 'fulfilled' | 'expired' | 'paused';
   expiresAt: string;
 
   // Metadata
@@ -357,13 +357,13 @@ export interface Notification {
 // ─── Plan limits (constantes de negocio) ─────────────────────────────────────
 
 export const PLAN_LIMITS: Record<MembershipPlan, { maxVehicles: number; maxWantedSearches: number; canFeatureListing: boolean }> = {
-  business:     { maxVehicles: 5,   maxWantedSearches: 5,   canFeatureListing: false },
-  professional: { maxVehicles: 15,  maxWantedSearches: 15,  canFeatureListing: true  },
-  enterprise:   { maxVehicles: 150, maxWantedSearches: 150, canFeatureListing: true  },
+  business:     { maxVehicles: 5,        maxWantedSearches: 5,       canFeatureListing: false },
+  professional: { maxVehicles: 15,       maxWantedSearches: 10,      canFeatureListing: true  },
+  enterprise:   { maxVehicles: Infinity, maxWantedSearches: Infinity, canFeatureListing: true  },
 };
 
 export const PLAN_PRICES: Record<MembershipPlan, { monthly: number; annual: number }> = {
-  business:     { monthly: 200000, annual: 1920000 },
-  professional: { monthly: 350000, annual: 3360000 },
-  enterprise:   { monthly: 500000, annual: 4800000 },
+  business:     { monthly: 200000, annual: 1800000 },
+  professional: { monthly: 350000, annual: 3150000 },
+  enterprise:   { monthly: 500000, annual: 4500000 },
 };

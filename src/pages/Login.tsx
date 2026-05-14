@@ -1,6 +1,8 @@
 
 import React, { useState } from 'react';
-import { Mail, Lock, ArrowRight, ShieldCheck, Building2, User, Phone, Fingerprint, CreditCard, Loader2 } from 'lucide-react';
+import { Mail, Lock, ArrowRight, ShieldCheck, Building2, User, Phone, Fingerprint, CreditCard, Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { app } from '@/src/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -41,6 +43,35 @@ export function Login() {
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regPlan, setRegPlan] = useState('plata');
+
+  // CUIT validation
+  const [cuitStatus, setCuitStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
+  const [cuitDenominacion, setCuitDenominacion] = useState('');
+  const [cuitError, setCuitError] = useState('');
+
+  const handleCuitBlur = async () => {
+    const cuitLimpio = regCuil.replace(/\D/g, '');
+    if (cuitLimpio.length !== 11) return;
+    setCuitStatus('loading');
+    setCuitError('');
+    try {
+      const fns = getFunctions(app, 'us-central1');
+      const consultarCUIT = httpsCallable(fns, 'consultarCUIT');
+      const res: any = await consultarCUIT({ cuit: cuitLimpio });
+      const { denominacion, activo } = res.data;
+      if (!activo) {
+        setCuitStatus('error');
+        setCuitError('El CUIT no está activo en ARCA');
+        return;
+      }
+      setCuitDenominacion(denominacion);
+      setCuitStatus('ok');
+      if (!regCompany) setRegCompany(denominacion);
+    } catch (err: any) {
+      setCuitStatus('error');
+      setCuitError(err.message?.includes('no encontrado') ? 'CUIT no encontrado en ARCA' : 'No se pudo verificar el CUIT');
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -262,15 +293,30 @@ export function Login() {
                     <Label htmlFor="cuil" className="text-[10px] font-bold uppercase tracking-widest ml-1">CUIL / CUIT</Label>
                     <div className="relative">
                       <Fingerprint className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input 
-                        id="cuil" 
+                      <Input
+                        id="cuil"
                         required
                         value={regCuil}
-                        onChange={(e) => setRegCuil(e.target.value)}
-                        placeholder="20-XXXXXXXX-X" 
-                        className="h-12 pl-10 rounded-xl bg-background/50 border-border font-bold" 
+                        onChange={(e) => { setRegCuil(e.target.value); setCuitStatus('idle'); setCuitDenominacion(''); setCuitError(''); }}
+                        onBlur={handleCuitBlur}
+                        placeholder="20-XXXXXXXX-X"
+                        className={`h-12 pl-10 pr-10 rounded-xl bg-background/50 font-bold border ${
+                          cuitStatus === 'ok' ? 'border-green-500' :
+                          cuitStatus === 'error' ? 'border-red-500' : 'border-border'
+                        }`}
                       />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        {cuitStatus === 'loading' && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                        {cuitStatus === 'ok'      && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+                        {cuitStatus === 'error'   && <XCircle className="h-4 w-4 text-red-500" />}
+                      </div>
                     </div>
+                    {cuitStatus === 'ok' && (
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-green-500 ml-1">{cuitDenominacion}</p>
+                    )}
+                    {cuitStatus === 'error' && (
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-red-400 ml-1">{cuitError}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="phone" className="text-[10px] font-bold uppercase tracking-widest ml-1">Teléfono</Label>
