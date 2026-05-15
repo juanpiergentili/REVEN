@@ -1230,13 +1230,21 @@ export function Profile() {
             const planLabel: Record<string, string> = { professional: 'Profesional', enterprise: 'Enterprise' };
             const planColor: Record<string, string> = { professional: 'text-yellow-400', enterprise: 'text-primary' };
             const planLimits: Record<string, { vehicles: number | string; searches: number | string }> = {
-              professional: { vehicles: 15, searches: 10 },
-              enterprise: { vehicles: 'Ilimitadas', searches: 'Ilimitadas' },
+              professional: {
+                vehicles: PLAN_LIMITS.professional.maxVehicles,
+                searches: PLAN_LIMITS.professional.maxWantedSearches,
+              },
+              enterprise: {
+                vehicles: 'Ilimitadas',
+                searches: 'Ilimitadas',
+              },
             };
             const newAmount = upgradeConfirm.cycle === 'annual'
               ? PLAN_PRICES[upgradeConfirm.plan as MembershipPlan]?.annual
               : PLAN_PRICES[upgradeConfirm.plan as MembershipPlan]?.monthly;
-            const currentAmount = upgradeConfirm.cycle === 'annual'
+            // Use the user's ACTUAL billing cycle, not the UI selector
+            const userBillingCycle = (profileData?.billingCycle as 'monthly' | 'annual') || 'monthly';
+            const currentAmount = userBillingCycle === 'annual'
               ? PLAN_PRICES[upgradeConfirm.currentPlan as MembershipPlan]?.annual
               : PLAN_PRICES[upgradeConfirm.currentPlan as MembershipPlan]?.monthly;
             const diffAmount = newAmount - (currentAmount || 0);

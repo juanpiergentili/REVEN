@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { BODY_TYPES, FUEL_TYPES, TRANSMISSIONS, KM_RANGES, COLORS, getYearRange } from '@/src/data/vehicle-catalog';
+import { BODY_TYPES, FUEL_TYPES, TRANSMISSIONS, KM_RANGES, getYearRange } from '@/src/data/vehicle-catalog';
 import { useArgAutos } from '@/src/hooks/useArgAutos';
 import { useGeoRef } from '@/src/hooks/useGeoRef';
 
@@ -364,25 +364,6 @@ export function FilterSidebar({ filters, onFilterChange, onClear, resultCount }:
           )}
         </FilterSection>
 
-        {/* Color */}
-        <FilterSection title="Color" defaultOpen={false}>
-          <div className="grid grid-cols-4 gap-2">
-            {COLORS.map(c => (
-              <button
-                key={c.value}
-                onClick={() => update('color', filters.color === c.value ? 'todos' : c.value)}
-                className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${filters.color === c.value ? 'bg-primary/10 border border-primary' : 'hover:bg-muted border border-transparent'}`}
-                title={c.label}
-              >
-                <div
-                  className="h-6 w-6 rounded-full border border-border shadow-inner"
-                  style={{ backgroundColor: c.hex }}
-                />
-                <span className="text-[8px] font-bold uppercase tracking-wider text-muted-foreground truncate w-full text-center">{c.label.split('/')[0]}</span>
-              </button>
-            ))}
-          </div>
-        </FilterSection>
         </div>
       </ScrollArea>
     </div>

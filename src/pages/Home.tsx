@@ -185,10 +185,10 @@ export function Home() {
   const [isAdmissionOpen, setIsAdmissionOpen] = useState(false);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
 
-  // If user is already logged in, "Solicitar Acceso" buttons should redirect, not open dialog
+  // If user is already logged in, "Solicitar Acceso" buttons should redirect to profile
   const handleOpenAdmission = () => {
     if (auth.currentUser) {
-      navigate('/payment');
+      navigate('/profile');
       return;
     }
     setIsAdmissionOpen(true);
