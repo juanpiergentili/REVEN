@@ -28,7 +28,7 @@ function AppContent() {
 
   return (
     <div className="min-h-screen flex flex-col font-sans antialiased">
-      {!isLoginPage && !isAdminPage && !isPaymentPage && <Header />}
+      {!isLoginPage && !isPaymentPage && <Header />}
       <main className="flex-1 pt-24">
         <Routes>
           <Route path="/" element={<Home />} />

@@ -101,7 +101,8 @@ export function Payment() {
           return;
         }
 
-        if (data.status === 'active' && !trialExpired && !celebratingRef.current) {
+        const hasRealSub = !!data.subscriptionId && data.subscriptionStatus === 'authorized';
+        if (data.status === 'active' && (!trialExpired || hasRealSub) && !celebratingRef.current) {
           celebratingRef.current = true;
           setCelebrating(true);
           setTimeout(() => navigate('/marketplace', { replace: true }), 3000);

@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db, handleFirestoreError, OperationType } from '@/src/lib/firebase';
+import { auth, db } from '@/src/lib/firebase';
 import { storage } from '@/src/lib/firebase';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
@@ -236,9 +236,21 @@ export function Home() {
   const [instagramUser, setInstagramUser] = useState('');
   const [regProvince, setRegProvince] = useState('');
   const [regCity, setRegCity] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [regLogoFile, setRegLogoFile] = useState<File | null>(null);
   const [regLogoPreview, setRegLogoPreview] = useState('');
   const regLogoInputRef = useRef<HTMLInputElement>(null);
+
+  const [structureFiles, setStructureFiles] = useState<(File | null)[]>([null, null, null]);
+  const [structurePreviews, setStructurePreviews] = useState<(string | null)[]>([null, null, null]);
+  const structureRef0 = useRef<HTMLInputElement>(null);
+  const structureRef1 = useRef<HTMLInputElement>(null);
+  const structureRef2 = useRef<HTMLInputElement>(null);
+
+  const handleStructureFile = (idx: number, file: File | null) => {
+    setStructureFiles(prev => { const n = [...prev]; n[idx] = file; return n; });
+    setStructurePreviews(prev => { const n = [...prev]; n[idx] = file ? URL.createObjectURL(file) : null; return n; });
+  };
 
   const { provincias: regProvincias, localidades: regLocalidades, loadingProvincias: regLoadingProvincias, loadingLocalidades: regLoadingLocalidades } = useGeoRef(regProvince);
 
@@ -338,22 +350,33 @@ export function Home() {
 
   const handleApplyDiscount = () => {
     const code = discountCode.toUpperCase().trim();
-    if (code === 'REVEN20') { setAppliedCoupon('REVEN20'); setError(null); }
-    else if (code === 'REVENFREE60') { setAppliedCoupon('REVENFREE60'); setError(null); }
-    else setError('Código de descuento inválido');
+    if (code === 'REVEN20') {
+      setAppliedCoupon('REVEN20');
+      setError(null);
+    } else if (code === 'REVENFREE60') {
+      setAppliedCoupon('REVENFREE60');
+      setPlan('professional');
+      setError(null);
+    } else {
+      setError('Código de descuento inválido');
+    }
   };
 
-  const handleAdmissionSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const doSubmitRegistration = async () => {
     if (!acceptedTerms) return;
-    if (!regProvince || !regCity) {
-      setError('Seleccioná tu provincia y localidad.');
-      return;
-    }
+    if (!name.trim() || !lastName.trim()) { setError('Completá tu nombre y apellido.'); return; }
+    if (!cuil.trim()) { setError('Ingresá tu CUIT.'); return; }
+    if (!phone.trim()) { setError('Ingresá tu número de teléfono.'); return; }
+    if (!company.trim()) { setError('Ingresá el nombre de tu concesionaria.'); return; }
+    if (!regProvince || !regCity) { setError('Seleccioná tu provincia y localidad.'); return; }
+    if (!email.trim() || !password.trim()) { setError('Completá el email y la contraseña.'); return; }
+    if (password !== confirmPassword) { setError('Las contraseñas no coinciden.'); return; }
+    if (structureFiles.filter(Boolean).length < 3) { setError('Debés subir 3 fotos de tu estructura (garage, galpón o concesionaria).'); return; }
+
     setLoading(true);
     setError(null);
     try {
-      // Check for duplicate company name (server-side)
+      // Check for duplicate company name via Cloud Function (no auth required)
       const { getFunctions: getFns2, httpsCallable: hc2 } = await import('firebase/functions');
       const { app: firebaseApp } = await import('@/src/lib/firebase');
       const fns2 = getFns2(firebaseApp, 'us-central1');
@@ -375,6 +398,16 @@ export function Home() {
         logoUrl = await getDownloadURL(logoRef);
       }
 
+      const structureUrls: string[] = [];
+      for (let i = 0; i < structureFiles.length; i++) {
+        const f = structureFiles[i];
+        if (f) {
+          const sRef = storageRef(storage, `users/${user.uid}/structure_${i}_${Date.now()}`);
+          await uploadBytes(sRef, f);
+          structureUrls.push(await getDownloadURL(sRef));
+        }
+      }
+
       const isSuperAdmin = SUPER_ADMINS.includes(email.toLowerCase());
 
       await setDoc(doc(db, 'users', user.uid), {
@@ -387,22 +420,19 @@ export function Home() {
         instagram: instagramUser || null,
         avatarUrl: logoUrl,
         logoUrl,
+        structurePhotos: structureUrls,
         arcaRazonSocial: arcaRazonSocial || null,
         arcaEstadoClave: estadoCuit || null,
         createdAt: serverTimestamp(),
       });
-      
-      // Asegurar que el scroll vuelva arriba para ver el éxito
-      const scrollArea = document.querySelector('[role="dialog"] [data-radix-scroll-area-viewport]');
-      if (scrollArea) scrollArea.scrollTop = 0;
-      
+
       setRegistrationSuccess(true);
     } catch (err: any) {
       if (err.code === 'auth/email-already-in-use') setError('El email ya se encuentra registrado. Intentá iniciar sesión.');
       else if (err.code === 'auth/weak-password') setError('La contraseña debe tener al menos 6 caracteres.');
       else {
-        handleFirestoreError(err, OperationType.WRITE, 'users');
-        setError('Error al crear la cuenta. Intentá de nuevo.');
+        console.error('Registration error:', err);
+        setError('Error al crear la cuenta. Intentá de nuevo más tarde.');
       }
     } finally {
       setLoading(false);
@@ -415,19 +445,19 @@ export function Home() {
     {
       key: 'business', displayName: 'BUSINESS', ...PLAN_PRICES.business, popular: false,
       promo: null as string | null,
-      features: ['Hasta 5 autos publicados', 'Hasta 5 búsquedas activas', 'Métricas de tu agencia', 'Datos de mercado básicos', 'Acceso simultáneo multi-dispositivo', 'Contacto directo B2B'],
+      features: ['Hasta 5 autos publicados', 'Hasta 5 búsquedas activas', 'Métricas de tu agencia', '2 sesiones activas en simultaneo', 'Contacto directo B2B'],
       cta: 'SOLICITÁ TU ACCESO',
     },
     {
       key: 'professional', displayName: 'PROFESIONAL', ...PLAN_PRICES.professional, popular: true,
       promo: null as string | null,
-      features: ['Hasta 15 autos publicados', 'Hasta 10 búsquedas activas', 'Métricas de tu agencia', 'Datos completos de mercado', 'Alertas personalizadas', 'Acceso simultáneo multi-dispositivo', 'Contacto directo B2B'],
+      features: ['Hasta 10 autos publicados', 'Hasta 5 búsquedas activas', 'Métricas de tu agencia', 'Alertas personalizadas', '4 sesiones activas en simultaneo', 'Contacto directo B2B'],
       cta: 'SOLICITÁ TU ACCESO',
     },
     {
       key: 'enterprise', displayName: 'ENTERPRISE', ...PLAN_PRICES.enterprise, popular: false,
       promo: null as string | null,
-      features: ['Publicaciones ilimitadas', 'Búsquedas activas ilimitadas', 'Métricas de tu agencia', 'Datos completos de mercado', 'Alertas personalizadas', 'Acceso simultáneo multi-dispositivo', 'Account manager'],
+      features: ['Publicaciones ilimitadas', 'Búsquedas activas ilimitadas', 'Métricas de tu agencia', 'Alertas personalizadas', '7 sesiones activas en simultaneo', 'Account manager'],
       cta: 'SOLICITÁ ACCESO',
     },
   ];
@@ -492,7 +522,8 @@ export function Home() {
 
             <p className="text-base md:text-lg text-white font-light max-w-lg leading-relaxed">
               Marketplace exclusivo B2B, solo para profesionales verificados.<br />
-              Sin intermediarios. Solo negocios reales.
+              Sin intermediarios. Solo negocios reales.<br />
+              Compra y vende al mejor precio.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 pt-2">
@@ -948,7 +979,7 @@ export function Home() {
                 <div className="p-4 rounded-xl bg-destructive/10 text-destructive text-xs font-light tracking-widest text-white uppercase text-center mb-6">{error}</div>
               )}
 
-              <form className="space-y-6" onSubmit={handleAdmissionSubmit}>
+              <form className="space-y-6" onSubmit={(e: React.FormEvent) => { e.preventDefault(); doSubmitRegistration(); }} noValidate>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-2">
@@ -1031,14 +1062,29 @@ export function Home() {
                     </Select>
                   </div>
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="pop-email" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Email Corporativo</Label>
+                  <Input id="pop-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="juan@concesionaria.com" className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4" />
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="pop-email" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Email Corporativo</Label>
-                    <Input id="pop-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="juan@concesionaria.com" className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4" />
-                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="pop-pass" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Contraseña</Label>
                     <Input id="pop-pass" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="pop-pass-confirm" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Confirmar Contraseña</Label>
+                    <Input
+                      id="pop-pass-confirm"
+                      type="password"
+                      required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className={`h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4 ${confirmPassword && confirmPassword !== password ? 'border-destructive/50' : confirmPassword && confirmPassword === password ? 'border-emerald-500/50' : ''}`}
+                    />
+                    {confirmPassword && confirmPassword !== password && (
+                      <p className="text-[9px] font-bold text-destructive uppercase tracking-widest ml-1">Las contraseñas no coinciden</p>
+                    )}
                   </div>
                 </div>
 
@@ -1079,6 +1125,60 @@ export function Home() {
                   </div>
                 </div>
 
+                {/* Fotos de estructura — obligatorio */}
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">
+                      Fotos de tu estructura <span className="text-primary">*</span>
+                    </Label>
+                    <p className="text-[9px] text-muted-foreground ml-1 mt-1 font-medium leading-relaxed">
+                      Subí 3 fotos de tu garage, galpón o concesionaria para validar tu actividad profesional.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    {([structureRef0, structureRef1, structureRef2] as React.RefObject<HTMLInputElement>[]).map((ref, idx) => (
+                      <div key={idx}>
+                        <input
+                          ref={ref}
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          className="hidden"
+                          onChange={e => handleStructureFile(idx, e.target.files?.[0] ?? null)}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => ref.current?.click()}
+                          className="w-full aspect-square rounded-xl border-2 border-dashed border-border bg-muted/30 hover:border-primary/50 hover:bg-primary/5 transition-all overflow-hidden flex items-center justify-center relative group"
+                        >
+                          {structurePreviews[idx] ? (
+                            <>
+                              <img src={structurePreviews[idx]!} alt={`Estructura ${idx + 1}`} className="w-full h-full object-cover" />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <Camera className="h-5 w-5 text-white" />
+                              </div>
+                            </>
+                          ) : (
+                            <div className="flex flex-col items-center gap-1.5 text-muted-foreground/40">
+                              <Camera className="h-6 w-6" />
+                              <span className="text-[9px] font-bold uppercase tracking-wider">Foto {idx + 1}</span>
+                            </div>
+                          )}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  {structureFiles.filter(Boolean).length > 0 && structureFiles.filter(Boolean).length < 3 && (
+                    <p className="text-[9px] font-bold text-yellow-500 uppercase tracking-widest ml-1">
+                      {structureFiles.filter(Boolean).length}/3 fotos subidas — falta{structureFiles.filter(Boolean).length === 2 ? '' : 'n'} {3 - structureFiles.filter(Boolean).length}
+                    </p>
+                  )}
+                  {structureFiles.filter(Boolean).length === 3 && (
+                    <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest ml-1 flex items-center gap-1">
+                      <Check className="h-3 w-3" /> 3 fotos cargadas correctamente
+                    </p>
+                  )}
+                </div>
+
                 {/* Optional Instagram */}
                 <div className="space-y-2">
                   <Label htmlFor="pop-insta" className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">
@@ -1100,15 +1200,17 @@ export function Home() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">Plan</Label>
-                    <Select value={plan} onValueChange={setPlan}>
-                      <SelectTrigger className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-muted-foreground">
+                      Plan {isFreeTrial && <span className="text-emerald-400 ml-1">· bloqueado por código</span>}
+                    </Label>
+                    <Select value={plan} onValueChange={setPlan} disabled={isFreeTrial}>
+                      <SelectTrigger className={`h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4 ${isFreeTrial ? 'opacity-70 cursor-not-allowed border-emerald-500/30' : ''}`}>
                         <SelectValue placeholder="Seleccionar plan" />
                       </SelectTrigger>
                       <SelectContent className="rounded-xl">
                         <SelectItem value="business">PLAN BUSINESS</SelectItem>
-                        <SelectItem value="profesional">PLAN PROFESIONAL</SelectItem>
-                        <SelectItem value="platinum">PLAN ENTERPRISE</SelectItem>
+                        <SelectItem value="professional">PLAN PROFESIONAL</SelectItem>
+                        <SelectItem value="enterprise">PLAN ENTERPRISE</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1132,7 +1234,7 @@ export function Home() {
                           <span className="text-2xl font-black tracking-tighter text-primary">FREE</span>
                           <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">(2 MESES)</span>
                         </div>
-                        <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Luego {formatARS(currentPlanPrices.monthly)} / mes</p>
+                        <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Luego {formatARS(currentPlanPrices.monthly)} / mes · Plan Professional</p>
                       </div>
                     ) : (
                       <p className="text-xl font-bold tracking-tighter text-primary">
@@ -1156,7 +1258,7 @@ export function Home() {
                     <Input id="pop-discount" value={discountCode} onChange={(e) => setDiscountCode(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleApplyDiscount()} placeholder="REVEN20" className="h-12 rounded-xl bg-background/50 border-border font-bold text-sm px-4 flex-1" />
                     <Button type="button" variant="secondary" onClick={handleApplyDiscount} className="h-12 rounded-xl font-bold px-6">APLICAR</Button>
                   </div>
-                  {appliedCoupon === 'REVENFREE60' && <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest ml-1">60 días gratis aplicados</p>}
+                  {appliedCoupon === 'REVENFREE60' && <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest ml-1">✓ 60 días gratis en Plan Professional aplicados</p>}
                   {appliedCoupon === 'REVEN20' && <p className="text-[10px] font-bold text-primary uppercase tracking-widest ml-1">Descuento aplicado</p>}
                 </div>
 
@@ -1171,9 +1273,20 @@ export function Home() {
                   </div>
                 </div>
 
-                <Button type="submit" disabled={!acceptedTerms || loading} className="w-full h-14 rounded-xl font-bold text-lg shadow-xl shadow-primary/20 mt-4 uppercase tracking-tighter">
+                {error && (
+                  <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs font-bold tracking-widest text-center uppercase">
+                    {error}
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={doSubmitRegistration}
+                  disabled={!acceptedTerms || loading}
+                  className="w-full h-14 rounded-xl font-bold text-lg shadow-xl shadow-primary/20 mt-4 uppercase tracking-tighter bg-primary text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                >
                   {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : 'ENVIAR SOLICITUD'}
-                </Button>
+                </button>
               </form>
               </>
               )}

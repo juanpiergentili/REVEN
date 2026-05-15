@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ChevronLeft, Eye, MessageSquare, Clock, BarChart3, TrendingUp, Award,
   MapPin, Building2, Phone, Mail, Loader2, ShoppingBag, Plus, Settings,
@@ -23,7 +23,8 @@ import { getResponseBadge } from '@/src/lib/analytics';
 import { useAuth, db } from '@/src/lib/firebase';
 import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { getVehiclesBySeller, updateVehicleStatus, pauseAllSellerListings, deleteVehicle } from '@/src/lib/vehicles';
-import { getUserActiveWantedCount } from '@/src/lib/wantedSearches';
+import { getUserActiveWantedCount, getUserWantedSearches, pauseWantedSearch, reactivateWantedSearch, deleteWantedSearch } from '@/src/lib/wantedSearches';
+import type { WantedSearch } from '@/src/types';
 import { addPointsToAgency, getAgencyTier, getTierColor } from '@/src/lib/gamification';
 import { isTrialUser, isTrialExpired, getTrialDaysRemaining, getTrialEndDate, TRIAL_MAX_LISTINGS } from '@/src/lib/trial';
 import { useGeoRef } from '@/src/hooks/useGeoRef';
@@ -65,7 +66,9 @@ const STATUS_CONFIG = {
 export function Profile() {
   const { uid } = useParams<{ uid: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'all');
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [showUpgradeRequested, setShowUpgradeRequested] = useState(false);
   const [upgradeConfirm, setUpgradeConfirm] = useState<{ plan: string; cycle: 'monthly' | 'annual'; currentPlan: string } | null>(null);
@@ -89,6 +92,9 @@ export function Profile() {
   const [selectedBuyer, setSelectedBuyer] = useState<{ id: string; company: string } | null>(null);
   const [isAddingPoints, setIsAddingPoints] = useState(false);
   const [activeWantedCount, setActiveWantedCount] = useState(0);
+  const [wantedSearches, setWantedSearches] = useState<WantedSearch[]>([]);
+  const [togglingWantedId, setTogglingWantedId] = useState<string | null>(null);
+  const [deletingWantedId, setDeletingWantedId] = useState<string | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
@@ -143,8 +149,12 @@ export function Profile() {
         setAllListings(vehicles);
         
         if (isOwnProfile) {
-          const wantedCount = await getUserActiveWantedCount(targetUid);
+          const [wantedCount, searches] = await Promise.all([
+            getUserActiveWantedCount(targetUid),
+            getUserWantedSearches(targetUid),
+          ]);
           setActiveWantedCount(wantedCount);
+          setWantedSearches(searches);
         }
       } catch (err) {
         console.error('Error fetching profile:', err);
@@ -312,6 +322,35 @@ export function Profile() {
     }
   };
 
+  const handleToggleWanted = async (search: WantedSearch) => {
+    setTogglingWantedId(search.id);
+    try {
+      if (search.status === 'active') {
+        await pauseWantedSearch(search.id);
+        setWantedSearches(prev => prev.map(s => s.id === search.id ? { ...s, status: 'paused' } : s));
+        setActiveWantedCount(c => Math.max(0, c - 1));
+      } else {
+        await reactivateWantedSearch(search.id);
+        setWantedSearches(prev => prev.map(s => s.id === search.id ? { ...s, status: 'active' } : s));
+        setActiveWantedCount(c => c + 1);
+      }
+    } finally {
+      setTogglingWantedId(null);
+    }
+  };
+
+  const handleDeleteWanted = async (search: WantedSearch) => {
+    if (!confirm('¿Eliminar esta búsqueda permanentemente?')) return;
+    setDeletingWantedId(search.id);
+    try {
+      await deleteWantedSearch(search.id);
+      setWantedSearches(prev => prev.filter(s => s.id !== search.id));
+      if (search.status === 'active') setActiveWantedCount(c => Math.max(0, c - 1));
+    } finally {
+      setDeletingWantedId(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -343,7 +382,13 @@ export function Profile() {
   // Real metrics computed from actual vehicle data
   const activeListings  = Array.isArray(allListings) ? allListings.filter(v => v.status === 'ACTIVE') : [];
   const pausedListings  = Array.isArray(allListings) ? allListings.filter(v => v.status === 'PAUSED') : [];
-  const soldListings    = Array.isArray(allListings) ? allListings.filter(v => v.status === 'SOLD') : [];
+  const soldListings    = Array.isArray(allListings)
+    ? allListings.filter(v => v.status === 'SOLD').sort((a, b) => {
+        const tA = (a as any).soldAt ? new Date((a as any).soldAt).getTime() : 0;
+        const tB = (b as any).soldAt ? new Date((b as any).soldAt).getTime() : 0;
+        return tB - tA;
+      })
+    : [];
   
   const totalViews      = Array.isArray(allListings) ? allListings.reduce((s, v) => s + (Number(v.viewCount) || 0), 0) : 0;
   const totalContacts   = Array.isArray(allListings) ? allListings.reduce((s, v) => s + (Number(v.contactCount) || 0), 0) : 0;
@@ -752,7 +797,7 @@ export function Profile() {
               )}
             </div>
           ) : isOwnProfile ? (
-            <Tabs defaultValue="all">
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="mb-8 bg-muted rounded-2xl p-1 h-auto gap-1 overflow-x-auto flex-nowrap w-full justify-start">
                 <TabsTrigger value="all"    className="rounded-xl font-bold text-[10px] uppercase tracking-widest px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                   Todo ({allListings.length})
@@ -804,6 +849,97 @@ export function Profile() {
           </div>
         </main>
   
+        {/* ── Mis Búsquedas ──────────────────────────────────────── */}
+        {isOwnProfile && (
+          <div className="container mx-auto px-4 md:px-8 pb-12 mt-2">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold tracking-tighter uppercase flex items-center gap-2">
+                <Search className="h-5 w-5 text-primary" /> Mis Búsquedas
+              </h2>
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                {wantedSearches.filter(s => s.status === 'active').length} activas · {wantedSearches.length} total
+              </span>
+            </div>
+
+            {wantedSearches.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-4 py-16 text-center border border-dashed border-border rounded-3xl">
+                <Search className="h-10 w-10 text-muted-foreground/40" />
+                <p className="text-sm font-medium text-muted-foreground">No tenés búsquedas publicadas.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {wantedSearches.map(search => {
+                  const isToggling = togglingWantedId === search.id;
+                  const isDeleting = deletingWantedId === search.id;
+                  const isPaused = search.status === 'paused';
+                  const statusColor = search.status === 'active'
+                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                    : search.status === 'paused'
+                    ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
+                    : 'bg-muted text-muted-foreground border-border';
+                  const statusLabel = search.status === 'active' ? 'Activa'
+                    : search.status === 'paused' ? 'Pausada'
+                    : search.status === 'fulfilled' ? 'Cumplida'
+                    : 'Expirada';
+
+                  return (
+                    <div key={search.id} className={`relative rounded-3xl border bg-card p-5 flex flex-col gap-4 transition-all ${isPaused ? 'opacity-60' : ''}`}>
+                      {/* Header */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-0.5">
+                          <p className="font-black uppercase tracking-tighter text-base leading-tight">
+                            {search.brand}{search.model ? ` ${search.model}` : ''}
+                          </p>
+                          {search.version && <p className="text-[11px] text-muted-foreground font-medium">{search.version}</p>}
+                        </div>
+                        <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border ${statusColor}`}>
+                          {statusLabel}
+                        </span>
+                      </div>
+
+                      {/* Details */}
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px] text-muted-foreground font-medium">
+                        <span>Año: <span className="text-foreground font-bold">{search.yearRange.min}–{search.yearRange.max}</span></span>
+                        {search.kmApprox && <span>KM aprox: <span className="text-foreground font-bold">{search.kmApprox.toLocaleString('es-AR')}</span></span>}
+                        <span className="col-span-2">
+                          Presupuesto: <span className="text-primary font-black">
+                            {search.currency} {search.budgetRange.min.toLocaleString('es-AR')} – {search.budgetRange.max.toLocaleString('es-AR')}
+                          </span>
+                        </span>
+                        {search.conditions?.length > 0 && (
+                          <span className="col-span-2">Condición: <span className="text-foreground font-bold">{search.conditions.join(' / ')}</span></span>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-2 mt-auto pt-2 border-t border-border">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={isToggling || isDeleting || ['fulfilled', 'expired'].includes(search.status)}
+                          onClick={() => handleToggleWanted(search)}
+                          className={`flex-1 rounded-xl text-[10px] font-bold uppercase tracking-widest h-9 ${isPaused ? 'border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10' : 'border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10'}`}
+                        >
+                          {isToggling ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : isPaused ? <><Play className="h-3.5 w-3.5 mr-1" /> Reactivar</> : <><Pause className="h-3.5 w-3.5 mr-1" /> Pausar</>}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={isDeleting || isToggling}
+                          onClick={() => handleDeleteWanted(search)}
+                          className="rounded-xl text-[10px] font-bold uppercase tracking-widest h-9 border-destructive/30 text-destructive hover:bg-destructive/10 px-3"
+                        >
+                          {isDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Sold Dialog */}
         <Dialog open={!!soldDialogVehicle} onOpenChange={() => { setSoldDialogVehicle(null); setSoldViaReven(null); setSelectedBuyer(null); }}>
           <DialogContent className="max-w-md rounded-3xl border-border bg-card p-6">

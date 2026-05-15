@@ -43,6 +43,11 @@ service cloud.firestore {
       match /private/{docId} {
         allow read, write: if isOwner(userId) || isAdmin();
       }
+
+      // Sesiones activas — owner gestiona las propias, admin puede leer/borrar
+      match /sessions/{sessionId} {
+        allow read, write, delete: if isOwner(userId) || isAdmin();
+      }
     }
 
     // ─── VEHICLES ─────────────────────────────────────────────────────────────

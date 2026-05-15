@@ -17,7 +17,6 @@ import {
   LogOut,
   Building2,
   ChevronDown,
-  ShoppingBag,
   Shield,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -31,6 +30,8 @@ import { auth, db, handleFirestoreError, OperationType } from '@/src/lib/firebas
 import { subscribeToUnreadCount } from '@/src/lib/chat';
 import { loginDemoUser } from '@/src/lib/auth';
 import { doc, getDoc } from 'firebase/firestore';
+import { createSession, deleteSession } from '@/src/lib/sessions';
+import { PLAN_LIMITS, normalizePlan } from '@/src/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -100,6 +101,7 @@ export function Header() {
   }, [user]);
 
   const handleLogout = async () => {
+    if (user) await deleteSession(user.uid);
     await signOut(auth);
     navigate('/');
   };
@@ -150,7 +152,14 @@ export function Header() {
         const userData = userDoc.data();
         
         const isSuperAdmin = userCredential.user.email && SUPER_ADMINS.includes(userCredential.user.email);
-        
+
+        if (!userDoc.exists() && !isSuperAdmin) {
+          await signOut(auth);
+          setError('Esta cuenta fue eliminada. Solicitá un nuevo acceso.');
+          setLoading(false);
+          return;
+        }
+
         if (userData && userData.role !== 'ADMIN' && !isSuperAdmin) {
           if (userData.status === 'pending') {
             await signOut(auth);
@@ -164,6 +173,13 @@ export function Header() {
             setLoading(false);
             return;
           }
+        }
+
+        // Create session (kicks oldest if plan limit is reached)
+        if (!isSuperAdmin && userData?.role !== 'ADMIN' && userData?.status === 'active') {
+          const plan = normalizePlan(userData?.membershipPlan);
+          const maxSessions = PLAN_LIMITS[plan].maxSessions;
+          await createSession(userCredential.user.uid, maxSessions);
         }
       }
       setIsLoginOpen(false);
@@ -299,10 +315,6 @@ export function Header() {
                     >
                       <Building2 className="mr-2 h-4 w-4" />
                       Mi Concesionaria
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="rounded-xl font-light uppercase tracking-widest text-[10px] px-3 py-2 cursor-pointer">
-                      <ShoppingBag className="mr-2 h-4 w-4" />
-                      Últimas Compras
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem 

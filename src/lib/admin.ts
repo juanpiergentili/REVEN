@@ -1,7 +1,9 @@
 import { db } from './firebase';
 import {
-  collection, getDocs, doc, updateDoc, deleteDoc, Timestamp, query, where,
+  collection, getDocs, doc, getDoc, updateDoc, deleteDoc, Timestamp, query, where,
 } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { app } from './firebase';
 
 export interface UserRecord {
   uid: string;
@@ -63,6 +65,12 @@ export async function reactivateUser(uid: string): Promise<void> {
 }
 
 export async function deleteUser(uid: string): Promise<void> {
+  // Delete Firebase Auth account via Cloud Function (Admin SDK required)
+  const fns = getFunctions(app, 'us-central1');
+  const deleteAuthUser = httpsCallable(fns, 'deleteAuthUser');
+  await deleteAuthUser({ uid });
+
+  // Delete Firestore data
   const [vehiclesSnap, wantedSnap] = await Promise.all([
     getDocs(query(collection(db, 'vehicles'), where('sellerId', '==', uid))),
     getDocs(query(collection(db, 'wanted_searches'), where('userId', '==', uid))),
@@ -119,11 +127,51 @@ export interface FinancialStats {
 }
 
 export async function getFinancialStats(): Promise<FinancialStats> {
-  const membershipsSnap = await getDocs(collection(db, 'memberships'));
-  const memberships = membershipsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-  
+  const [membershipsSnap, usersSnap] = await Promise.all([
+    getDocs(collection(db, 'memberships')),
+    getDocs(collection(db, 'users')),
+  ]);
+
+  const userMap: Record<string, { company: string; name: string; lastName: string }> = {};
+  usersSnap.docs.forEach(d => {
+    const data = d.data();
+    userMap[d.id] = {
+      company: data.company || data.companyName || '',
+      name: data.name || '',
+      lastName: data.lastName || '',
+    };
+  });
+
+  const memberships = await Promise.all(membershipsSnap.docs.map(async d => {
+    const data = d.data();
+
+    // 1. Already stored inline
+    if (data.companyName) return { id: d.id, ...data };
+
+    // 2. Try prebuilt map (user still exists)
+    const u = userMap[data.userId];
+    if (u) {
+      const name = u.company || `${u.name} ${u.lastName}`.trim();
+      if (name) return { id: d.id, ...data, companyName: name };
+    }
+
+    // 3. Direct lookup (user exists but wasn't in batch read for some reason)
+    if (data.userId) {
+      try {
+        const userSnap = await getDoc(doc(db, 'users', data.userId));
+        if (userSnap.exists()) {
+          const ud = userSnap.data();
+          const name = ud.company || ud.companyName || `${ud.name || ''} ${ud.lastName || ''}`.trim();
+          if (name) return { id: d.id, ...data, companyName: name };
+        }
+      } catch {}
+    }
+
+    return { id: d.id, ...data, companyName: '—' };
+  }));
+
   const activeMemberships = memberships.filter((m: any) => m.status === 'active');
-  
+
   let mrr = 0;
   activeMemberships.forEach((m: any) => {
     if (m.billingCycle === 'annual') {
@@ -141,16 +189,21 @@ export async function getFinancialStats(): Promise<FinancialStats> {
     arr,
     totalRevenue,
     activeSubscriptions: activeMemberships.length,
-    recentPayments: memberships.sort((a: any, b: any) => 
+    recentPayments: memberships.sort((a: any, b: any) =>
       (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0)
     ).slice(0, 10)
   };
 }
 
 export async function promoteToAdmin(uid: string): Promise<void> {
-  await updateDoc(doc(db, 'users', uid), { 
+  await updateDoc(doc(db, 'users', uid), {
     role: 'ADMIN',
-    status: 'active' 
+    status: 'active'
   });
+}
+
+export async function deleteAllMemberships(): Promise<void> {
+  const snap = await getDocs(collection(db, 'memberships'));
+  await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
 }
 

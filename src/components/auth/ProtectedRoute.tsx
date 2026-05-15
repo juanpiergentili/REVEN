@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth, db } from '@/src/lib/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { Loader2, XCircle, CheckCircle2 } from 'lucide-react';
+import { Loader2, XCircle, CheckCircle2, MonitorX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/src/lib/firebase';
+import { getSessionId, pingSession, clearSessionId } from '@/src/lib/sessions';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -19,6 +20,7 @@ export function ProtectedRoute({ children, requireApproval = true }: ProtectedRo
   const [profile, setProfile] = useState<any>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [accountDeleted, setAccountDeleted] = useState(false);
+  const [sessionKicked, setSessionKicked] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -41,6 +43,37 @@ export function ProtectedRoute({ children, requireApproval = true }: ProtectedRo
 
     return () => unsub();
   }, [user]);
+
+  useEffect(() => {
+    if (!user || !profile) return;
+    const SUPER_ADMINS_LIST = ['lucas.ferreyra@gmail.com'];
+    const isAdminUser = profile.role === 'ADMIN' || (user.email && SUPER_ADMINS_LIST.includes(user.email));
+    if (isAdminUser || profile.status !== 'active') return;
+
+    const sessionId = getSessionId();
+    if (!sessionId) return;
+
+    const sessionRef = doc(db, 'users', user.uid, 'sessions', sessionId);
+    const unsub = onSnapshot(sessionRef, (snap) => {
+      if (!snap.exists()) {
+        clearSessionId();
+        setSessionKicked(true);
+      }
+    });
+
+    const heartbeat = setInterval(() => {
+      pingSession(user.uid);
+    }, 3 * 60 * 1000);
+
+    return () => {
+      unsub();
+      clearInterval(heartbeat);
+    };
+  }, [user, profile]);
+
+  if (sessionKicked) {
+    return <SessionKickedScreen />;
+  }
 
   if (accountDeleted) {
     return (
@@ -108,8 +141,9 @@ export function ProtectedRoute({ children, requireApproval = true }: ProtectedRo
     return <>{children}</>;
   }
 
-  // Active user with expired trial → redirect to payment to subscribe
-  if (requireApproval && status === 'active' && trialExpired && !isSuperAdmin && profile?.role !== 'ADMIN') {
+  // Active user with expired trial and no real subscription → redirect to payment
+  const hasRealSubscription = !!profile?.subscriptionId && profile?.subscriptionStatus === 'authorized';
+  if (requireApproval && status === 'active' && trialExpired && !hasRealSubscription && !isSuperAdmin && profile?.role !== 'ADMIN') {
     if (location.pathname !== '/payment') {
       return <Navigate to="/payment" replace />;
     }
@@ -207,6 +241,31 @@ function RejectedScreen() {
       <Button
         variant="outline"
         onClick={() => navigate('/')}
+        className="rounded-full px-10 h-12 font-bold uppercase tracking-widest text-xs border-border"
+      >
+        Volver al inicio
+      </Button>
+    </div>
+  );
+}
+
+function SessionKickedScreen() {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center text-center space-y-8 px-4 bg-background">
+      <div className="w-20 h-20 rounded-full bg-yellow-500/10 flex items-center justify-center">
+        <MonitorX className="h-10 w-10 text-yellow-400" />
+      </div>
+      <div className="space-y-3 max-w-md">
+        <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-yellow-400">Sesión cerrada</p>
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tighter uppercase leading-none">Límite de sesiones</h1>
+        <p className="text-muted-foreground font-medium leading-relaxed">
+          Se inició sesión desde otro dispositivo y se alcanzó el límite de tu plan.<br />
+          Volvé a ingresar para continuar.
+        </p>
+      </div>
+      <Button
+        variant="outline"
+        onClick={() => signOut(auth).then(() => { window.location.href = '/'; })}
         className="rounded-full px-10 h-12 font-bold uppercase tracking-widest text-xs border-border"
       >
         Volver al inicio

@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import {
   getAllUsers, approveUser, rejectUser, reactivateUser, deleteUser, UserRecord,
-  getPlatformStats, getFinancialStats, PlatformStats, FinancialStats, promoteToAdmin
+  getPlatformStats, getFinancialStats, PlatformStats, FinancialStats, promoteToAdmin, deleteAllMemberships
 } from '@/src/lib/admin';
 
 const SUPER_ADMINS = ['lucas.ferreyra@gmail.com'];
@@ -28,9 +28,12 @@ const STATUS_LABEL: Record<string, { label: string; color: string }> = {
 };
 
 const PLAN_LABEL: Record<string, string> = {
-  plata: 'Plata',
-  oro: 'Oro',
-  platinum: 'Platinum',
+  plata: 'Business',
+  business: 'Business',
+  oro: 'Professional',
+  professional: 'Professional',
+  platinum: 'Enterprise',
+  enterprise: 'Enterprise',
   admin: 'Admin',
 };
 
@@ -334,13 +337,28 @@ export function Admin() {
             <div className="bg-card border border-border rounded-3xl overflow-hidden">
               <div className="p-6 border-b border-border flex items-center justify-between">
                 <h3 className="text-sm font-black uppercase tracking-widest">Pagos Recientes</h3>
-                <Badge variant="outline" className="rounded-full px-4">Últimos 10</Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="rounded-full px-4">Últimos 10</Badge>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full text-[10px] font-bold uppercase tracking-widest text-destructive border-destructive/30 hover:bg-destructive/10 h-8 px-3"
+                    onClick={async () => {
+                      if (!window.confirm('¿Eliminar todos los pagos de prueba? Esta acción no se puede deshacer.')) return;
+                      await deleteAllMemberships();
+                      setFinancialStats(null);
+                      loadData();
+                    }}
+                  >
+                    Resetear datos de prueba
+                  </Button>
+                </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
                     <tr className="bg-muted/50">
-                      <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">ID</th>
+                      <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Concesionaria</th>
                       <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Plan</th>
                       <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Ciclo</th>
                       <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Monto</th>
@@ -351,9 +369,9 @@ export function Admin() {
                   <tbody className="divide-y divide-border/50">
                     {financialStats?.recentPayments.map((p: any) => (
                       <tr key={p.id} className="hover:bg-muted/30 transition-colors">
-                        <td className="px-6 py-4 text-[11px] font-bold tracking-tight uppercase truncate max-w-[120px]">{p.id}</td>
+                        <td className="px-6 py-4 text-[11px] font-bold tracking-tight uppercase truncate max-w-[180px]">{p.companyName || p.id}</td>
                         <td className="px-6 py-4">
-                          <Badge className="bg-primary/10 text-primary border-primary/20 text-[9px] font-black rounded-full uppercase">{p.plan}</Badge>
+                          <Badge className="bg-primary/10 text-primary border-primary/20 text-[9px] font-black rounded-full uppercase">{PLAN_LABEL[p.plan] ?? p.plan}</Badge>
                         </td>
                         <td className="px-6 py-4 text-[11px] font-medium text-muted-foreground uppercase tracking-widest">{p.billingCycle}</td>
                         <td className="px-6 py-4 text-[11px] font-black text-white">${p.pricePaid?.toLocaleString('es-AR')}</td>

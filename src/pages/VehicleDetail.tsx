@@ -287,7 +287,13 @@ export function VehicleDetail() {
           </Button>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="rounded-full h-10 w-10"
-              onClick={() => navigator.clipboard?.writeText(window.location.href)}>
+              onClick={() => {
+                const url = window.location.href;
+                const text = vehicle
+                  ? `Te comparto esta publicación en REVEN: ${vehicle.brand} ${vehicle.model} ${vehicle.year} - ${url}`
+                  : url;
+                window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+              }}>
               <Share2 className="h-4 w-4" />
             </Button>
           </div>

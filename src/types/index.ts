@@ -9,7 +9,7 @@ export function normalizePlan(plan: string | undefined): MembershipPlan {
   if (!plan) return 'business';
   const p = plan.toLowerCase();
   if (p === 'plata' || p === 'business') return 'business';
-  if (p === 'oro' || p === 'professional') return 'professional';
+  if (p === 'oro' || p === 'professional' || p === 'profesional') return 'professional';
   if (p === 'platinum' || p === 'enterprise') return 'enterprise';
   return 'business';
 }
@@ -356,10 +356,10 @@ export interface Notification {
 
 // ─── Plan limits (constantes de negocio) ─────────────────────────────────────
 
-export const PLAN_LIMITS: Record<MembershipPlan, { maxVehicles: number; maxWantedSearches: number; canFeatureListing: boolean }> = {
-  business:     { maxVehicles: 5,        maxWantedSearches: 5,       canFeatureListing: false },
-  professional: { maxVehicles: 15,       maxWantedSearches: 10,      canFeatureListing: true  },
-  enterprise:   { maxVehicles: Infinity, maxWantedSearches: Infinity, canFeatureListing: true  },
+export const PLAN_LIMITS: Record<MembershipPlan, { maxVehicles: number; maxWantedSearches: number; canFeatureListing: boolean; maxSessions: number }> = {
+  business:     { maxVehicles: 5,        maxWantedSearches: 5,       canFeatureListing: false, maxSessions: 2 },
+  professional: { maxVehicles: 10,       maxWantedSearches: 5,       canFeatureListing: true,  maxSessions: 4 },
+  enterprise:   { maxVehicles: Infinity, maxWantedSearches: Infinity, canFeatureListing: true,  maxSessions: 7 },
 };
 
 export const PLAN_PRICES: Record<MembershipPlan, { monthly: number; annual: number }> = {
