@@ -15,7 +15,7 @@ const activeConfig = import.meta.env.VITE_FIREBASE_API_KEY ? {
   firestoreDatabaseId: import.meta.env.VITE_FIREBASE_DATABASE_ID || '(default)'
 } : firebaseConfigJson;
 
-const app = initializeApp(activeConfig);
+export const app = initializeApp(activeConfig);
 export const db = getFirestore(app, (activeConfig as any).firestoreDatabaseId);
 export const auth = getAuth(app);
 auth.languageCode = 'es'; // Forzar correos de Firebase en español

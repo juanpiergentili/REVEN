@@ -81,7 +81,7 @@ export function Footer({ onAdmissionClick, onTermsClick, className = "bg-[#0e0a1
               </li>
               <li>
                 <a
-                  href="https://wa.me/543516161300"
+                  href="https://wa.me/5493515999338"
                   target="_blank"
                   className="flex items-center gap-4 group"
                 >

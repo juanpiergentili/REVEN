@@ -31,6 +31,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isAuthenticated();
       allow create: if isOwner(userId);
+      allow delete: if isAdmin();
       // Owner edita su propio perfil. Admin edita cualquiera.
       // Terceros sólo pueden incrementar analíticas (no las propias).
       allow update: if isOwner(userId)
@@ -41,6 +42,11 @@ service cloud.firestore {
       // Datos privados — solo owner + admin
       match /private/{docId} {
         allow read, write: if isOwner(userId) || isAdmin();
+      }
+
+      // Sesiones activas — owner gestiona las propias, admin puede leer/borrar
+      match /sessions/{sessionId} {
+        allow read, write, delete: if isOwner(userId) || isAdmin();
       }
     }
 

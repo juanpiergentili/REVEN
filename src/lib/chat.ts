@@ -1,6 +1,6 @@
 import {
   collection, doc, addDoc, query, where, onSnapshot,
-  updateDoc, getDoc, getDocs, limit, Timestamp
+  updateDoc, getDoc, getDocs, limit, Timestamp, arrayUnion,
 } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -135,24 +135,41 @@ export function subscribeToConversations(
   );
 
   return onSnapshot(q, (snapshot) => {
-    const conversations = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data() as ConversationData,
-    }));
-    
-    // Sort on client side to avoid composite index requirement
+    const conversations = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() as ConversationData }))
+      .filter(c => !(c as any).deletedBy?.includes(userId));
+
     conversations.sort((a, b) => {
       const timeA = a.lastMessageAt?.toMillis() || 0;
       const timeB = b.lastMessageAt?.toMillis() || 0;
-      return timeB - timeA; // Descending
+      return timeB - timeA;
     });
-    
+
     callback(conversations);
   }, (error) => {
     console.error("Error subscribing to conversations:", error);
     if (onError) onError(error);
     else callback([]);
   });
+}
+
+/**
+ * Soft-delete a conversation for the current user.
+ * Optionally add the other party to a blocked list in the user's profile.
+ */
+export async function deleteConversation(
+  conversationId: string,
+  userId: string,
+  blockOtherUser?: string,
+): Promise<void> {
+  await updateDoc(doc(db, 'conversations', conversationId), {
+    deletedBy: arrayUnion(userId),
+  });
+  if (blockOtherUser) {
+    await updateDoc(doc(db, 'users', userId), {
+      blockedUsers: arrayUnion(blockOtherUser),
+    });
+  }
 }
 
 /**

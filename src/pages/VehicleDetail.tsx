@@ -4,16 +4,17 @@ import {
   ChevronLeft, ChevronRight, Share2, MapPin, Calendar, Gauge, Fuel,
   CheckCircle2, MessageSquare, Eye, ShieldCheck, Users, ArrowRight, Car, Loader2,
   AlertCircle, Wrench, PaintBucket, Settings, X, Expand,
-  Pencil, Pause, Play, CheckSquare, Trash2, Search,
+  Pencil, Pause, Play, CheckSquare, Trash2, Search, AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { useState, useEffect, useCallback } from 'react';
-import { doc, getDoc, updateDoc, deleteDoc, getDocs, collection, increment, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, getDocFromServer, updateDoc, deleteDoc, getDocs, collection, increment, serverTimestamp } from 'firebase/firestore';
 import { db, useAuth } from '@/src/lib/firebase';
 import type { Vehicle } from '@/src/types';
 import { extractIdFromSlug } from '@/src/lib/seo';
@@ -30,6 +31,7 @@ export function VehicleDetail() {
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [notFoundReason, setNotFoundReason] = useState('');
   const [ownerActionLoading, setOwnerActionLoading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [soldDialogOpen, setSoldDialogOpen] = useState(false);
@@ -37,32 +39,22 @@ export function VehicleDetail() {
   const [agencySearch, setAgencySearch] = useState('');
   const [agencies, setAgencies] = useState<{ id: string; company: string; name: string }[]>([]);
   const [selectedBuyer, setSelectedBuyer] = useState<{ id: string; company: string } | null>(null);
+  const [isAdminUser, setIsAdminUser] = useState(false);
+  const [adminPauseOpen, setAdminPauseOpen] = useState(false);
+  const [adminPauseReason, setAdminPauseReason] = useState('');
+  const [adminActionLoading, setAdminActionLoading] = useState(false);
 
   const id = slug ? extractIdFromSlug(slug) : undefined;
 
   useEffect(() => {
-    // Reset state when ID or slug changes to avoid showing stale data
-    setVehicle(null);
-    setLoading(true);
-    setNotFound(false);
-
     if (!id) {
-      console.warn('[VehicleDetail] No valid ID extracted from slug:', slug);
+      setNotFoundReason(`Slug inválido: "${slug}"`);
       setNotFound(true);
       setLoading(false);
       return;
     }
 
-    console.log(`[VehicleDetail] Attempting to fetch vehicle. ID: "${id}", Slug: "${slug}"`);
-
     let isMounted = true;
-    const timeoutId = setTimeout(() => {
-      if (isMounted && loading) {
-        console.error('[VehicleDetail] Fetch timeout (10s) for ID:', id);
-        setLoading(false);
-        setNotFound(true);
-      }
-    }, 10000);
 
     async function fetchVehicle() {
       const id = extractIdFromSlug(slug || '');
@@ -77,46 +69,87 @@ export function VehicleDetail() {
         return;
       }
       try {
-        const snap = await getDoc(doc(db, 'vehicles', id));
+        const snap = await getDocFromServer(doc(db, 'vehicles', id));
         if (!isMounted) return;
 
         if (snap.exists()) {
           const data = snap.data();
-          console.log('[VehicleDetail] Document found successfully:', data.brand, data.model);
           setVehicle({
             ...data,
             id: snap.id,
             createdAt: convertTimestamp(data.createdAt)
           } as Vehicle);
-          
-          // Background update: don't wait for this
-          updateDoc(snap.ref, { viewCount: increment(1) }).catch(e => {
-            console.warn('[VehicleDetail] Failed to increment viewCount:', e);
-          });
-          
-          setLoading(false);
-        } else {
-          console.warn(`[VehicleDetail] Document does not exist in Firestore. ID: "${id}"`);
-          setNotFound(true);
+          updateDoc(snap.ref, { viewCount: increment(1) }).catch(() => {});
           setLoading(false);
         }
+
+        setNotFoundReason(`ID: ${id}`);
+        setNotFound(true);
+        setLoading(false);
       } catch (err) {
-        console.error('[VehicleDetail] Critical error during fetch:', err);
-        if (isMounted) {
-          setNotFound(true);
-          setLoading(false);
-        }
+        if (!isMounted) return;
+        const msg = err instanceof Error ? err.message : String(err);
+        setNotFoundReason(`Error: ${msg}`);
+        setNotFound(true);
+        setLoading(false);
       }
     }
 
     fetchVehicle();
-    return () => {
-      isMounted = false;
-      clearTimeout(timeoutId);
-    };
+    return () => { isMounted = false; };
   }, [id, slug]);
 
+  const SUPER_ADMINS = ['lucas.ferreyra@gmail.com'];
+
+  useEffect(() => {
+    if (!user) { setIsAdminUser(false); return; }
+    if (user.email && SUPER_ADMINS.includes(user.email)) { setIsAdminUser(true); return; }
+    getDoc(doc(db, 'users', user.uid)).then(snap => {
+      setIsAdminUser(snap.exists() && snap.data().role === 'ADMIN');
+    });
+  }, [user]);
+
   const isOwner = !!user && !!vehicle && vehicle.sellerId === user.uid;
+  const isAdmin = isAdminUser;
+
+  const handleAdminPause = async () => {
+    if (!vehicle) return;
+    setAdminActionLoading(true);
+    try {
+      await updateDoc(doc(db, 'vehicles', vehicle.id), {
+        status: 'PAUSED',
+        adminPauseReason: adminPauseReason.trim() || null,
+      });
+      setVehicle(v => v ? { ...v, status: 'PAUSED', adminPauseReason: adminPauseReason.trim() || null } as any : v);
+      setAdminPauseOpen(false);
+      setAdminPauseReason('');
+    } finally {
+      setAdminActionLoading(false);
+    }
+  };
+
+  const handleAdminUnpause = async () => {
+    if (!vehicle) return;
+    setAdminActionLoading(true);
+    try {
+      await updateDoc(doc(db, 'vehicles', vehicle.id), { status: 'ACTIVE', adminPauseReason: null });
+      setVehicle(v => v ? { ...v, status: 'ACTIVE', adminPauseReason: null } as any : v);
+    } finally {
+      setAdminActionLoading(false);
+    }
+  };
+
+  const handleAdminDelete = async () => {
+    if (!vehicle) return;
+    if (!window.confirm('¿Eliminar esta publicación permanentemente?')) return;
+    setAdminActionLoading(true);
+    try {
+      await deleteDoc(doc(db, 'vehicles', vehicle.id));
+      navigate(-1);
+    } finally {
+      setAdminActionLoading(false);
+    }
+  };
 
   const handleStatusChange = async (status: Vehicle['status']) => {
     if (!vehicle || !user) return;
@@ -239,6 +272,9 @@ export function VehicleDetail() {
         <div className="text-center space-y-2">
           <h2 className="text-2xl font-bold tracking-tighter uppercase">Vehículo no encontrado</h2>
           <p className="text-muted-foreground font-medium">Esta publicación no existe o fue eliminada.</p>
+          {notFoundReason && (
+            <p className="text-[11px] font-mono text-orange-400 bg-orange-500/10 border border-orange-500/20 rounded-xl px-4 py-2 mt-2">{notFoundReason}</p>
+          )}
         </div>
         <Button onClick={() => navigate('/marketplace')} className="rounded-full font-bold uppercase tracking-widest text-xs">
           Volver al Marketplace
@@ -260,19 +296,14 @@ export function VehicleDetail() {
             <ChevronLeft className="h-4 w-4" /> Volver
           </Button>
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost" size="icon" className="rounded-full h-10 w-10 hover:text-[#25D366] hover:bg-[#25D366]/10 transition-colors"
+            <Button variant="ghost" size="icon" className="rounded-full h-10 w-10"
               onClick={() => {
-                const text = `¡Mira este vehículo en REVEN! ${vehicle.brand} ${vehicle.model} ${vehicle.year}\n\n${window.location.href}`;
+                const url = window.location.href;
+                const text = vehicle
+                  ? `Te comparto esta publicación en REVEN: ${vehicle.brand} ${vehicle.model} ${vehicle.year} - ${url}`
+                  : url;
                 window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-              }}
-            >
-              <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-              </svg>
-            </Button>
-            <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 hover:text-primary hover:bg-primary/10 transition-colors"
-              onClick={() => navigator.clipboard?.writeText(window.location.href)}>
+              }}>
               <Share2 className="h-4 w-4" />
             </Button>
           </div>
@@ -731,6 +762,41 @@ export function VehicleDetail() {
                       </Button>
                     </div>
                   </div>
+                ) : isAdmin ? (
+                  <div className="space-y-3">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-orange-400 text-center flex items-center justify-center gap-1.5">
+                      <ShieldCheck className="h-3.5 w-3.5" /> Panel Admin
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {vehicle.status === 'PAUSED' ? (
+                        <Button
+                          variant="outline"
+                          className="h-12 rounded-2xl font-bold uppercase tracking-tighter text-xs gap-2 text-primary border-primary/40"
+                          onClick={handleAdminUnpause}
+                          disabled={adminActionLoading}
+                        >
+                          {adminActionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Play className="h-4 w-4" /> Activar</>}
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          className="h-12 rounded-2xl font-bold uppercase tracking-tighter text-xs gap-2 text-orange-400 border-orange-400/30 hover:bg-orange-500/10"
+                          onClick={() => { setAdminPauseReason(''); setAdminPauseOpen(true); }}
+                          disabled={adminActionLoading || vehicle.status === 'SOLD'}
+                        >
+                          <Pause className="h-4 w-4" /> Pausar
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        className="h-12 rounded-2xl font-bold uppercase tracking-tighter text-xs gap-2 text-red-400 border-red-400/30 hover:bg-red-500/10"
+                        onClick={handleAdminDelete}
+                        disabled={adminActionLoading}
+                      >
+                        {adminActionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Trash2 className="h-4 w-4" /> Eliminar</>}
+                      </Button>
+                    </div>
+                  </div>
                 ) : (
                   <Button
                     size="lg"
@@ -844,6 +910,36 @@ export function VehicleDetail() {
               </Button>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Admin Pause Dialog */}
+      <Dialog open={adminPauseOpen} onOpenChange={open => { setAdminPauseOpen(open); if (!open) setAdminPauseReason(''); }}>
+        <DialogContent className="sm:max-w-md rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="font-black uppercase tracking-tighter text-xl flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-orange-400" /> Pausar publicación
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground font-medium">
+              Ingresá el motivo. El vendedor verá esta advertencia en su panel.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <Textarea
+              placeholder="Ej: Información incompleta, precio incorrecto, imágenes inapropiadas..."
+              className="rounded-2xl resize-none min-h-[100px]"
+              value={adminPauseReason}
+              onChange={e => setAdminPauseReason((e.target as HTMLTextAreaElement).value)}
+              autoFocus
+            />
+            <Button
+              className="w-full h-12 rounded-2xl font-bold uppercase tracking-tighter bg-orange-500 hover:bg-orange-600 text-white"
+              onClick={handleAdminPause}
+              disabled={!adminPauseReason.trim() || adminActionLoading}
+            >
+              {adminActionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Confirmar pausa'}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

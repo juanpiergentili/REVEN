@@ -1,4 +1,4 @@
-export const TRIAL_MAX_LISTINGS = 5;
+export const TRIAL_MAX_LISTINGS = 10;
 
 export function isTrialUser(profile: Record<string, any> | null | undefined): boolean {
   return profile?.discountCode === 'REVENFREE60';
