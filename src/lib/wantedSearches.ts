@@ -1,6 +1,6 @@
 import { db, convertTimestamp } from './firebase';
 import {
-  collection, addDoc, deleteDoc, doc,
+  collection, addDoc, deleteDoc, doc, updateDoc,
   query, orderBy, limit, onSnapshot, serverTimestamp,
   getDocs, where
 } from 'firebase/firestore';
@@ -54,4 +54,26 @@ export async function getUserActiveWantedCount(userId: string): Promise<number> 
   );
   const snap = await getDocs(q);
   return snap.size;
+}
+
+export async function getUserWantedSearches(userId: string): Promise<WantedSearch[]> {
+  const q = query(
+    collection(db, 'wanted_searches'),
+    where('userId', '==', userId),
+    orderBy('createdAt', 'desc')
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map(d => ({
+    ...d.data(),
+    id: d.id,
+    createdAt: convertTimestamp(d.data().createdAt),
+  } as WantedSearch));
+}
+
+export async function pauseWantedSearch(id: string): Promise<void> {
+  await updateDoc(doc(db, 'wanted_searches', id), { status: 'paused' });
+}
+
+export async function reactivateWantedSearch(id: string): Promise<void> {
+  await updateDoc(doc(db, 'wanted_searches', id), { status: 'active' });
 }

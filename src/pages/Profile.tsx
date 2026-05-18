@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ChevronLeft, Eye, MessageSquare, Clock, BarChart3, TrendingUp, Award,
   MapPin, Building2, Phone, Mail, Loader2, ShoppingBag, Plus, Settings,
-  Instagram, Facebook, ExternalLink, Trash2, User, Activity, Fingerprint, Shield,
+  Instagram, Facebook, ExternalLink, Trash2, User, Users, Activity,
   Save, Pause, Play, CheckCircle2, Package, Lock, Camera, Upload, Globe,
-  CreditCard,
+  CreditCard, XCircle, Search, AlertCircle,
 } from 'lucide-react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '@/src/lib/firebase';
@@ -23,7 +23,8 @@ import { getResponseBadge } from '@/src/lib/analytics';
 import { useAuth, db } from '@/src/lib/firebase';
 import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { getVehiclesBySeller, updateVehicleStatus, pauseAllSellerListings, deleteVehicle } from '@/src/lib/vehicles';
-import { getUserActiveWantedCount } from '@/src/lib/wantedSearches';
+import { getUserActiveWantedCount, getUserWantedSearches, pauseWantedSearch, reactivateWantedSearch, deleteWantedSearch } from '@/src/lib/wantedSearches';
+import type { WantedSearch } from '@/src/types';
 import { addPointsToAgency, getAgencyTier, getTierColor } from '@/src/lib/gamification';
 import { isTrialUser, isTrialExpired, getTrialDaysRemaining, getTrialEndDate, TRIAL_MAX_LISTINGS } from '@/src/lib/trial';
 import { useGeoRef } from '@/src/hooks/useGeoRef';
@@ -65,9 +66,18 @@ const STATUS_CONFIG = {
 export function Profile() {
   const { uid } = useParams<{ uid: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'all');
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [showUpgradeRequested, setShowUpgradeRequested] = useState(false);
+  const [upgradeConfirm, setUpgradeConfirm] = useState<{ plan: string; cycle: 'monthly' | 'annual'; currentPlan: string } | null>(null);
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
+  const [upgradeError, setUpgradeError] = useState<string | null>(null);
+  const [cancelConfirm, setCancelConfirm] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  const [cancelAccessUntil, setCancelAccessUntil] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [profileData, setProfileData] = useState<any>(null);
@@ -77,8 +87,15 @@ export function Profile() {
   const [markingSoldId, setMarkingSoldId] = useState<string | null>(null);
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
   const [soldDialogVehicle, setSoldDialogVehicle] = useState<Vehicle | null>(null);
+  const [soldViaReven, setSoldViaReven] = useState<boolean | null>(null);
+  const [soldAgencies, setSoldAgencies] = useState<{ id: string; company: string; name: string }[]>([]);
+  const [agencySearch, setAgencySearch] = useState('');
+  const [selectedBuyer, setSelectedBuyer] = useState<{ id: string; company: string } | null>(null);
   const [isAddingPoints, setIsAddingPoints] = useState(false);
   const [activeWantedCount, setActiveWantedCount] = useState(0);
+  const [wantedSearches, setWantedSearches] = useState<WantedSearch[]>([]);
+  const [togglingWantedId, setTogglingWantedId] = useState<string | null>(null);
+  const [deletingWantedId, setDeletingWantedId] = useState<string | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
@@ -138,8 +155,12 @@ export function Profile() {
         setAllListings(vehicles);
         
         if (isOwnProfile) {
-          const wantedCount = await getUserActiveWantedCount(targetUid);
+          const [wantedCount, searches] = await Promise.all([
+            getUserActiveWantedCount(targetUid),
+            getUserWantedSearches(targetUid),
+          ]);
           setActiveWantedCount(wantedCount);
+          setWantedSearches(searches);
         }
       } catch (err) {
         console.error('Error fetching profile:', err);
@@ -227,6 +248,53 @@ export function Profile() {
     }
   };
 
+  const handleUpgrade = (plan: any, cycle: 'monthly' | 'annual') => {
+    setUpgradeError(null);
+    const currentPlan = normalizePlan(profileData?.plan || 'business');
+    setUpgradeConfirm({ plan, cycle, currentPlan });
+  };
+
+  const confirmUpgrade = async (startNow: boolean) => {
+    if (!user || !upgradeConfirm) return;
+    setUpgradeLoading(true);
+    setUpgradeError(null);
+    try {
+      const { getFunctions, httpsCallable } = await import('firebase/functions');
+      const { app } = await import('@/src/lib/firebase');
+      const fns = getFunctions(app, 'us-central1');
+      const upgradePlan = httpsCallable(fns, 'upgradePlan');
+      const result: any = await upgradePlan({ newPlan: upgradeConfirm.plan, startNow });
+      setUpgradeConfirm(null);
+      if (startNow && result.data?.init_point) {
+        window.location.href = result.data.init_point;
+      } else {
+        setShowUpgradeRequested(true);
+      }
+    } catch (err: any) {
+      setUpgradeError(err?.message || 'Error al procesar el upgrade. Intentá de nuevo.');
+    } finally {
+      setUpgradeLoading(false);
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    if (!user) return;
+    setCancelLoading(true);
+    setCancelError(null);
+    try {
+      const { getFunctions, httpsCallable } = await import('firebase/functions');
+      const { app } = await import('@/src/lib/firebase');
+      const fns = getFunctions(app, 'us-central1');
+      const cancelSubscription = httpsCallable(fns, 'cancelSubscription');
+      const result: any = await cancelSubscription({});
+      setCancelConfirm(false);
+      setCancelAccessUntil(result.data?.accessUntil || null);
+    } catch (err: any) {
+      setCancelError(err?.message || 'Error al cancelar la suscripción. Intentá de nuevo.');
+    } finally {
+      setCancelLoading(false);
+    }
+  };
 
   const handleToggleStatus = async (vehicle: Vehicle) => {
     const next = vehicle.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
@@ -242,17 +310,34 @@ export function Profile() {
   };
 
   const handleMarkSold = async (vehicle: Vehicle) => {
+    setSoldViaReven(null);
+    setSelectedBuyer(null);
+    setAgencySearch('');
     setSoldDialogVehicle(vehicle);
+    const snap = await getDocs(collection(db, 'users'));
+    const list = snap.docs
+      .filter(d => d.id !== user?.uid && d.data().status === 'active' && d.data().role !== 'ADMIN')
+      .map(d => ({ id: d.id, company: d.data().company || d.data().name || 'Agencia', name: d.data().name || '' }));
+    setSoldAgencies(list);
   };
 
-  const confirmMarkSold = async (soldViaReven: boolean) => {
+  const confirmMarkSold = async (viaReven: boolean, buyer?: { id: string; company: string } | null) => {
     if (!soldDialogVehicle || !user) return;
     setMarkingSoldId(soldDialogVehicle.id);
     setIsAddingPoints(true);
     try {
-      await updateVehicleStatus(soldDialogVehicle.id, 'SOLD');
-      if (soldViaReven) {
-        await addPointsToAgency(user.uid, 50);
+      const update: any = { status: 'SOLD' };
+      if (viaReven && buyer) {
+        update.soldViaReven = true;
+        update.buyerAgencyId = buyer.id;
+        update.buyerAgencyName = buyer.company;
+      }
+      await updateDoc(doc(db, 'vehicles', soldDialogVehicle.id), update);
+      if (viaReven && buyer) {
+        await Promise.all([
+          addPointsToAgency(user.uid, 50),
+          addPointsToAgency(buyer.id, 50),
+        ]);
         setProfileData((prev: any) => ({ ...prev, points: (prev.points || 0) + 50 }));
       }
       setAllListings(prev => prev.map(v => v.id === soldDialogVehicle.id ? { ...v, status: 'SOLD' } : v));
@@ -260,6 +345,8 @@ export function Profile() {
       setMarkingSoldId(null);
       setIsAddingPoints(false);
       setSoldDialogVehicle(null);
+      setSoldViaReven(null);
+      setSelectedBuyer(null);
     }
   };
 
@@ -271,6 +358,35 @@ export function Profile() {
       setAllListings(prev => prev.filter(v => v.id !== vehicle.id));
     } finally {
       setIsDeletingId(null);
+    }
+  };
+
+  const handleToggleWanted = async (search: WantedSearch) => {
+    setTogglingWantedId(search.id);
+    try {
+      if (search.status === 'active') {
+        await pauseWantedSearch(search.id);
+        setWantedSearches(prev => prev.map(s => s.id === search.id ? { ...s, status: 'paused' } : s));
+        setActiveWantedCount(c => Math.max(0, c - 1));
+      } else {
+        await reactivateWantedSearch(search.id);
+        setWantedSearches(prev => prev.map(s => s.id === search.id ? { ...s, status: 'active' } : s));
+        setActiveWantedCount(c => c + 1);
+      }
+    } finally {
+      setTogglingWantedId(null);
+    }
+  };
+
+  const handleDeleteWanted = async (search: WantedSearch) => {
+    if (!confirm('¿Eliminar esta búsqueda permanentemente?')) return;
+    setDeletingWantedId(search.id);
+    try {
+      await deleteWantedSearch(search.id);
+      setWantedSearches(prev => prev.filter(s => s.id !== search.id));
+      if (search.status === 'active') setActiveWantedCount(c => Math.max(0, c - 1));
+    } finally {
+      setDeletingWantedId(null);
     }
   };
 
@@ -307,10 +423,16 @@ export function Profile() {
   // Real metrics computed from actual vehicle data
   const activeListings  = Array.isArray(allListings) ? allListings.filter(v => v.status === 'ACTIVE') : [];
   const pausedListings  = Array.isArray(allListings) ? allListings.filter(v => v.status === 'PAUSED') : [];
-  const soldListings    = Array.isArray(allListings) ? allListings.filter(v => v.status === 'SOLD') : [];
+  const soldListings    = Array.isArray(allListings)
+    ? allListings.filter(v => v.status === 'SOLD').sort((a, b) => {
+        const tA = (a as any).soldAt ? new Date((a as any).soldAt).getTime() : 0;
+        const tB = (b as any).soldAt ? new Date((b as any).soldAt).getTime() : 0;
+        return tB - tA;
+      })
+    : [];
   
-  const totalViews      = Array.isArray(allListings) ? allListings.reduce((s, v) => s + (Number(v?.viewCount) || 0), 0) : 0;
-  const totalContacts   = Array.isArray(allListings) ? allListings.reduce((s, v) => s + (Number(v?.contactCount) || 0), 0) : 0;
+  const totalViews      = Array.isArray(allListings) ? allListings.reduce((s, v) => s + (Number(v.viewCount) || 0), 0) : 0;
+  const totalContacts   = Array.isArray(allListings) ? allListings.reduce((s, v) => s + (Number(v.contactCount) || 0), 0) : 0;
   
   // Computed Advanced Metrics
   // conversionRate now represents the "Closing Rate" (Leads to Sales)
@@ -508,89 +630,22 @@ export function Profile() {
             <StatCard icon={Package}      label="Stock activo"        value={activeListings.length}  accent />
             <StatCard icon={CheckCircle2} label="Vendidos"           value={soldListings.length}    />
           </div>
-
           {isOwnProfile && (
-            <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Evolution Chart */}
-              <div className="lg:col-span-2 p-8 rounded-[2rem] bg-card border border-border space-y-6">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <h4 className="text-xs font-black uppercase tracking-widest">Evolución de Actividad</h4>
-                    <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">Actividad de los últimos 7 días</p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1.5">
-                      <div className="h-2 w-2 rounded-full bg-primary" />
-                      <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Visitas</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <div className="h-2 w-2 rounded-full bg-blue-500" />
-                      <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Mensajes</span>
-                    </div>
-                  </div>
+            <div className="mt-6 p-6 rounded-3xl border border-primary/10 bg-primary/5 flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                  <BarChart3 className="h-6 w-6 text-primary" />
                 </div>
-
-                <div className="h-40 w-full relative flex items-end justify-between px-2 gap-2">
-                  <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-5">
-                    {[1, 2, 3, 4].map(i => <div key={i} className="w-full h-px bg-white" />)}
-                  </div>
-
-                  {[65, 42, 88, 54, 72, 95, 82].map((v, i) => {
-                    const m = [12, 8, 15, 10, 14, 18, 16][i];
-                    return (
-                      <div key={i} className="flex-1 flex flex-col items-center gap-2 group cursor-pointer">
-                        <div className="w-full flex flex-col items-center justify-end gap-1 h-32 relative">
-                          <div className="w-full max-w-[12px] bg-primary/20 rounded-t-full absolute bottom-0 h-full" />
-                          <div 
-                            className="w-full max-w-[12px] bg-primary rounded-t-full transition-all duration-700 group-hover:brightness-125 relative z-10"
-                            style={{ height: `${v}%` }}
-                          />
-                          <div 
-                            className="w-full max-w-[12px] bg-blue-500 rounded-t-full transition-all duration-700 group-hover:brightness-125 relative z-20 -mb-1"
-                            style={{ height: `${m * 4}%` }}
-                          />
-                        </div>
-                        <span className="text-[8px] font-black text-muted-foreground uppercase">{['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'][i]}</span>
-                      </div>
-                    );
-                  })}
+                <div>
+                  <p className="font-bold uppercase tracking-widest text-[10px] text-muted-foreground">Índice de Rotación</p>
+                  <p className="text-2xl font-semibold tracking-tighter lowercase">
+                    {rotationIndex.toFixed(0)}% de efectividad
+                  </p>
                 </div>
               </div>
-
-              {/* Reports & Performance */}
-              <div className="p-8 rounded-[2rem] border border-primary/10 bg-primary/5 flex flex-col justify-between space-y-6">
-                <div className="space-y-4">
-                  <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-                    <BarChart3 className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-bold uppercase tracking-widest text-[10px] text-muted-foreground">Rendimiento Mensual</p>
-                    <p className="text-2xl font-black tracking-tighter uppercase italic text-white">
-                      {rotationIndex.toFixed(0)}% Eficacia
-                    </p>
-                    <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest mt-1">Tu stock rota cada {(30 / (rotationIndex / 100 || 1)).toFixed(0)} días</p>
-                  </div>
-                </div>
-                
-                <Button 
-                  onClick={() => {
-                    const csvContent = "data:text/csv;charset=utf-8," 
-                      + "Fecha,Visitas,Consultas,Ventas\n"
-                      + "2024-05-08,65,12,1\n"
-                      + "2024-05-09,42,8,0\n"
-                      + "2024-05-10,88,15,2\n";
-                    const encodedUri = encodeURI(csvContent);
-                    const link = document.createElement("a");
-                    link.setAttribute("href", encodedUri);
-                    link.setAttribute("download", `reporte_reven_${profileData.company || 'mi_agencia'}.csv`);
-                    document.body.appendChild(link);
-                    link.click();
-                  }}
-                  variant="outline" 
-                  className="w-full rounded-2xl border-primary/20 text-primary font-bold uppercase tracking-widest text-[10px] h-12 hover:bg-primary hover:text-primary-foreground transition-all gap-2"
-                >
-                  <Download className="h-3.5 w-3.5" /> Exportar Informe CSV
-                </Button>
+              <div className="flex gap-2">
+                <Badge variant="outline" className="rounded-full px-4 py-1.5 border-primary/20 text-primary font-bold uppercase tracking-widest text-[9px]">ROI Positivo</Badge>
+                <Badge variant="outline" className="rounded-full px-4 py-1.5 border-emerald-500/20 text-emerald-400 font-bold uppercase tracking-widest text-[9px]">Market Fit</Badge>
               </div>
             </div>
           )}
@@ -643,24 +698,32 @@ export function Profile() {
                     />
                   </div>
                 </div>
-                <div className="space-y-4 pt-4 border-t border-border/50">
-                  <div className="flex items-center justify-between">
-                    <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Vencimiento</p>
-                    <p className="text-xs font-bold text-white">
-                      {activeMembership?.currentPeriodEnd ? new Date(activeMembership.currentPeriodEnd).toLocaleDateString('es-AR') : '—'}
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Último Pago</p>
-                    <p className="text-xs font-bold text-white">
-                      {activeMembership?.currentPeriodStart ? new Date(activeMembership.currentPeriodStart).toLocaleDateString('es-AR') : '—'}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 pt-2">
-                    <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Suscripción {activeMembership?.status === 'active' ? 'Al día' : 'Pendiente'}</span>
-                  </div>
+                <div className="space-y-2 pt-2">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Estado de Cuenta</p>
+                  {profileData?.scheduledCancelDate ? (
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full bg-yellow-500" />
+                        <span className="text-xs font-black uppercase tracking-widest text-yellow-400">Cancela el {new Date(profileData.scheduledCancelDate.toDate()).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">Tu acceso se mantiene hasta esa fecha.</p>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="text-xs font-black uppercase tracking-widest text-emerald-400">Activo y Verificado</span>
+                    </div>
+                  )}
                 </div>
+
+                {!profileData?.scheduledCancelDate && profileData?.subscriptionId && (
+                  <button
+                    onClick={() => { setCancelConfirm(true); setCancelError(null); }}
+                    className="w-full text-left text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 hover:text-red-400 transition-colors pt-2"
+                  >
+                    Cancelar suscripción
+                  </button>
+                )}
               </div>
 
               {/* MercadoPago Upgrade Options */}
@@ -681,7 +744,7 @@ export function Profile() {
                       onClick={() => setBillingCycle('annual')}
                       className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase transition-all ${billingCycle === 'annual' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-white'}`}
                     >
-                      Anual -20%
+                      Anual -25%
                     </button>
                   </div>
                 </div>
@@ -733,16 +796,8 @@ export function Profile() {
                           )}
                           <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">Pago seguro vía MercadoPago</p>
                         </div>
-                        <Button 
-                          variant="outline" 
-                          disabled={editLoading}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleUpgrade(p.id, billingCycle);
-                          }}
-                          className="w-full mt-6 rounded-2xl font-bold uppercase tracking-widest text-[10px] h-11 border-border group-hover:bg-primary group-hover:text-primary-foreground transition-all"
-                        >
-                          {editLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Contratar Ahora'}
+                        <Button variant="outline" className="w-full mt-6 rounded-2xl font-bold uppercase tracking-widest text-[10px] h-11 border-border group-hover:bg-primary group-hover:text-primary-foreground transition-all">
+                          Contratar Ahora
                         </Button>
                       </div>
                     ))}
@@ -783,7 +838,7 @@ export function Profile() {
               )}
             </div>
           ) : isOwnProfile ? (
-            <Tabs defaultValue="all">
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="mb-8 bg-muted rounded-2xl p-1 h-auto gap-1 overflow-x-auto flex-nowrap w-full justify-start">
                 <TabsTrigger value="all"    className="rounded-xl font-bold text-[10px] uppercase tracking-widest px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                   Todo ({allListings.length})
@@ -835,30 +890,175 @@ export function Profile() {
           </div>
         </main>
   
-        {/* Sold Dialog */}
-        <Dialog open={!!soldDialogVehicle} onOpenChange={() => setSoldDialogVehicle(null)}>
-          <DialogContent className="max-w-md rounded-3xl border-border bg-card p-6">
-            <DialogTitle className="text-xl font-bold tracking-tighter uppercase text-center mb-2">Marcar como Vendido</DialogTitle>
-            <DialogDescription className="text-center font-medium mb-6">
-              ¡Felicitaciones por la venta! ¿Realizaste esta venta a través de REVEN?
-            </DialogDescription>
-            <div className="flex flex-col gap-3">
-              <Button 
-                onClick={() => confirmMarkSold(true)} 
-                disabled={isAddingPoints}
-                className="rounded-xl font-bold uppercase tracking-widest text-xs h-12 shadow-lg shadow-primary/20"
-              >
-                {isAddingPoints ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Sí, lo vendí por la plataforma (+50 pts)'}
-              </Button>
-              <Button 
-                onClick={() => confirmMarkSold(false)} 
-                disabled={isAddingPoints}
-                variant="outline"
-                className="rounded-xl font-bold uppercase tracking-widest text-xs h-12 border-border"
-              >
-                {isAddingPoints ? <Loader2 className="h-4 w-4 animate-spin" /> : 'No, lo vendí por otro medio'}
-              </Button>
+        {/* ── Mis Búsquedas ──────────────────────────────────────── */}
+        {isOwnProfile && (
+          <div className="container mx-auto px-4 md:px-8 pb-12 mt-2">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold tracking-tighter uppercase flex items-center gap-2">
+                <Search className="h-5 w-5 text-primary" /> Mis Búsquedas
+              </h2>
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                {wantedSearches.filter(s => s.status === 'active').length} activas · {wantedSearches.length} total
+              </span>
             </div>
+
+            {wantedSearches.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-4 py-16 text-center border border-dashed border-border rounded-3xl">
+                <Search className="h-10 w-10 text-muted-foreground/40" />
+                <p className="text-sm font-medium text-muted-foreground">No tenés búsquedas publicadas.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {wantedSearches.map(search => {
+                  const isToggling = togglingWantedId === search.id;
+                  const isDeleting = deletingWantedId === search.id;
+                  const isPaused = search.status === 'paused';
+                  const statusColor = search.status === 'active'
+                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                    : search.status === 'paused'
+                    ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
+                    : 'bg-muted text-muted-foreground border-border';
+                  const statusLabel = search.status === 'active' ? 'Activa'
+                    : search.status === 'paused' ? 'Pausada'
+                    : search.status === 'fulfilled' ? 'Cumplida'
+                    : 'Expirada';
+
+                  return (
+                    <div key={search.id} className={`relative rounded-3xl border bg-card p-5 flex flex-col gap-4 transition-all ${isPaused ? 'opacity-60' : ''}`}>
+                      {/* Header */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-0.5">
+                          <p className="font-black uppercase tracking-tighter text-base leading-tight">
+                            {search.brand}{search.model ? ` ${search.model}` : ''}
+                          </p>
+                          {search.version && <p className="text-[11px] text-muted-foreground font-medium">{search.version}</p>}
+                        </div>
+                        <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border ${statusColor}`}>
+                          {statusLabel}
+                        </span>
+                      </div>
+
+                      {/* Details */}
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px] text-muted-foreground font-medium">
+                        <span>Año: <span className="text-foreground font-bold">{search.yearRange.min}–{search.yearRange.max}</span></span>
+                        {search.kmApprox && <span>KM aprox: <span className="text-foreground font-bold">{search.kmApprox.toLocaleString('es-AR')}</span></span>}
+                        <span className="col-span-2">
+                          Presupuesto: <span className="text-primary font-black">
+                            {search.currency} {search.budgetRange.min.toLocaleString('es-AR')} – {search.budgetRange.max.toLocaleString('es-AR')}
+                          </span>
+                        </span>
+                        {search.conditions?.length > 0 && (
+                          <span className="col-span-2">Condición: <span className="text-foreground font-bold">{search.conditions.join(' / ')}</span></span>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-2 mt-auto pt-2 border-t border-border">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={isToggling || isDeleting || ['fulfilled', 'expired'].includes(search.status)}
+                          onClick={() => handleToggleWanted(search)}
+                          className={`flex-1 rounded-xl text-[10px] font-bold uppercase tracking-widest h-9 ${isPaused ? 'border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10' : 'border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10'}`}
+                        >
+                          {isToggling ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : isPaused ? <><Play className="h-3.5 w-3.5 mr-1" /> Reactivar</> : <><Pause className="h-3.5 w-3.5 mr-1" /> Pausar</>}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={isDeleting || isToggling}
+                          onClick={() => handleDeleteWanted(search)}
+                          className="rounded-xl text-[10px] font-bold uppercase tracking-widest h-9 border-destructive/30 text-destructive hover:bg-destructive/10 px-3"
+                        >
+                          {isDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Sold Dialog */}
+        <Dialog open={!!soldDialogVehicle} onOpenChange={() => { setSoldDialogVehicle(null); setSoldViaReven(null); setSelectedBuyer(null); }}>
+          <DialogContent className="max-w-md rounded-3xl border-border bg-card p-6">
+            <DialogTitle className="text-xl font-bold tracking-tighter uppercase mb-2">Marcar como Vendido</DialogTitle>
+
+            {soldViaReven === null ? (
+              <div className="space-y-4 py-2">
+                <p className="text-sm text-muted-foreground font-medium">¿Cómo realizaste la venta?</p>
+                <div className="grid grid-cols-1 gap-3">
+                  <button
+                    onClick={() => setSoldViaReven(true)}
+                    className="flex items-center gap-4 p-4 rounded-2xl border-2 border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors text-left"
+                  >
+                    <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-black uppercase tracking-tighter text-sm text-primary">A través de REVEN</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">+50 puntos para vos y el comprador</p>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => confirmMarkSold(false)}
+                    disabled={isAddingPoints}
+                    className="flex items-center gap-4 p-4 rounded-2xl border border-border bg-muted/30 hover:bg-muted/60 transition-colors text-left"
+                  >
+                    <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center shrink-0">
+                      <Users className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="font-black uppercase tracking-tighter text-sm">Por mi cuenta</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">Sin puntos de gamificación</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4 py-2">
+                <p className="text-sm text-muted-foreground font-medium">Seleccioná la agencia compradora</p>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar agencia..."
+                    className="pl-10 rounded-2xl"
+                    value={agencySearch}
+                    onChange={e => setAgencySearch(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+                <div className="max-h-56 overflow-y-auto space-y-1 pr-1">
+                  {soldAgencies
+                    .filter(a => a.company.toLowerCase().includes(agencySearch.toLowerCase()) || a.name.toLowerCase().includes(agencySearch.toLowerCase()))
+                    .map(agency => (
+                      <button
+                        key={agency.id}
+                        onClick={() => setSelectedBuyer({ id: agency.id, company: agency.company })}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-colors ${selectedBuyer?.id === agency.id ? 'bg-primary/15 border border-primary/40' : 'hover:bg-muted border border-transparent'}`}
+                      >
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-[10px] font-black text-primary">
+                          {agency.company[0]}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-bold uppercase tracking-tighter text-sm truncate">{agency.company}</p>
+                          {agency.name && <p className="text-[10px] text-muted-foreground truncate">{agency.name}</p>}
+                        </div>
+                        {selectedBuyer?.id === agency.id && <CheckCircle2 className="h-4 w-4 text-primary ml-auto shrink-0" />}
+                      </button>
+                    ))}
+                </div>
+                <Button
+                  className="w-full h-12 rounded-2xl font-bold uppercase tracking-tighter"
+                  onClick={() => confirmMarkSold(true, selectedBuyer)}
+                  disabled={!selectedBuyer || isAddingPoints}
+                >
+                  {isAddingPoints ? <Loader2 className="h-4 w-4 animate-spin" /> : '+ 50 pts — Confirmar venta REVEN'}
+                </Button>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
   
@@ -1253,22 +1453,183 @@ export function Profile() {
         </DialogContent>
       </Dialog>
 
-      {/* Upgrade Requested Dialog */}
+      {/* Upgrade Confirmation Dialog */}
+      <Dialog open={!!upgradeConfirm} onOpenChange={(open) => { if (!open) { setUpgradeConfirm(null); setUpgradeError(null); } }}>
+        <DialogContent className="sm:max-w-md rounded-3xl">
+          <DialogTitle className="sr-only">Confirmar upgrade de plan</DialogTitle>
+          <DialogDescription className="sr-only">Elegí cuándo querés que empiece el nuevo plan</DialogDescription>
+          {upgradeConfirm && (() => {
+            const planLabel: Record<string, string> = { professional: 'Profesional', enterprise: 'Enterprise' };
+            const planColor: Record<string, string> = { professional: 'text-yellow-400', enterprise: 'text-primary' };
+            const planLimits: Record<string, { vehicles: number | string; searches: number | string }> = {
+              professional: {
+                vehicles: PLAN_LIMITS.professional.maxVehicles,
+                searches: PLAN_LIMITS.professional.maxWantedSearches,
+              },
+              enterprise: {
+                vehicles: 'Ilimitadas',
+                searches: 'Ilimitadas',
+              },
+            };
+            const newAmount = upgradeConfirm.cycle === 'annual'
+              ? PLAN_PRICES[upgradeConfirm.plan as MembershipPlan]?.annual
+              : PLAN_PRICES[upgradeConfirm.plan as MembershipPlan]?.monthly;
+            // Use the user's ACTUAL billing cycle, not the UI selector
+            const userBillingCycle = (profileData?.billingCycle as 'monthly' | 'annual') || 'monthly';
+            const currentAmount = userBillingCycle === 'annual'
+              ? PLAN_PRICES[upgradeConfirm.currentPlan as MembershipPlan]?.annual
+              : PLAN_PRICES[upgradeConfirm.currentPlan as MembershipPlan]?.monthly;
+            const diffAmount = newAmount - (currentAmount || 0);
+            const limits = planLimits[upgradeConfirm.plan] || { vehicles: '—', searches: '—' };
+            return (
+              <div className="py-6 space-y-6">
+                <div className="text-center space-y-1">
+                  <p className={`text-[10px] font-black uppercase tracking-widest ${planColor[upgradeConfirm.plan] || 'text-primary'}`}>
+                    Upgrade de plan
+                  </p>
+                  <h4 className="text-2xl font-black tracking-tighter uppercase">
+                    Plan {planLabel[upgradeConfirm.plan] || upgradeConfirm.plan}
+                  </h4>
+                  <p className="text-xs text-muted-foreground">
+                    {typeof limits.vehicles === 'number' ? `${limits.vehicles} publicaciones` : limits.vehicles} · {typeof limits.searches === 'number' ? `${limits.searches} búsquedas` : limits.searches}
+                  </p>
+                </div>
+
+                <p className="text-xs text-center text-muted-foreground font-medium">¿Cuándo querés que empiece?</p>
+
+                <div className="space-y-3">
+                  {/* Option: Start Now */}
+                  <button
+                    className="w-full text-left rounded-2xl border border-primary/30 bg-primary/5 p-4 space-y-1 hover:border-primary/60 transition-colors disabled:opacity-50"
+                    onClick={() => confirmUpgrade(true)}
+                    disabled={upgradeLoading}
+                  >
+                    <p className="text-xs font-black uppercase tracking-widest text-primary">Empezar ahora</p>
+                    <p className="text-lg font-black tracking-tighter">{formatARS(diffAmount)}</p>
+                    <p className="text-xs text-muted-foreground">Pagás la diferencia hoy. Tus publicaciones y búsquedas se amplían al instante.</p>
+                  </button>
+
+                  {/* Option: Next cycle */}
+                  <button
+                    className="w-full text-left rounded-2xl border border-border bg-card p-4 space-y-1 hover:border-muted-foreground/40 transition-colors disabled:opacity-50"
+                    onClick={() => confirmUpgrade(false)}
+                    disabled={upgradeLoading}
+                  >
+                    <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Próximo ciclo</p>
+                    <p className="text-lg font-black tracking-tighter">{formatARS(newAmount)}<span className="text-sm font-normal text-muted-foreground">/{upgradeConfirm.cycle === 'annual' ? 'año' : 'mes'}</span></p>
+                    <p className="text-xs text-muted-foreground">Se cobra el total en tu próxima fecha de vencimiento. Los límites actuales se mantienen hasta entonces.</p>
+                  </button>
+                </div>
+
+                {upgradeLoading && (
+                  <div className="flex items-center justify-center gap-2 text-muted-foreground text-xs">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="font-bold uppercase tracking-widest">Procesando...</span>
+                  </div>
+                )}
+                {upgradeError && (
+                  <p className="text-red-400 text-xs font-bold uppercase tracking-widest text-center">{upgradeError}</p>
+                )}
+                <Button
+                  variant="ghost"
+                  className="w-full rounded-2xl h-10 font-bold uppercase tracking-widest text-xs text-muted-foreground"
+                  onClick={() => { setUpgradeConfirm(null); setUpgradeError(null); }}
+                  disabled={upgradeLoading}
+                >
+                  Cancelar
+                </Button>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
+      {/* Upgrade Success Dialog */}
       <Dialog open={showUpgradeRequested} onOpenChange={setShowUpgradeRequested}>
         <DialogContent className="sm:max-w-md rounded-3xl">
+          <DialogTitle className="sr-only">Upgrade exitoso</DialogTitle>
+          <DialogDescription className="sr-only">Tu plan fue actualizado</DialogDescription>
           <div className="py-12 text-center space-y-6">
-            <div className="h-20 w-20 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto">
-              <CheckCircle2 className="h-10 w-10 text-emerald-500" />
+            <div className="h-20 w-20 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="h-10 w-10 text-primary" />
             </div>
             <div className="space-y-2">
-              <h4 className="text-2xl font-black tracking-tighter uppercase italic">Solicitud Enviada</h4>
+              <h4 className="text-2xl font-black tracking-tighter uppercase italic">¡Upgrade confirmado!</h4>
               <p className="text-sm text-muted-foreground font-medium leading-relaxed px-4">
-                Tu solicitud de cambio de plan ha sido recibida correctamente. <br />
-                Nuestro equipo comercial se contactará con vos para finalizar la activación.
+                Tu suscripción fue actualizada en Mercado Pago.<br />
+                El nuevo plan y sus límites se activarán automáticamente cuando se acredite el próximo cobro.
               </p>
             </div>
-            <Button 
+            <Button
               onClick={() => { setShowUpgradeRequested(false); window.location.reload(); }}
+              className="rounded-full h-12 px-12 font-bold uppercase tracking-widest text-xs"
+            >
+              Entendido
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Subscription Confirmation Dialog */}
+      <Dialog open={cancelConfirm} onOpenChange={(open) => { if (!open) { setCancelConfirm(false); setCancelError(null); } }}>
+        <DialogContent className="sm:max-w-md rounded-3xl">
+          <DialogTitle className="sr-only">Cancelar suscripción</DialogTitle>
+          <DialogDescription className="sr-only">Confirmá la cancelación de tu suscripción</DialogDescription>
+          <div className="py-6 space-y-6 text-center">
+            <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto">
+              <XCircle className="h-8 w-8 text-red-400" />
+            </div>
+            <div className="space-y-2">
+              <p className="text-[10px] font-black uppercase tracking-widest text-red-400">Cancelar Suscripción</p>
+              <h4 className="text-2xl font-black tracking-tighter uppercase">¿Estás seguro?</h4>
+              <p className="text-sm text-muted-foreground leading-relaxed px-4">
+                Tu suscripción se cancelará y conservarás el acceso hasta la fecha de vencimiento de tu ciclo actual. Después deberás volver a suscribirte para seguir usando REVEN.
+              </p>
+            </div>
+            {cancelError && (
+              <p className="text-red-400 text-xs font-bold uppercase tracking-widest">{cancelError}</p>
+            )}
+            <div className="flex gap-3 px-2">
+              <Button
+                variant="outline"
+                className="flex-1 rounded-2xl h-12 font-bold uppercase tracking-widest text-xs"
+                onClick={() => { setCancelConfirm(false); setCancelError(null); }}
+                disabled={cancelLoading}
+              >
+                Mantener
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1 rounded-2xl h-12 font-bold uppercase tracking-widest text-xs border-red-500/40 text-red-400 hover:bg-red-500/10"
+                onClick={handleCancelSubscription}
+                disabled={cancelLoading}
+              >
+                {cancelLoading ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Cancelando...</> : 'Sí, cancelar'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Success Dialog */}
+      <Dialog open={!!cancelAccessUntil} onOpenChange={(open) => { if (!open) { setCancelAccessUntil(null); window.location.reload(); } }}>
+        <DialogContent className="sm:max-w-md rounded-3xl">
+          <DialogTitle className="sr-only">Suscripción cancelada</DialogTitle>
+          <DialogDescription className="sr-only">Tu suscripción fue cancelada</DialogDescription>
+          <div className="py-12 text-center space-y-6">
+            <CheckCircle2 className="h-12 w-12 text-yellow-400 mx-auto" />
+            <div className="space-y-2">
+              <h4 className="text-2xl font-black tracking-tighter uppercase">Suscripción cancelada</h4>
+              <p className="text-sm text-muted-foreground font-medium leading-relaxed px-4">
+                Tu acceso se mantiene activo hasta el{' '}
+                <span className="text-white font-bold">
+                  {cancelAccessUntil ? new Date(cancelAccessUntil).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' }) : ''}
+                </span>.
+                <br />Podés renovar tu suscripción desde esta misma pantalla cuando quieras.
+              </p>
+            </div>
+            <Button
+              onClick={() => { setCancelAccessUntil(null); window.location.reload(); }}
               className="rounded-full h-12 px-12 font-bold uppercase tracking-widest text-xs"
             >
               Entendido
@@ -1368,6 +1729,13 @@ function VehicleGrid({
 
             {/* Info */}
             <div className="flex-1 min-w-0 p-3 flex flex-col gap-2">
+              {/* Admin pause warning — only visible to the seller */}
+              {isOwnProfile && listing.status === 'PAUSED' && (listing as any).adminPauseReason && (
+                <div className="flex items-start gap-2 p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/25">
+                  <AlertCircle className="h-3.5 w-3.5 text-orange-400 shrink-0 mt-0.5" />
+                  <p className="text-[10px] font-bold text-orange-300 leading-snug">{(listing as any).adminPauseReason}</p>
+                </div>
+              )}
               <div className="cursor-pointer" onClick={() => onNavigate(listing.id)}>
                 <h3 className="text-sm font-bold tracking-tighter uppercase leading-tight truncate">{listing.brand} {listing.model}</h3>
                 <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest truncate">{listing.version}</p>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { getVehiclePath } from '@/src/lib/seo';
-import { Send, Search, ChevronLeft, Clock, Check, CheckCheck, ArrowLeft, MessageCircle } from 'lucide-react';
+import { Send, Search, ChevronLeft, Clock, Check, CheckCheck, ArrowLeft, MessageCircle, Trash2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -11,6 +11,7 @@ import { useAuth, db } from '@/src/lib/firebase';
 import {
   subscribeToConversations, subscribeToMessages,
   sendMessage, findOrCreateConversation, markMessagesAsRead,
+  deleteConversation,
   ConversationData, MessageData,
 } from '@/src/lib/chat';
 import { Timestamp, collection, getDocs, doc, getDoc } from 'firebase/firestore';
@@ -40,6 +41,9 @@ export function Messages() {
   const [initError, setInitError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const [deleteTarget, setDeleteTarget] = useState<(ConversationData & { id: string }) | null>(null);
+  const [blockOnDelete, setBlockOnDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Prevent horizontal scroll while Messages overlay is mounted
   useEffect(() => {
@@ -183,6 +187,20 @@ export function Messages() {
     return unsub;
   }, [selectedConvoId, currentUserId]);
 
+  const handleDeleteConversation = async () => {
+    if (!deleteTarget || !currentUserId) return;
+    setDeleting(true);
+    const otherUserId = deleteTarget.buyerId === currentUserId ? deleteTarget.sellerId : deleteTarget.buyerId;
+    try {
+      await deleteConversation(deleteTarget.id, currentUserId, blockOnDelete ? otherUserId : undefined);
+      if (selectedConvoId === deleteTarget.id) setSelectedConvoId(null);
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(null);
+      setBlockOnDelete(false);
+    }
+  };
+
   const handleSend = async () => {
     if (!newMessage.trim() || !selectedConvoId) return;
     const msg = newMessage.trim();
@@ -282,10 +300,10 @@ export function Messages() {
                 {filteredConversations.map(convo => {
                   const hasUnread = convo.unreadBy?.includes(currentUserId);
                   return (
-                    <button
+                    <div
                       key={convo.id}
+                      className={`group relative flex items-center gap-4 p-4 border-b border-border transition-all hover:bg-muted cursor-pointer ${selectedConvoId === convo.id ? 'bg-primary/5 border-l-2 border-l-primary' : ''}`}
                       onClick={() => setSelectedConvoId(convo.id)}
-                      className={`w-full flex items-center gap-4 p-4 text-left border-b border-border transition-all hover:bg-muted ${selectedConvoId === convo.id ? 'bg-primary/5 border-l-2 border-l-primary' : ''}`}
                     >
                       <div className="relative">
                         <Avatar className="h-12 w-12 shrink-0 border-2 border-primary/20">
@@ -316,7 +334,15 @@ export function Messages() {
                         )}
                         <p className={`text-xs truncate ${hasUnread ? 'text-foreground font-bold' : 'text-muted-foreground'}`}>{convo.lastMessage || 'Conversación nueva'}</p>
                       </div>
-                    </button>
+                      {/* Delete button — visible on hover */}
+                      <button
+                        onClick={(e: React.MouseEvent) => { e.stopPropagation(); setDeleteTarget(convo); setBlockOnDelete(false); }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 p-2 rounded-xl text-muted-foreground hover:text-red-400 hover:bg-red-500/10"
+                        title="Eliminar chat"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   );
                 })}
               </>
@@ -480,6 +506,69 @@ export function Messages() {
           )}
         </div>
       </div>
+      {/* Delete conversation confirmation dialog */}
+      <AnimatePresence>
+        {deleteTarget && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => !deleting && setDeleteTarget(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
+              className="bg-card border border-border rounded-3xl p-6 w-full max-w-sm shadow-2xl space-y-5"
+            >
+              <div className="flex items-start gap-4">
+                <div className="bg-red-500/10 p-3 rounded-2xl shrink-0">
+                  <AlertTriangle className="h-5 w-5 text-red-400" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-black uppercase tracking-tighter text-base">Eliminar chat</h3>
+                  <p className="text-xs text-muted-foreground font-medium leading-relaxed">
+                    Esta acción no se puede deshacer y no podrás restablecer el historial de mensajes.
+                  </p>
+                </div>
+              </div>
+
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={blockOnDelete}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBlockOnDelete(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded accent-primary shrink-0"
+                />
+                <span className="text-xs font-bold text-muted-foreground group-hover:text-foreground transition-colors leading-relaxed">
+                  No quiero recibir más notificaciones de este usuario
+                </span>
+              </label>
+
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1 rounded-2xl h-11 font-bold uppercase tracking-widest text-xs"
+                  onClick={() => setDeleteTarget(null)}
+                  disabled={deleting}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="flex-1 rounded-2xl h-11 font-bold uppercase tracking-widest text-xs bg-red-500 hover:bg-red-600"
+                  onClick={handleDeleteConversation}
+                  disabled={deleting}
+                >
+                  {deleting ? <Clock className="h-4 w-4 animate-spin" /> : 'Eliminar'}
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

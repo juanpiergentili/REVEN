@@ -43,6 +43,8 @@ export const OBSERVACIONES_INTERNAS_OPTIONS = [
   'Calefacción no funciona',
   'Tapizado roto',
   'Limpieza interior',
+  'Volante gastado',
+  'Levanta cristal no funciona',
 ] as const;
 
 export const PANELES_CHAPA = [
@@ -89,6 +91,8 @@ export const FALLAS_MECANICAS_OPTIONS = [
   'Frenos',
   'Check ABS',
   'Check Engine',
+  'Pérdida de aceite',
+  'Gasea',
 ] as const;
 
 // ─── Estado inicial de inspección ────────────────────────────────────────────
@@ -101,6 +105,7 @@ export interface InspectionFormData {
   chapaPintura: ChapaPinturaItem[];
   opticasDanadas: string[];
   fallasMecanicas: string[];
+  mecanicaNotas: string;
 }
 
 export const INITIAL_INSPECTION: InspectionFormData = {
@@ -111,6 +116,7 @@ export const INITIAL_INSPECTION: InspectionFormData = {
   chapaPintura: [],
   opticasDanadas: [],
   fallasMecanicas: [],
+  mecanicaNotas: '',
 };
 
 // ─── Tipo del form principal ─────────────────────────────────────────────────
@@ -171,7 +177,6 @@ export function validateStep(
       if (!formData.fuelType) return 'Seleccioná el tipo de combustible.';
       if (!formData.transmission) return 'Seleccioná el tipo de transmisión.';
       if (!formData.bodyType) return 'Seleccioná el tipo de carrocería.';
-      if (!formData.color) return 'Seleccioná el color del vehículo.';
       if (!formData.condition) return 'Seleccioná la condición del vehículo.';
       if (!formData.province) return 'Indicá en qué provincia se encuentra la unidad.';
       if (!formData.city) return 'Indicá en qué localidad se encuentra la unidad.';
@@ -261,6 +266,7 @@ export function hasInspectionData(inspection: InspectionFormData): boolean {
     inspection.cubiertas.sinAuxilio ||
     inspection.chapaPintura.length > 0 ||
     inspection.opticasDanadas.length > 0 ||
-    inspection.fallasMecanicas.length > 0
+    inspection.fallasMecanicas.length > 0 ||
+    inspection.mecanicaNotas.trim() !== ''
   );
 }

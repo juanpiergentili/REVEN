@@ -1,12 +1,12 @@
 import {
-  collection, addDoc, updateDoc, doc,
+  collection, addDoc, updateDoc, doc, getDoc,
   query, where, getDocs, onSnapshot, serverTimestamp,
 } from 'firebase/firestore';
 import { db, convertTimestamp } from './firebase';
 import type { Membership, MembershipPlan, BillingCycle, MembershipStatus } from '../types';
 import { PLAN_LIMITS, PLAN_PRICES } from '../types';
 
-type NewMembership = Pick<Membership, 'userId' | 'plan' | 'billingCycle' | 'discountCode' | 'discountPercent'>;
+type NewMembership = Pick<Membership, 'userId' | 'plan' | 'billingCycle' | 'discountCode' | 'discountPercent'> & { companyName?: string };
 
 function getPeriodEnd(cycle: BillingCycle): Date {
   const end = new Date();
@@ -22,8 +22,18 @@ export async function createMembership(data: NewMembership): Promise<string> {
   const limits = PLAN_LIMITS[plan];
   const now = new Date();
 
+  let companyName = data.companyName || '';
+  if (!companyName && data.userId) {
+    const userSnap = await getDoc(doc(db, 'users', data.userId));
+    if (userSnap.exists()) {
+      const u = userSnap.data();
+      companyName = u.company || u.companyName || `${u.name || ''} ${u.lastName || ''}`.trim() || '';
+    }
+  }
+
   const docRef = await addDoc(collection(db, 'memberships'), {
     ...data,
+    companyName,
     pricePaid,
     currency: 'USD',
     status: 'active' as MembershipStatus,

@@ -21,7 +21,7 @@ export function Agencies() {
         const snap = await getDocs(collection(db, 'users'));
         const users = snap.docs
           .map(d => ({ id: d.id, ...d.data() }))
-          .filter((u: any) => u.role !== 'ADMIN');
+          .filter((u: any) => u.role !== 'ADMIN' && u.status === 'active');
         setAgencies(users);
       } catch (err) {
         console.error('Error fetching agencies:', err);

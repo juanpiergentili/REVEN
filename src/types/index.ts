@@ -9,7 +9,7 @@ export function normalizePlan(plan: string | undefined): MembershipPlan {
   if (!plan) return 'business';
   const p = plan.toLowerCase();
   if (p === 'plata' || p === 'business') return 'business';
-  if (p === 'oro' || p === 'professional') return 'professional';
+  if (p === 'oro' || p === 'professional' || p === 'profesional') return 'professional';
   if (p === 'platinum' || p === 'enterprise') return 'enterprise';
   return 'business';
 }
@@ -206,7 +206,7 @@ export interface WantedSearch {
   description?: string;
 
   // Estado
-  status: 'active' | 'fulfilled' | 'expired';
+  status: 'active' | 'fulfilled' | 'expired' | 'paused';
   expiresAt: string;
 
   // Metadata
@@ -356,14 +356,14 @@ export interface Notification {
 
 // ─── Plan limits (constantes de negocio) ─────────────────────────────────────
 
-export const PLAN_LIMITS: Record<MembershipPlan, { maxVehicles: number; maxWantedSearches: number; maxSessions: number; canFeatureListing: boolean }> = {
-  business:     { maxVehicles: 5,   maxWantedSearches: 5,   maxSessions: 1,  canFeatureListing: false },
-  professional: { maxVehicles: 15,  maxWantedSearches: 15,  maxSessions: 3,  canFeatureListing: true  },
-  enterprise:   { maxVehicles: 150, maxWantedSearches: 150, maxSessions: 10, canFeatureListing: true  },
+export const PLAN_LIMITS: Record<MembershipPlan, { maxVehicles: number; maxWantedSearches: number; canFeatureListing: boolean; maxSessions: number }> = {
+  business:     { maxVehicles: 5,        maxWantedSearches: 5,       canFeatureListing: false, maxSessions: 2 },
+  professional: { maxVehicles: 10,       maxWantedSearches: 5,       canFeatureListing: true,  maxSessions: 4 },
+  enterprise:   { maxVehicles: Infinity, maxWantedSearches: Infinity, canFeatureListing: true,  maxSessions: 7 },
 };
 
 export const PLAN_PRICES: Record<MembershipPlan, { monthly: number; annual: number }> = {
-  business:     { monthly: 200000, annual: 1920000 },
-  professional: { monthly: 350000, annual: 3360000 },
-  enterprise:   { monthly: 500000, annual: 4800000 },
+  business:     { monthly: 200000, annual: 1800000 },
+  professional: { monthly: 350000, annual: 3150000 },
+  enterprise:   { monthly: 500000, annual: 4500000 },
 };

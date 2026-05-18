@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -412,6 +412,15 @@ export function StepEstadoTecnico({ inspection, onChange }: Props) {
                     <span className="font-bold text-xs uppercase tracking-widest">{falla}</span>
                   </label>
                 ))}
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Notas adicionales</Label>
+                <Textarea
+                  value={inspection.mecanicaNotas}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => onChange({ ...inspection, mecanicaNotas: e.target.value })}
+                  placeholder="Ej: Motor consume aceite, ruido en marcha lenta..."
+                  className="min-h-[80px] rounded-xl bg-muted border-border font-bold p-4"
+                />
               </div>
             </motion.div>
           )}
