@@ -28,11 +28,10 @@ const FAQS = [
 const PLANS = [
   {
     name: "BUSINESS",
-    price: { monthly: 0, annual: 0, isFree: true },
+    price: { monthly: 200000, annual: 1560000 },
     features: ["Agencias hasta 2 sucursales", "Hasta 30 autos publicados", "3 destacados por mes", "Datos de mercado básicos", "1 usuario por cuenta", "Contacto directo B2B"],
     cta: "Solicitá tu acceso",
-    popular: false,
-    freeSubtitle: "(2 meses) Luego A$200.000 / mes"
+    popular: false
   },
   {
     name: "PROFESSIONAL",
@@ -197,9 +196,8 @@ export function HomeV2() {
           className="relative z-10 max-w-5xl mx-auto px-4 md:px-6 text-center"
         >
           <h1 className="text-4xl md:text-[52px] font-light uppercase tracking-tighter leading-none mb-4 md:mb-8 dark:text-white light:text-[#0e0a14]">
-            El stock de todas las <br />
-            <span className="text-[#aafc3d]">concesionarias</span> <br />
-            en un solo lugar.
+            El futuro del <br />
+            <span className="text-[#aafc3d]">negocio automotor.</span>
           </h1>
           <p className="text-lg md:text-xl text-zinc-300 dark:text-zinc-300 light:text-[#0e0a14]/60 max-w-2xl mx-auto mb-8 md:mb-10 font-light leading-relaxed">
             Marketplace exclusivo B2B, solo para profesionales verificados. <br /> 
