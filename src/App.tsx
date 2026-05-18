@@ -12,6 +12,7 @@ import { HomeV2 } from '@/src/pages/HomeV2';
 import { Agencies } from '@/src/pages/Agencies';
 import { Payment } from '@/src/pages/Payment';
 import { ProtectedRoute } from '@/src/components/auth/ProtectedRoute';
+import { WhatsAppWidget } from '@/src/components/ui/WhatsAppWidget';
 import { useEffect } from 'react';
 
 function AppContent() {
@@ -101,6 +102,7 @@ function AppContent() {
           </div>
         </footer>
       )}
+      {!isLoginPage && !isPaymentPage && <WhatsAppWidget />}
     </div>
   );
 }
