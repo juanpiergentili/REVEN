@@ -411,14 +411,12 @@ export function HomeV2() {
                     </li>
                   ))}
                 </ul>
-                <motion.button 
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                <button 
                   onClick={() => setAdmissionOpen(true)}
-                  className={`w-full py-5 rounded-full font-black uppercase text-[10px] tracking-widest transition-colors shadow-lg ${p.popular ? 'bg-[#0e0a14] text-[#aafc3d]' : 'bg-[#aafc3d] text-[#0e0a14]'}`}
+                  className={`w-full py-5 rounded-full font-normal uppercase text-xs tracking-widest transition-transform hover:scale-105 shadow-lg ${p.popular ? 'bg-[#0e0a14] text-[#aafc3d]' : 'bg-[#aafc3d] text-[#0e0a14]'}`}
                 >
                   {p.cta}
-                </motion.button>
+                </button>
               </div>
             ))}
           </div>
@@ -568,14 +566,7 @@ export function HomeV2() {
                     </select>
                   </div>
                   
-                  <motion.button 
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    type="submit" 
-                    className="w-full py-6 rounded-full bg-[#aafc3d] text-[#0e0a14] font-black uppercase tracking-widest shadow-2xl shadow-[#aafc3d]/10 transition-colors"
-                  >
-                    Enviar solicitud de acceso
-                  </motion.button>
+                  <button type="submit" className="w-full py-6 rounded-full bg-[#aafc3d] text-[#0e0a14] font-black uppercase tracking-widest shadow-2xl shadow-[#aafc3d]/10 hover:scale-[1.02] transition-transform">Enviar solicitud de acceso</button>
                 </form>
              </motion.div>
           </motion.div>
