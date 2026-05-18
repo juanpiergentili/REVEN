@@ -7,7 +7,7 @@ import {
   Menu, 
   X, 
   Plus, 
-  HelpCircle,
+
   User,
   Mail,
   Lock,
@@ -19,7 +19,6 @@ import {
   ChevronDown,
   ShoppingBag,
   Shield,
-  Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -118,7 +117,6 @@ export function Header() {
     { name: 'Inicio', path: '/', icon: LayoutDashboard },
     { name: 'Marketplace', path: '/marketplace', icon: Car },
     { name: 'Agencias', path: '/agencies', icon: Building2 },
-    { name: 'Ayuda', path: '/como-funciona', icon: HelpCircle },
   ];
 
   const handleNavClick = (path: string, e: MouseEvent) => {
@@ -202,18 +200,7 @@ export function Header() {
   };
 
   return (
-    <>
-      {/* Top Banner */}
-      <div className="fixed top-0 left-0 right-0 z-[60] bg-primary text-primary-foreground py-2 px-4 text-center text-[10px] md:text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-xl border-b border-primary-foreground/10">
-        <Sparkles className="h-4 w-4 shrink-0" />
-        <span>
-          Accede al plan profesional y obtén los dos primeros meses gratis. Utiliza el código:{' '}
-          <span className="bg-primary-foreground text-primary px-2 py-0.5 rounded-md mx-1 shadow-sm">REVEN60</span>
-        </span>
-        <Sparkles className="h-4 w-4 shrink-0 hidden md:block" />
-      </div>
-
-      <header className="fixed top-12 left-0 right-0 z-50 px-4 md:px-6">
+    <header className="fixed top-4 left-0 right-0 z-50 px-4 md:px-6">
       <div className="max-w-screen-xl mx-auto flex h-16 items-center justify-between px-5 md:px-8 rounded-2xl border border-white/10 bg-background/30 backdrop-blur-2xl shadow-xl transition-colors duration-300">
         <div className="flex items-center gap-8">
           <Link to="/" className="flex items-center space-x-2 group">
@@ -665,6 +652,5 @@ export function Header() {
         </DialogContent>
       </Dialog>
     </header>
-    </>
   );
 }

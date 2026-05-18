@@ -10,7 +10,6 @@ import { Profile } from '@/src/pages/Profile';
 import { Admin } from '@/src/pages/Admin';
 import { HomeV2 } from '@/src/pages/HomeV2';
 import { Agencies } from '@/src/pages/Agencies';
-import { HowItWorks } from '@/src/pages/HowItWorks';
 import { ProtectedRoute } from '@/src/components/auth/ProtectedRoute';
 import { useEffect } from 'react';
 
@@ -28,12 +27,11 @@ function AppContent() {
   return (
     <div className="min-h-screen flex flex-col font-sans antialiased">
       {!isLoginPage && !isAdminPage && <Header />}
-      <main className="flex-1 pt-32">
+      <main className="flex-1 pt-24">
         <Routes>
           <Route path="/" element={<HomeV2 />} />
           <Route path="/v1" element={<Home />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/como-funciona" element={<HowItWorks />} />
           
           {/* Protected Routes */}
           <Route path="/marketplace" element={
