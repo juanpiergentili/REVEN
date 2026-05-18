@@ -11,7 +11,7 @@ import { Logo } from '../components/layout/Logo';
 import { Footer } from '../components/layout/Footer';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/src/lib/firebase';
 import { storage } from '@/src/lib/firebase';
@@ -391,6 +391,9 @@ export function Home() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       await updateProfile(user, { displayName: `${name} ${lastName}` });
+
+      // Enviar correo de bienvenida y verificación de Firebase
+      await sendEmailVerification(user);
 
       let logoUrl: string | null = null;
       if (regLogoFile) {
