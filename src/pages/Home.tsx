@@ -271,16 +271,6 @@ export function Home() {
     return dv === parseInt(c[10]);
   };
 
-  // Validación local del dígito verificador CUIT/CUIL argentino
-  const isValidCuitFormat = (cuit: string): boolean => {
-    const c = cuit.replace(/\D/g, '');
-    if (c.length !== 11) return false;
-    const mult = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];
-    const sum = mult.reduce((acc, m, i) => acc + parseInt(c[i]) * m, 0);
-    const rem = sum % 11;
-    const dv = rem === 0 ? 0 : rem === 1 ? 9 : 11 - rem;
-    return dv === parseInt(c[10]);
-  };
 
   const checkCuit = async (val: string) => {
     const cleanCuit = val.replace(/\D/g, '');
