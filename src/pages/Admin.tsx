@@ -13,7 +13,7 @@ import {
   getPlatformStats, getFinancialStats, PlatformStats, FinancialStats, promoteToAdmin, deleteAllMemberships
 } from '@/src/lib/admin';
 
-const SUPER_ADMINS = ['lucas.ferreyra@gmail.com'];
+const SUPER_ADMINS = ['lucas.ferreyra@gmail.com', 'juanpablo.piergentili@gmail.com'];
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';

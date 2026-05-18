@@ -36,8 +36,21 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { subscribeToVehicles } from '@/src/lib/vehicles';
 import { Vehicle, PLAN_PRICES } from '@/src/types';
 import { useGeoRef } from '@/src/hooks/useGeoRef';
+import { initializeApp, getApps } from 'firebase/app';
 
-const SUPER_ADMINS = ['lucas.ferreyra@gmail.com'];
+const SUPER_ADMINS = ['lucas.ferreyra@gmail.com', 'juanpablo.piergentili@gmail.com'];
+
+const arcaConfig = {
+  apiKey: "AIzaSyBb8OZMeJTsmkJXok81IVe4Va7rNUSE9Ro",
+  appId: "1:316361254730:web:95a6b8292abd9c641143b3",
+  authDomain: "reven-b55d5.firebaseapp.com",
+  projectId: "reven-b55d5",
+  storageBucket: "reven-b55d5.firebasestorage.app"
+};
+
+const getArcaApp = () => {
+  return getApps().find(a => a.name === 'arcaApp') || initializeApp(arcaConfig, 'arcaApp');
+};
 
 const SOLUTIONS_LEFT = [
   { icon: Zap, title: 'COMUNICACIÓN DIRECTA', desc: 'Chau grupos ruidosos. Chat interno directo con vendedores reales y stock activo.' },
@@ -287,8 +300,7 @@ export function Home() {
 
     try {
       const { getFunctions, httpsCallable } = await import('firebase/functions');
-      const { app } = await import('@/src/lib/firebase');
-      const fns = getFunctions(app, 'us-central1');
+      const fns = getFunctions(getArcaApp(), 'us-central1');
       const consultarCUIT = httpsCallable(fns, 'consultarCUIT');
       const res: any = await consultarCUIT({ cuit: cleanCuit });
       const { denominacion, activo, estadoClave, tipoClave, alreadyRegistered } = res.data;
@@ -378,8 +390,7 @@ export function Home() {
     try {
       // Check for duplicate company name via Cloud Function (no auth required)
       const { getFunctions: getFns2, httpsCallable: hc2 } = await import('firebase/functions');
-      const { app: firebaseApp } = await import('@/src/lib/firebase');
-      const fns2 = getFns2(firebaseApp, 'us-central1');
+      const fns2 = getFns2(getArcaApp(), 'us-central1');
       const checkCompany: any = await hc2(fns2, 'checkCompanyName')({ company: company.trim() });
       if (!checkCompany.data.available) {
         setError('Ya existe una agencia registrada con ese nombre de concesionaria.');

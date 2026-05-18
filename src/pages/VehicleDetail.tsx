@@ -89,7 +89,7 @@ export function VehicleDetail() {
     return () => { isMounted = false; };
   }, [id, slug]);
 
-  const SUPER_ADMINS = ['lucas.ferreyra@gmail.com'];
+  const SUPER_ADMINS = ['lucas.ferreyra@gmail.com', 'juanpablo.piergentili@gmail.com'];
 
   useEffect(() => {
     if (!user) { setIsAdminUser(false); return; }

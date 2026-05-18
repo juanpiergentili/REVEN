@@ -3,6 +3,21 @@ import React, { useState } from 'react';
 import { Mail, Lock, ArrowRight, ShieldCheck, Building2, User, Phone, Fingerprint, CreditCard, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { app } from '@/src/lib/firebase';
+import { initializeApp, getApps } from 'firebase/app';
+
+const arcaConfig = {
+  apiKey: "AIzaSyBb8OZMeJTsmkJXok81IVe4Va7rNUSE9Ro",
+  appId: "1:316361254730:web:95a6b8292abd9c641143b3",
+  authDomain: "reven-b55d5.firebaseapp.com",
+  projectId: "reven-b55d5",
+  storageBucket: "reven-b55d5.firebasestorage.app"
+};
+
+const getArcaFunctions = () => {
+  const arcaApp = getApps().find(a => a.name === 'arcaApp') || initializeApp(arcaConfig, 'arcaApp');
+  return getFunctions(arcaApp, 'us-central1');
+};
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -56,7 +71,7 @@ export function Login() {
     setCuitStatus('loading');
     setCuitError('');
     try {
-      const fns = getFunctions(app, 'us-central1');
+      const fns = getArcaFunctions();
       const consultarCUIT = httpsCallable(fns, 'consultarCUIT');
       const res: any = await consultarCUIT({ cuit: cuitLimpio });
       const { denominacion, activo } = res.data;

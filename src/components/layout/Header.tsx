@@ -44,7 +44,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Logo } from './Logo';
 
-const SUPER_ADMINS = ['lucas.ferreyra@gmail.com'];
+const SUPER_ADMINS = ['lucas.ferreyra@gmail.com', 'juanpablo.piergentili@gmail.com'];
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);

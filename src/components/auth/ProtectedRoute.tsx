@@ -46,7 +46,7 @@ export function ProtectedRoute({ children, requireApproval = true }: ProtectedRo
 
   useEffect(() => {
     if (!user || !profile) return;
-    const SUPER_ADMINS_LIST = ['lucas.ferreyra@gmail.com'];
+    const SUPER_ADMINS_LIST = ['lucas.ferreyra@gmail.com', 'juanpablo.piergentili@gmail.com'];
     const isAdminUser = profile.role === 'ADMIN' || (user.email && SUPER_ADMINS_LIST.includes(user.email));
     if (isAdminUser || profile.status !== 'active') return;
 
@@ -104,7 +104,7 @@ export function ProtectedRoute({ children, requireApproval = true }: ProtectedRo
     return <Navigate to="/" state={{ from: location }} replace />;
   }
 
-  const SUPER_ADMINS = ['lucas.ferreyra@gmail.com'];
+  const SUPER_ADMINS = ['lucas.ferreyra@gmail.com', 'juanpablo.piergentili@gmail.com'];
   const isSuperAdmin = user?.email && SUPER_ADMINS.includes(user.email);
   const status = (profile?.role === 'ADMIN' || isSuperAdmin) ? 'active' : (profile?.status || 'pending');
 
