@@ -11,7 +11,8 @@ import { Logo } from '../components/layout/Logo';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
-  updateProfile
+  updateProfile,
+  sendEmailVerification
 } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, OperationType } from '@/src/lib/firebase';
@@ -122,6 +123,9 @@ export function Login() {
       await updateProfile(user, {
         displayName: `${regName} ${regLastName}`
       });
+
+      // Enviar correo de bienvenida y verificación de Firebase
+      await sendEmailVerification(user);
 
       const userPath = `users/${user.uid}`;
       try {

@@ -19,7 +19,7 @@ function AppContent() {
   const isLoginPage = location.pathname === '/login';
   const isHomePage = location.pathname === '/';
   const isAdminPage = location.pathname === '/admin';
-  const isV2Page = location.pathname === '/v2';
+  const isV1Page = location.pathname === '/v1';
   const isPaymentPage = location.pathname === '/payment';
 
   useEffect(() => {
@@ -31,7 +31,8 @@ function AppContent() {
       {!isLoginPage && !isPaymentPage && <Header />}
       <main className="flex-1 pt-24">
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<HomeV2 />} />
+          <Route path="/v1" element={<Home />} />
           <Route path="/login" element={<Login />} />
           
           {/* Protected Routes */}
@@ -81,14 +82,12 @@ function AppContent() {
             </ProtectedRoute>
           } />
           <Route path="/admin" element={<Admin />} />
-          <Route path="/v2" element={<HomeV2 />} />
           
           {/* Fallback to home */}
           <Route path="*" element={<Home />} />
         </Routes>
       </main>
-
-      {!isLoginPage && !isHomePage && !isAdminPage && !isV2Page && !isPaymentPage && (
+      {!isLoginPage && !isHomePage && !isAdminPage && !isV1Page && !isPaymentPage && (
         <footer className="border-t py-6 md:py-0 bg-background">
           <div className="container mx-auto flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row px-4 md:px-8">
             <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
