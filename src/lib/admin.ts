@@ -23,6 +23,13 @@ export interface UserRecord {
   createdAt?: Timestamp;
   arcaRazonSocial?: string;
   arcaEstadoClave?: string;
+  province?: string;
+  city?: string;
+  instagram?: string;
+  logoUrl?: string;
+  avatarUrl?: string;
+  structurePhotos?: string[];
+  billingCycle?: string;
 }
 
 export async function getAllUsers(): Promise<UserRecord[]> {

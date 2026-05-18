@@ -6,7 +6,8 @@ import { auth, db } from '@/src/lib/firebase';
 import {
   Users, Clock, CheckCircle, XCircle, ShieldCheck,
   Building2, Mail, Phone, CreditCard, ArrowLeft, Loader2, Trash2,
-  DollarSign, TrendingUp, Activity, BarChart3, ShoppingBag, MessageSquare
+  DollarSign, TrendingUp, Activity, BarChart3, ShoppingBag, MessageSquare,
+  ChevronDown, ChevronUp, MapPin, Instagram, ExternalLink
 } from 'lucide-react';
 import {
   getAllUsers, approveUser, rejectUser, reactivateUser, deleteUser, UserRecord,
@@ -53,6 +54,8 @@ export function Admin() {
   const [dataLoading, setDataLoading] = useState(true);
   const [tab, setTab] = useState<'dashboard' | 'pending' | 'all'>('dashboard');
   const [actionId, setActionId] = useState<string | null>(null);
+  const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   // Auth guard — only ADMIN can access
   useEffect(() => {
@@ -406,128 +409,221 @@ export function Admin() {
               {displayed.map(u => {
                 const statusInfo = STATUS_LABEL[u.status] ?? { label: u.status, color: 'bg-muted text-muted-foreground' };
                 return (
-                  <div key={u.uid} className="bg-card border border-border rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center gap-4">
-                    <Avatar className="h-12 w-12 shrink-0 border-2 border-primary/20">
-                      <AvatarFallback className="bg-primary/10 text-primary font-bold text-sm">
-                        {(u.name?.[0] ?? '') + (u.lastName?.[0] ?? '')}
-                      </AvatarFallback>
-                    </Avatar>
+                  <div key={u.uid} className="bg-card border border-border rounded-2xl p-5 flex flex-col gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full">
+                      <Avatar className="h-12 w-12 shrink-0 border-2 border-primary/20">
+                        <AvatarFallback className="bg-primary/10 text-primary font-bold text-sm">
+                          {(u.name?.[0] ?? '') + (u.lastName?.[0] ?? '')}
+                        </AvatarFallback>
+                      </Avatar>
 
-                    <div className="flex-1 min-w-0 space-y-1.5">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-bold uppercase tracking-tight">{u.name} {u.lastName}</span>
-                        <Badge variant="outline" className={`text-[9px] font-bold tracking-wider rounded-full px-2 border ${statusInfo.color}`}>
-                          {statusInfo.label}
-                        </Badge>
-                        <Badge variant="outline" className="text-[9px] font-bold tracking-wider rounded-full px-2 border-border bg-muted">
-                          {PLAN_LABEL[u.plan] ?? u.plan}
-                        </Badge>
-                        {u.discountCode === 'REVENFREE60' && (
-                          <Badge className="text-[9px] font-bold tracking-wider rounded-full px-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                            60 DÍAS GRATIS
+                      <div className="flex-1 min-w-0 space-y-1.5">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-bold uppercase tracking-tight">{u.name} {u.lastName}</span>
+                          <Badge variant="outline" className={`text-[9px] font-bold tracking-wider rounded-full px-2 border ${statusInfo.color}`}>
+                            {statusInfo.label}
                           </Badge>
-                        )}
-                      </div>
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground font-medium">
-                        <span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{u.company}</span>
-                        <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{u.email}</span>
-                        {u.phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{u.phone}</span>}
-                        {u.cuil && <span className="flex items-center gap-1"><CreditCard className="h-3 w-3" />{u.cuil}</span>}
-                      </div>
-                      {(u.arcaRazonSocial || u.arcaEstadoClave) && (
-                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-medium mt-0.5">
-                          {u.arcaRazonSocial && (
-                            <span className="text-white/60 uppercase tracking-wide">ARCA: {u.arcaRazonSocial}</span>
-                          )}
-                          {u.arcaEstadoClave && (
-                            <span className={`font-bold uppercase tracking-widest ${u.arcaEstadoClave === 'ACTIVO' ? 'text-emerald-400' : 'text-red-400'}`}>
-                              {u.arcaEstadoClave}
-                            </span>
+                          <Badge variant="outline" className="text-[9px] font-bold tracking-wider rounded-full px-2 border-border bg-muted">
+                            {PLAN_LABEL[u.plan] ?? u.plan}
+                          </Badge>
+                          {u.discountCode === 'REVENFREE60' && (
+                            <Badge className="text-[9px] font-bold tracking-wider rounded-full px-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                              60 DÍAS GRATIS
+                            </Badge>
                           )}
                         </div>
-                      )}
-                      <p className="text-[10px] text-muted-foreground">Registrado: {formatDate(u.createdAt)}</p>
-                    </div>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground font-medium">
+                          <span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{u.company}</span>
+                          <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{u.email}</span>
+                          {u.phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{u.phone}</span>}
+                          {u.cuil && <span className="flex items-center gap-1"><CreditCard className="h-3 w-3" />{u.cuil}</span>}
+                        </div>
+                        {(u.arcaRazonSocial || u.arcaEstadoClave) && (
+                          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-medium mt-0.5">
+                            {u.arcaRazonSocial && (
+                              <span className="text-white/60 uppercase tracking-wide">ARCA: {u.arcaRazonSocial}</span>
+                            )}
+                            {u.arcaEstadoClave && (
+                              <span className={`font-bold uppercase tracking-widest ${u.arcaEstadoClave === 'ACTIVO' ? 'text-emerald-400' : 'text-red-400'}`}>
+                                {u.arcaEstadoClave}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        <p className="text-[10px] text-muted-foreground">Registrado: {formatDate(u.createdAt)}</p>
+                      </div>
 
-                    <div className="flex gap-2 shrink-0">
-                      {u.status === 'pending' && (
-                        <>
-                          <Button
-                            size="sm"
-                            disabled={actionId === u.uid}
-                            onClick={() => handleApprove(u.uid)}
-                            className="rounded-xl h-9 px-4 text-[10px] font-bold uppercase tracking-widest bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20"
-                          >
-                            {actionId === u.uid ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Aprobar'}
-                          </Button>
+                      <div className="flex flex-wrap items-center gap-2 shrink-0">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setExpandedUserId(expandedUserId === u.uid ? null : u.uid)}
+                          className="rounded-xl h-9 px-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-white hover:bg-muted"
+                        >
+                          {expandedUserId === u.uid ? (
+                            <>
+                              Ocultar detalles
+                              <ChevronUp className="ml-1 h-3.5 w-3.5" />
+                            </>
+                          ) : (
+                            <>
+                              Ver detalles
+                              <ChevronDown className="ml-1 h-3.5 w-3.5" />
+                            </>
+                          )}
+                        </Button>
+
+                        {u.status === 'pending' && (
+                          <>
+                            <Button
+                              size="sm"
+                              disabled={actionId === u.uid}
+                              onClick={() => handleApprove(u.uid)}
+                              className="rounded-xl h-9 px-4 text-[10px] font-bold uppercase tracking-widest bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20"
+                            >
+                              {actionId === u.uid ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Aprobar'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={actionId === u.uid}
+                              onClick={() => handleReject(u.uid)}
+                              className="rounded-xl h-9 px-4 text-[10px] font-bold uppercase tracking-widest border-red-500/40 text-red-400 hover:bg-red-500/10"
+                            >
+                              Rechazar
+                            </Button>
+                          </>
+                        )}
+
+                        {u.status === 'active' && (
                           <Button
                             size="sm"
                             variant="outline"
                             disabled={actionId === u.uid}
                             onClick={() => handleReject(u.uid)}
-                            className="rounded-xl h-9 px-4 text-[10px] font-bold uppercase tracking-widest border-red-500/40 text-red-400 hover:bg-red-500/10"
+                            className="rounded-xl h-9 px-4 text-[10px] font-bold uppercase tracking-widest border-red-500/40 text-red-400 hover:bg-red-500/10 shrink-0"
                           >
-                            Rechazar
+                            Suspender
                           </Button>
-                        </>
-                      )}
+                        )}
 
-                      {u.status === 'active' && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={actionId === u.uid}
-                          onClick={() => handleReject(u.uid)}
-                          className="rounded-xl h-9 px-4 text-[10px] font-bold uppercase tracking-widest border-red-500/40 text-red-400 hover:bg-red-500/10 shrink-0"
-                        >
-                          Suspender
-                        </Button>
-                      )}
+                        {u.status === 'rejected' && (
+                          <Button
+                            size="sm"
+                            disabled={actionId === u.uid}
+                            onClick={() => handleApprove(u.uid)}
+                            className="rounded-xl h-9 px-4 text-[10px] font-bold uppercase tracking-widest bg-emerald-500 hover:bg-emerald-600 text-white shrink-0"
+                          >
+                            Reactivar
+                          </Button>
+                        )}
 
-                      {u.status === 'rejected' && (
-                        <Button
-                          size="sm"
-                          disabled={actionId === u.uid}
-                          onClick={() => handleApprove(u.uid)}
-                          className="rounded-xl h-9 px-4 text-[10px] font-bold uppercase tracking-widest bg-emerald-500 hover:bg-emerald-600 text-white shrink-0"
-                        >
-                          Reactivar
-                        </Button>
-                      )}
+                        {u.status === 'suspended' && (
+                          <Button
+                            size="sm"
+                            disabled={actionId === u.uid}
+                            onClick={() => handleReactivate(u.uid)}
+                            className="rounded-xl h-9 px-4 text-[10px] font-bold uppercase tracking-widest bg-emerald-500 hover:bg-emerald-600 text-white shrink-0"
+                          >
+                            {actionId === u.uid ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Reactivar'}
+                          </Button>
+                        )}
 
-                      {u.status === 'suspended' && (
-                        <Button
-                          size="sm"
-                          disabled={actionId === u.uid}
-                          onClick={() => handleReactivate(u.uid)}
-                          className="rounded-xl h-9 px-4 text-[10px] font-bold uppercase tracking-widest bg-emerald-500 hover:bg-emerald-600 text-white shrink-0"
-                        >
-                          {actionId === u.uid ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Reactivar'}
-                        </Button>
-                      )}
+                        {u.role !== 'ADMIN' && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            disabled={actionId === u.uid}
+                            onClick={() => handlePromote(u.uid)}
+                            className="rounded-xl h-9 px-4 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10"
+                          >
+                            Hacer Admin
+                          </Button>
+                        )}
 
-                      {u.role !== 'ADMIN' && (
                         <Button
-                          size="sm"
+                          size="icon"
                           variant="ghost"
                           disabled={actionId === u.uid}
-                          onClick={() => handlePromote(u.uid)}
-                          className="rounded-xl h-9 px-4 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10"
+                          onClick={() => handleDelete(u.uid)}
+                          className="rounded-xl h-9 w-9 text-muted-foreground hover:text-red-400 hover:bg-red-500/10"
                         >
-                          Hacer Admin
+                          <Trash2 className="h-4 w-4" />
                         </Button>
-                      )}
-
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        disabled={actionId === u.uid}
-                        onClick={() => handleDelete(u.uid)}
-                        className="rounded-xl h-9 w-9 text-muted-foreground hover:text-red-400 hover:bg-red-500/10"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      </div>
                     </div>
+
+                    {/* Expanded details section */}
+                    {expandedUserId === u.uid && (
+                      <div className="w-full border-t border-border/50 pt-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-3">
+                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Información Adicional</h4>
+                            <div className="space-y-2 text-xs">
+                              {u.province && (
+                                <p className="flex items-center gap-2 text-white/80">
+                                  <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
+                                  <span>Ubicación: <strong className="uppercase">{u.city}, {u.province}</strong></span>
+                                </p>
+                              )}
+                              {u.instagram && (
+                                <p className="flex items-center gap-2 text-white/80">
+                                  <Instagram className="h-3.5 w-3.5 text-pink-500 shrink-0" />
+                                  <span>Instagram: <strong>@{u.instagram}</strong></span>
+                                </p>
+                              )}
+                              {u.billingCycle && (
+                                <p className="flex items-center gap-2 text-white/80">
+                                  <CreditCard className="h-3.5 w-3.5 text-primary shrink-0" />
+                                  <span>Facturación: <strong className="uppercase">{u.billingCycle}</strong></span>
+                                </p>
+                              )}
+                              {u.discountCode && (
+                                <p className="flex items-center gap-2 text-white/80">
+                                  <DollarSign className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                                  <span>Cupón Aplicado: <strong>{u.discountCode}</strong></span>
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          {u.logoUrl && (
+                            <div className="flex flex-col items-start md:items-end justify-start space-y-2">
+                              <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Logo de la Agencia</h4>
+                              <div className="relative group overflow-hidden rounded-xl border border-border bg-muted/20 p-1">
+                                <img
+                                  src={u.logoUrl}
+                                  alt="Logo Agencia"
+                                  className="h-16 w-32 object-contain rounded-lg hover:scale-105 transition-transform cursor-pointer"
+                                  onClick={() => setLightboxUrl(u.logoUrl || null)}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {u.structurePhotos && u.structurePhotos.length > 0 && (
+                          <div className="space-y-3 pt-2">
+                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Fotos de la Estructura (Requisito de Admisión)</h4>
+                            <div className="grid grid-cols-3 gap-3">
+                              {u.structurePhotos.map((photo, pIdx) => (
+                                <div key={pIdx} className="relative group aspect-video rounded-xl overflow-hidden border border-border/80 bg-muted/40 cursor-pointer">
+                                  <img
+                                    src={photo}
+                                    alt={`Estructura ${pIdx + 1}`}
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                    onClick={() => setLightboxUrl(photo)}
+                                  />
+                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300">
+                                    <ExternalLink className="h-5 w-5 text-white animate-in zoom-in-50 duration-200" />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -535,6 +631,28 @@ export function Admin() {
           )
         )}
       </div>
+
+      {/* Lightbox Modal */}
+      {lightboxUrl && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 animate-in fade-in duration-200 cursor-zoom-out"
+          onClick={() => setLightboxUrl(null)}
+        >
+          <div className="relative max-w-4xl max-h-[85vh] overflow-hidden rounded-2xl border border-border bg-card">
+            <img 
+              src={lightboxUrl} 
+              alt="Ampliada" 
+              className="max-w-full max-h-[80vh] object-contain"
+            />
+            <button 
+              className="absolute top-4 right-4 rounded-full bg-black/60 p-2 text-white hover:bg-black/80 transition-colors"
+              onClick={() => setLightboxUrl(null)}
+            >
+              <XCircle className="h-6 w-6" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
