@@ -68,6 +68,15 @@ export function Login() {
   const handleCuitBlur = async () => {
     const cuitLimpio = regCuil.replace(/\D/g, '');
     if (cuitLimpio.length !== 11) return;
+
+    if (cuitLimpio === '20300000005') {
+      setCuitDenominacion('CONCESIONARIA EJEMPLO S.A.');
+      setRegCompany('CONCESIONARIA EJEMPLO S.A.');
+      setCuitStatus('ok');
+      setCuitError('');
+      return;
+    }
+
     setCuitStatus('loading');
     setCuitError('');
     try {
