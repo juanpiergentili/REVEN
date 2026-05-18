@@ -4,12 +4,13 @@ import { Mail, Lock, ArrowRight, ShieldCheck, Building2, User, Phone, Fingerprin
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Logo } from '../components/layout/Logo';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
-  updateProfile
+  updateProfile,
+  sendEmailVerification
 } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, OperationType } from '@/src/lib/firebase';
@@ -23,10 +24,12 @@ import {
 } from '@/components/ui/select';
 
 export function Login() {
-  const [isLogin, setIsLogin] = useState(true);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const [isLogin, setIsLogin] = useState(queryParams.get('register') !== 'true');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
 
   // Login States
   const [loginEmail, setLoginEmail] = useState('');
@@ -76,6 +79,12 @@ export function Login() {
       await updateProfile(user, {
         displayName: `${regName} ${regLastName}`
       });
+
+      try {
+        await sendEmailVerification(user);
+      } catch (emailErr) {
+        console.error('Error sending verification email:', emailErr);
+      }
 
       const userPath = `users/${user.uid}`;
       try {

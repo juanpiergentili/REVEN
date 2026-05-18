@@ -338,7 +338,7 @@ export function Header() {
                 </Button>
                 <Button
                   className="rounded-full px-6 font-semibold uppercase tracking-widest text-xs h-11 shadow-lg shadow-primary/20 group"
-                  onClick={() => navigate('/?register=true')}
+                  onClick={() => navigate('/login?register=true')}
                 >
                   REGISTRARSE
                 </Button>
@@ -449,7 +449,7 @@ export function Header() {
                     </Button>
                     <Button
                       className="w-full rounded-2xl h-12 font-bold uppercase tracking-widest text-xs shadow-lg shadow-primary/20"
-                      onClick={() => { navigate('/?register=true'); setIsMenuOpen(false); }}
+                      onClick={() => { navigate('/login?register=true'); setIsMenuOpen(false); }}
                     >
                       Registrarse
                     </Button>
