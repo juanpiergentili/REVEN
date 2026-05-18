@@ -57,17 +57,6 @@ export function VehicleDetail() {
     let isMounted = true;
 
     async function fetchVehicle() {
-      const id = extractIdFromSlug(slug || '');
-      console.log('[VehicleDetail] Extracted ID:', id, 'from slug:', slug);
-
-      if (!id) {
-        console.warn('[VehicleDetail] No valid ID extracted from slug');
-        if (isMounted) {
-          setNotFound(true);
-          setLoading(false);
-        }
-        return;
-      }
       try {
         const snap = await getDocFromServer(doc(db, 'vehicles', id));
         if (!isMounted) return;
@@ -81,6 +70,7 @@ export function VehicleDetail() {
           } as Vehicle);
           updateDoc(snap.ref, { viewCount: increment(1) }).catch(() => {});
           setLoading(false);
+          return;
         }
 
         setNotFoundReason(`ID: ${id}`);

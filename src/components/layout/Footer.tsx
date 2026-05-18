@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, Building2, MessageCircle, Instagram, Facebook, Linkedin } from 'lucide-react';
+import { Mail, Building2, MessageCircle, Instagram, Facebook, Youtube, Linkedin } from 'lucide-react';
 import { Logo } from './Logo';
 
 interface FooterProps {
@@ -23,23 +23,13 @@ export function Footer({ onAdmissionClick, onTermsClick, className = "bg-[#0e0a1
              <p className="text-[#ffffff] text-base font-light leading-relaxed max-w-sm">
                La plataforma privada de trading automotor más avanzada de Argentina. Exclusividad, tecnología y resultados reales.
              </p>
-              <div className="flex gap-4">
-                {[
-                  { Icon: Instagram, url: 'https://www.instagram.com/reven.com.ar/' },
-                  { Icon: Facebook,  url: 'https://www.facebook.com/Reven.com.ar/' },
-                  { Icon: Linkedin,  url: 'https://www.linkedin.com/company/reven-argentina' },
-                ].map((social, i) => (
-                  <a 
-                    key={i} 
-                    href={social.url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-[#ffffff] hover:border-[#aafc3d]/50 hover:text-[#aafc3d] transition-all"
-                  >
-                    <social.Icon size={18} />
-                  </a>
-                ))}
-              </div>
+             <div className="flex gap-4">
+               {[Instagram, Facebook, Linkedin, Youtube].map((Icon, i) => (
+                 <a key={i} href="#" className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-[#ffffff] hover:border-[#aafc3d]/50 hover:text-[#aafc3d] transition-all">
+                   <Icon size={18} />
+                 </a>
+               ))}
+             </div>
           </div>
 
           {/* Links 1 */}

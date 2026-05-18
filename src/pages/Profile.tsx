@@ -82,7 +82,6 @@ export function Profile() {
   const [loading, setLoading] = useState(true);
   const [profileData, setProfileData] = useState<any>(null);
   const [allListings, setAllListings] = useState<Vehicle[]>([]);
-  const [activeMembership, setActiveMembership] = useState<any>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [markingSoldId, setMarkingSoldId] = useState<string | null>(null);
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
@@ -118,9 +117,10 @@ export function Profile() {
       if (!targetUid) return;
       setLoading(true);
       try {
-        const snap = await getDoc(doc(db, 'users', targetUid));
-        if (snap.exists()) {
-          const data = snap.data();
+        const userDoc = await getDoc(doc(db, 'users', targetUid));
+        let data: any = null;
+        if (userDoc.exists()) {
+          data = userDoc.data();
           setProfileData(data);
           setEditForm({
             company: data.company || '',
@@ -139,13 +139,7 @@ export function Profile() {
             showPhone: data.showPhone !== false,
             showName: data.showName !== false,
           });
-          
-          // Fetch membership
-          const { getActiveMembership } = await import('@/src/lib/memberships');
-          const membership = await getActiveMembership(targetUid);
-          setActiveMembership(membership);
         }
-
         let vehicles = await getVehiclesBySeller(targetUid);
         // Auto-pause all active listings when trial has expired
         if (isOwnProfile && isTrialExpired(data) && vehicles.some(v => v.status === 'ACTIVE')) {
@@ -169,40 +163,7 @@ export function Profile() {
       }
     }
     fetchProfile();
-  }, [targetUid, isOwnProfile]);
-
-  // Handle plan upgrades with better feedback
-  const handleUpgrade = async (plan: any, cycle: 'monthly' | 'annual') => {
-    if (!user) return;
-    setEditLoading(true);
-    setEditError(null);
-    try {
-      // Create membership record
-      const { createMembership } = await import('@/src/lib/memberships');
-      await createMembership({
-        userId: user.uid,
-        plan: plan,
-        billingCycle: cycle,
-        discountPercent: profileData?.discountCode === 'REVENFREE60' ? 100 : 0,
-        discountCode: profileData?.discountCode
-      });
-      
-      // Instead of immediate activation, set a pending status for admin approval
-      await updateDoc(doc(db, 'users', user.uid), {
-        pendingPlanUpgrade: plan,
-        pendingBillingCycle: cycle,
-        upgradeRequestedAt: new Date(),
-        updatedAt: new Date()
-      });
-      
-      setShowUpgradeRequested(true);
-    } catch (err: any) {
-      console.error('Error upgrading plan:', err);
-      setEditError(err?.message || 'Error al solicitar el plan. Por favor, reintentá.');
-    } finally {
-      setEditLoading(false);
-    }
-  };
+  }, [targetUid]);
 
   const handleUpdateProfile = async () => {
     if (!user) return;
@@ -398,17 +359,15 @@ export function Profile() {
     );
   }
 
-  // Final render with full safety wrap
-  try {
-    if (!profileData) {
-      return (
-        <div className="min-h-screen flex flex-col items-center justify-center space-y-4">
-          <Building2 className="h-16 w-16 text-muted-foreground opacity-20" />
-          <h2 className="text-xl font-bold uppercase tracking-widest text-muted-foreground">Perfil no encontrado</h2>
-          <Button onClick={() => navigate('/marketplace')}>Volver al Marketplace</Button>
-        </div>
-      );
-    }
+  if (!profileData) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center space-y-4">
+        <Building2 className="h-16 w-16 text-muted-foreground opacity-20" />
+        <h2 className="text-xl font-bold uppercase tracking-widest text-muted-foreground">Perfil no encontrado</h2>
+        <Button onClick={() => navigate('/marketplace')}>Volver al Marketplace</Button>
+      </div>
+    );
+  }
 
   const responseBadge = getResponseBadge(profileData.responseTimestamps || [12, 15, 8, 20]);
   const provinceName = provincias.find(p => p.id === profileData.province)?.nombre || profileData.province || '';
@@ -560,9 +519,9 @@ export function Profile() {
             {(profileData.instagram || profileData.facebook || profileData.whatsapp) && (
               <div className="flex flex-wrap items-center gap-3 pt-1">
                 {profileData.instagram && (
-                  <a href={`https://instagram.com/${profileData.instagram.toString().replace('@', '')}`} target="_blank" rel="noopener noreferrer"
+                  <a href={`https://instagram.com/${profileData.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer"
                     className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors font-bold">
-                    <Instagram className="h-3.5 w-3.5" /> @{profileData.instagram.toString().replace('@', '')}
+                    <Instagram className="h-3.5 w-3.5" /> @{profileData.instagram.replace('@', '')}
                   </a>
                 )}
                 {profileData.facebook && (
@@ -572,7 +531,7 @@ export function Profile() {
                   </a>
                 )}
                 {profileData.whatsapp && (
-                  <a href={`https://wa.me/${profileData.whatsapp.toString().replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"
+                  <a href={`https://wa.me/${profileData.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"
                     className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors font-bold">
                     <Phone className="h-3.5 w-3.5" /> WhatsApp
                   </a>
@@ -1105,335 +1064,144 @@ export function Profile() {
               </div>
             </div>
 
-          <Tabs defaultValue="general" className="flex-1 flex flex-col overflow-hidden">
-            <div className="px-8 border-b border-border shrink-0">
-              <TabsList className="bg-transparent border-none p-0 h-12 gap-6">
-                <TabsTrigger value="general" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 font-bold uppercase tracking-widest text-[10px]">General</TabsTrigger>
-                <TabsTrigger value="plan" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 font-bold uppercase tracking-widest text-[10px]">Mi Plan</TabsTrigger>
-              </TabsList>
+            {/* Datos principales */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3 col-span-1 md:col-span-2">
+                <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-primary">Nombre de la Agencia / Concesionaria</Label>
+                <Input
+                  value={editForm.company}
+                  onChange={e => setEditForm(prev => ({ ...prev, company: e.target.value }))}
+                  placeholder="Automotores Reven S.A."
+                  className="h-14 rounded-[2.5rem] bg-muted border-border font-bold px-6"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-primary">Provincia</Label>
+                <Select value={editForm.province} onValueChange={v => setEditForm(prev => ({ ...prev, province: v, city: '' }))} disabled={loadingProvincias}>
+                  <SelectTrigger className="h-14 rounded-[2.5rem] bg-muted border-border font-bold px-6">
+                    <SelectValue>{loadingProvincias ? 'Cargando...' : (provincias.find(p => p.id === editForm.province)?.nombre || 'Seleccionar')}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="rounded-[2.5rem]">
+                    {provincias.map(p => (
+                      <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Localidad</Label>
+                <Select value={editForm.city} onValueChange={v => setEditForm(prev => ({ ...prev, city: v }))} disabled={!editForm.province || loadingLocalidades}>
+                  <SelectTrigger className="h-14 rounded-[2.5rem] bg-muted border-border font-bold px-6">
+                    <SelectValue>{loadingLocalidades ? 'Cargando...' : (localidades.find(l => l.id === editForm.city)?.nombre || 'Seleccionar')}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="rounded-[2.5rem]">
+                    {localidades.map(l => (
+                      <SelectItem key={l.id} value={l.id}>{l.nombre}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-primary">Nombre del Dueño / Apoderado</Label>
+                <Input
+                  value={editForm.name}
+                  onChange={e => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Nombre"
+                  className="h-12 rounded-xl bg-muted border-border font-bold"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold uppercase tracking-widest ml-1">Teléfono Público</Label>
+                <Input
+                  value={editForm.phone}
+                  onChange={e => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="+54 9 11 ..."
+                  className="h-12 rounded-xl bg-muted border-border font-bold"
+                />
+              </div>
+
+              <div className="space-y-2 col-span-1 md:col-span-2">
+                <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-primary">CUIT</Label>
+                <Input
+                  value={editForm.cuit}
+                  onChange={e => setEditForm(prev => ({ ...prev, cuit: e.target.value }))}
+                  placeholder="20-12345678-9"
+                  className="h-12 rounded-xl bg-muted border-border font-bold"
+                />
+              </div>
             </div>
 
-            <TabsContent value="general" className="flex-1 overflow-y-auto p-0 m-0">
-              <div className="px-8 py-6 space-y-8">
-                {/* Logo de Agencia */}
-                <div className="space-y-4">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest text-primary">Logo de Agencia</Label>
-                  <div className="flex items-center gap-6">
-                    <div className="h-20 w-20 rounded-[2rem] border-2 border-border overflow-hidden bg-muted flex items-center justify-center shrink-0 shadow-inner">
-                      {logoPreview || editForm.logoUrl ? (
-                        <img src={logoPreview || editForm.logoUrl} alt="logo" className="w-full h-full object-contain p-1" />
-                      ) : (
-                        <Building2 className="h-8 w-8 text-muted-foreground" />
-                      )}
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => logoInputRef.current?.click()}
-                      className="rounded-full font-bold uppercase tracking-widest text-[10px] gap-2 border-border h-9"
-                    >
-                      <Upload className="h-3.5 w-3.5" /> Subir logo
-                    </Button>
-                  </div>
+            {/* Visibilidad de contacto */}
+            <div className="space-y-3">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-primary">Visibilidad en el Perfil Público</Label>
+              <div className="flex flex-col gap-3 p-4 rounded-xl bg-muted/40 border border-border">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={editForm.showName}
+                    onChange={e => setEditForm(prev => ({ ...prev, showName: e.target.checked }))}
+                    className="w-4 h-4 rounded accent-primary"
+                  />
+                  <span className="text-xs font-bold uppercase tracking-widest">Mostrar nombre del apoderado</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={editForm.showEmail}
+                    onChange={e => setEditForm(prev => ({ ...prev, showEmail: e.target.checked }))}
+                    className="w-4 h-4 rounded accent-primary"
+                  />
+                  <span className="text-xs font-bold uppercase tracking-widest">Mostrar email en el perfil</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={editForm.showPhone}
+                    onChange={e => setEditForm(prev => ({ ...prev, showPhone: e.target.checked }))}
+                    className="w-4 h-4 rounded accent-primary"
+                  />
+                  <span className="text-xs font-bold uppercase tracking-widest">Mostrar teléfono en el perfil</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Redes Sociales */}
+            <div className="space-y-4">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-primary">Redes Sociales</Label>
+              <div className="grid grid-cols-1 gap-4">
+                <div className="relative">
+                  <Instagram className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={editForm.instagram}
+                    onChange={e => setEditForm(prev => ({ ...prev, instagram: e.target.value.replace('@', '') }))}
+                    placeholder="usuario de Instagram"
+                    className="h-12 rounded-xl bg-muted border-border font-bold pl-10"
+                  />
                 </div>
-
-                {/* Datos principales */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-3 col-span-1 md:col-span-2">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-primary">Nombre de la Agencia / Concesionaria</Label>
-                    <Input
-                      value={editForm.company}
-                      onChange={e => setEditForm(prev => ({ ...prev, company: e.target.value }))}
-                      placeholder="Automotores Reven S.A."
-                      className="h-14 rounded-[1.5rem] bg-muted border-border font-bold px-6 focus:ring-primary/20"
-                    />
-                  </div>
-
-                  <div className="space-y-3">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-primary">Provincia</Label>
-                    <Select value={editForm.province} onValueChange={v => setEditForm(prev => ({ ...prev, province: v, city: '' }))} disabled={loadingProvincias}>
-                      <SelectTrigger className="h-14 rounded-[1.5rem] bg-muted border-border font-bold px-6">
-                        <SelectValue>{loadingProvincias ? 'Cargando...' : (provincias.find(p => p.id === editForm.province)?.nombre || 'Seleccionar')}</SelectValue>
-                      </SelectTrigger>
-                      <SelectContent className="rounded-[1.5rem]">
-                        {provincias.map(p => (
-                          <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-3">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-primary">Localidad</Label>
-                    <Select value={editForm.city} onValueChange={v => setEditForm(prev => ({ ...prev, city: v }))} disabled={!editForm.province || loadingLocalidades}>
-                      <SelectTrigger className="h-14 rounded-[1.5rem] bg-muted border-border font-bold px-6">
-                        <SelectValue>{loadingLocalidades ? 'Cargando...' : (localidades.find(l => l.id === editForm.city)?.nombre || 'Seleccionar')}</SelectValue>
-                      </SelectTrigger>
-                      <SelectContent className="rounded-[1.5rem]">
-                        {localidades.map(l => (
-                          <SelectItem key={l.id} value={l.id}>{l.nombre}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-3">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-primary">Nombre del Dueño / Apoderado</Label>
-                    <Input
-                      value={editForm.name}
-                      onChange={e => setEditForm(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="Nombre"
-                      className="h-14 rounded-[1.5rem] bg-muted border-border font-bold px-6"
-                    />
-                  </div>
-
-                  <div className="space-y-3">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest ml-1 text-primary">Teléfono Público</Label>
-                    <Input
-                      value={editForm.phone}
-                      onChange={e => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
-                      placeholder="+54 9 11 ..."
-                      className="h-14 rounded-[1.5rem] bg-muted border-border font-bold px-6"
-                    />
-                  </div>
+                <div className="relative">
+                  <Facebook className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={editForm.facebook}
+                    onChange={e => setEditForm(prev => ({ ...prev, facebook: e.target.value }))}
+                    placeholder="Página de Facebook"
+                    className="h-12 rounded-xl bg-muted border-border font-bold pl-10"
+                  />
                 </div>
-
-                {/* Redes Sociales */}
-                <div className="space-y-4">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest text-primary">Redes Sociales</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="relative">
-                      <Instagram className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        value={editForm.instagram}
-                        onChange={e => setEditForm(prev => ({ ...prev, instagram: e.target.value.replace('@', '') }))}
-                        placeholder="Instagram"
-                        className="h-12 rounded-xl bg-muted border-border font-bold pl-11"
-                      />
-                    </div>
-                    <div className="relative">
-                      <Facebook className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        value={editForm.facebook}
-                        onChange={e => setEditForm(prev => ({ ...prev, facebook: e.target.value }))}
-                        placeholder="Facebook"
-                        className="h-12 rounded-xl bg-muted border-border font-bold pl-11"
-                      />
-                    </div>
-                    <div className="relative">
-                      <Globe className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        value={editForm.whatsapp}
-                        onChange={e => setEditForm(prev => ({ ...prev, whatsapp: e.target.value }))}
-                        placeholder="WhatsApp"
-                        className="h-12 rounded-xl bg-muted border-border font-bold pl-11"
-                      />
-                    </div>
-                  </div>
+                <div className="relative">
+                  <Globe className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={editForm.whatsapp}
+                    onChange={e => setEditForm(prev => ({ ...prev, whatsapp: e.target.value }))}
+                    placeholder="WhatsApp (ej: 5491112345678)"
+                    className="h-12 rounded-xl bg-muted border-border font-bold pl-10"
+                  />
                 </div>
               </div>
-            </TabsContent>
-
-            <TabsContent value="plan" className="flex-1 overflow-y-auto p-0 m-0">
-              <div className="px-8 py-6 space-y-8">
-                {/* Current Plan Card */}
-                <div className="p-8 rounded-3xl bg-primary/5 border border-primary/20 relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform">
-                    <Award className="h-24 w-24 text-primary" />
-                  </div>
-                  <div className="relative z-10 space-y-6">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Plan Vigente</p>
-                        <h3 className="text-3xl font-black tracking-tighter uppercase italic text-primary">REVEN {currentPlan}</h3>
-                      </div>
-                      <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 uppercase font-black text-[9px] px-3 py-1 rounded-full">Activo</Badge>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-8">
-                      <div className="space-y-1">
-                        <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Último Pago</p>
-                        <p className="font-bold text-sm">{profileData.lastPaymentDate ? new Date(profileData.lastPaymentDate).toLocaleDateString('es-AR') : '01/05/2026'}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Vencimiento</p>
-                        <p className="font-bold text-sm text-primary">{profileData.nextPaymentDate ? new Date(profileData.nextPaymentDate).toLocaleDateString('es-AR') : '01/06/2026'}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Usage Stats */}
-                <div className="space-y-4">
-                  <h4 className="text-[10px] font-bold uppercase tracking-widest text-primary ml-1">Límites y Consumo</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-6 rounded-2xl bg-muted/40 border border-border space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold uppercase tracking-tighter">Publicaciones</span>
-                        <span className="text-xs font-black">{activeListings.length} / {PLAN_LIMITS[currentPlan]?.maxVehicles || 5}</span>
-                      </div>
-                      <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                        <div className="h-full bg-primary" style={{ width: `${Math.min(100, (activeListings.length / (PLAN_LIMITS[currentPlan]?.maxVehicles || 5)) * 100)}%` }} />
-                      </div>
-                    </div>
-                    <div className="p-6 rounded-2xl bg-muted/40 border border-border space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold uppercase tracking-tighter">Búsquedas Wanted</span>
-                        <span className="text-xs font-black">{activeWantedCount} / {PLAN_LIMITS[currentPlan]?.maxWantedSearches || 5}</span>
-                      </div>
-                      <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                        <div className="h-full bg-blue-500" style={{ width: `${Math.min(100, (activeWantedCount / (PLAN_LIMITS[currentPlan]?.maxWantedSearches || 5)) * 100)}%` }} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Performance Metrics */}
-                <div className="space-y-4">
-                  <h4 className="text-[10px] font-bold uppercase tracking-widest text-primary ml-1">Rendimiento de Cuenta</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="p-4 rounded-2xl bg-card border border-border text-center space-y-1">
-                      <Eye className="h-4 w-4 mx-auto text-primary opacity-50" />
-                      <p className="text-xl font-black tracking-tighter">
-                        {Array.isArray(allListings) ? allListings.reduce((acc, l) => acc + (Number(l?.viewCount) || 0), 0) : 0}
-                      </p>
-                      <p className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Vistas</p>
-                    </div>
-                    <div className="p-4 rounded-2xl bg-card border border-border text-center space-y-1">
-                      <MessageSquare className="h-4 w-4 mx-auto text-primary opacity-50" />
-                      <p className="text-xl font-black tracking-tighter">
-                        {Array.isArray(allListings) ? allListings.reduce((acc, l) => acc + (Number(l?.contactCount) || 0), 0) : 0}
-                      </p>
-                      <p className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Leads</p>
-                    </div>
-                    <div className="p-4 rounded-2xl bg-card border border-border text-center space-y-1">
-                      <TrendingUp className="h-4 w-4 mx-auto text-primary opacity-50" />
-                      <p className="text-xl font-black tracking-tighter">
-                        {Array.isArray(allListings) && allListings.length > 0 
-                          ? Math.round((allListings.reduce((acc, l) => acc + (Number(l?.contactCount) || 0), 0) / allListings.reduce((acc, l) => acc + (Number(l?.viewCount) || 0), 1)) * 100) 
-                          : 0}%
-                      </p>
-                      <p className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Conv.</p>
-                    </div>
-                    <div className="p-4 rounded-2xl bg-card border border-border text-center space-y-1">
-                      <Clock className="h-4 w-4 mx-auto text-primary opacity-50" />
-                      <p className="text-xl font-black tracking-tighter">
-                        {(() => {
-                          try {
-                            const nextDate = profileData?.nextPaymentDate;
-                            if (!nextDate) return 30;
-                            const dateObj = (typeof nextDate === 'object' && 'seconds' in nextDate) 
-                              ? new Date((nextDate as any).seconds * 1000) 
-                              : new Date(nextDate);
-                            if (isNaN(dateObj.getTime())) return 30;
-                            const diff = dateObj.getTime() - new Date().getTime();
-                            return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-                          } catch {
-                            return 30;
-                          }
-                        })()}
-                      </p>
-                      <p className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Días</p>
-                    </div>
-                    <div className="p-4 rounded-2xl bg-card border border-border text-center space-y-1">
-                      <Shield className="h-4 w-4 mx-auto text-primary opacity-50" />
-                      <p className="text-xl font-black tracking-tighter">
-                        {(() => {
-                          try {
-                            const sessions = profileData?.sessions;
-                            const count = (sessions && typeof sessions === 'object') ? Object.keys(sessions).length : 0;
-                            const limit = PLAN_LIMITS[currentPlan as MembershipPlan]?.maxSessions || 1;
-                            return `${count} / ${limit}`;
-                          } catch {
-                            return "1 / 1";
-                          }
-                        })()}
-                      </p>
-                      <p className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Sesiones</p>
-                    </div>
-                  </div>
-
-                  {/* Evolution Chart */}
-                  <div className="p-8 rounded-[2rem] bg-card border border-border space-y-6">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <h4 className="text-xs font-black uppercase tracking-widest">Evolución de Actividad</h4>
-                        <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">Últimos 7 días</p>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-1.5">
-                          <div className="h-2 w-2 rounded-full bg-primary" />
-                          <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Visitas</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <div className="h-2 w-2 rounded-full bg-blue-500" />
-                          <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Mensajes</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="h-48 w-full relative flex items-end justify-between px-2 gap-2">
-                      {/* Grid lines */}
-                      <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-5">
-                        {[1, 2, 3, 4].map(i => <div key={i} className="w-full h-px bg-white" />)}
-                      </div>
-
-                      {/* Bar Simulation for simplicity and better aesthetics in a narrow space */}
-                      {[65, 42, 88, 54, 72, 95, 82].map((v, i) => {
-                        const m = [12, 8, 15, 10, 14, 18, 16][i];
-                        return (
-                          <div key={i} className="flex-1 flex flex-col items-center gap-2 group cursor-pointer">
-                            <div className="w-full flex flex-col items-center justify-end gap-1 h-32 relative">
-                              {/* Visits Bar */}
-                              <div 
-                                className="w-1.5 sm:w-2 bg-primary rounded-full transition-all duration-500 group-hover:brightness-125"
-                                style={{ height: `${v}%` }}
-                              />
-                              {/* Messages Bar */}
-                              <div 
-                                className="w-1.5 sm:w-2 bg-blue-500 rounded-full transition-all duration-500 group-hover:brightness-125"
-                                style={{ height: `${m * 4}%` }}
-                              />
-                              
-                              {/* Tooltip on hover */}
-                              <div className="absolute -top-12 bg-zinc-900 border border-border text-[8px] font-bold uppercase tracking-widest p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-20 pointer-events-none whitespace-nowrap">
-                                Visitas: {v}<br />Mensajes: {m}
-                              </div>
-                            </div>
-                            <span className="text-[8px] font-black text-muted-foreground uppercase">{['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'][i]}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Invoice Simulation */}
-                <div className="space-y-4">
-                  <h4 className="text-[10px] font-bold uppercase tracking-widest text-primary ml-1">Facturación</h4>
-                  <div className="rounded-2xl border border-border overflow-hidden">
-                    <div className="px-5 py-3 bg-muted/50 border-b border-border flex items-center justify-between">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Factura</span>
-                      <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Estado</span>
-                    </div>
-                    <div className="p-5 flex items-center justify-between hover:bg-muted/20 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center">
-                          <CreditCard className="h-5 w-5 text-muted-foreground" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold tracking-tight uppercase">Mayo 2026</p>
-                          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">REVEN-{currentPlan.toUpperCase()}</p>
-                        </div>
-                      </div>
-                      <Badge variant="outline" className="rounded-full border-emerald-500/30 text-emerald-400 font-bold text-[9px] uppercase tracking-widest">Pagado</Badge>
-                    </div>
-                  </div>
-                  <p className="text-[9px] text-muted-foreground text-center font-medium uppercase tracking-widest">Las facturas son generadas automáticamente por MercadoPago.</p>
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
+            </div>
           </div>
 
           <div className="px-8 py-5 border-t border-border flex flex-col gap-3 shrink-0">
@@ -1638,27 +1406,7 @@ export function Profile() {
         </DialogContent>
       </Dialog>
     </div>
-    );
-  } catch (err) {
-    console.error("Critical render error in Profile:", err);
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-8 text-center space-y-6 bg-background">
-        <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center">
-          <Activity className="h-10 w-10 text-red-500" />
-        </div>
-        <div className="space-y-2">
-          <h1 className="text-2xl font-black tracking-tighter uppercase italic">Error de Carga</h1>
-          <p className="text-sm text-muted-foreground font-medium max-w-xs mx-auto">
-            Hubo un problema al renderizar este perfil. <br />
-            Por favor, recargá la página o contactanos si el error persiste.
-          </p>
-        </div>
-        <Button onClick={() => window.location.reload()} className="rounded-full px-12 h-12 font-bold uppercase tracking-widest text-xs">
-          Recargar Página
-        </Button>
-      </div>
-    );
-  }
+  );
 }
 
 function VehicleGrid({

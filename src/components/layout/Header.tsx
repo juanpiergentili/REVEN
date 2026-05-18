@@ -28,6 +28,7 @@ import { Label } from '@/components/ui/label';
 import { signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail, User as FirebaseUser } from 'firebase/auth';
 import { auth, db, handleFirestoreError, OperationType } from '@/src/lib/firebase';
 import { subscribeToUnreadCount } from '@/src/lib/chat';
+import { loginDemoUser } from '@/src/lib/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { createSession, deleteSession } from '@/src/lib/sessions';
 import { PLAN_LIMITS, normalizePlan } from '@/src/types';
@@ -134,6 +135,10 @@ export function Header() {
     setError(null);
 
     const emailLower = email.toLowerCase();
+    const isDemoAccount =
+      (emailLower === 'demo@reven.com.ar' && password === 'DEMO1234') ||
+      (emailLower === 'vendedor.test@reven.com.ar' && password === 'REVEN2026') ||
+      (emailLower === 'comprador.test@reven.com.ar' && password === 'REVEN2026');
 
     try {
       if (isDemoAccount) {
@@ -342,7 +347,7 @@ export function Header() {
                 </Button>
                 <Button
                   className="rounded-full px-6 font-semibold uppercase tracking-widest text-xs h-11 shadow-lg shadow-primary/20 group"
-                  onClick={() => navigate('/login?register=true')}
+                  onClick={() => navigate('/?register=true')}
                 >
                   REGISTRARSE
                 </Button>
@@ -453,7 +458,7 @@ export function Header() {
                     </Button>
                     <Button
                       className="w-full rounded-2xl h-12 font-bold uppercase tracking-widest text-xs shadow-lg shadow-primary/20"
-                      onClick={() => { navigate('/login?register=true'); setIsMenuOpen(false); }}
+                      onClick={() => { navigate('/?register=true'); setIsMenuOpen(false); }}
                     >
                       Registrarse
                     </Button>

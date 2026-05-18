@@ -4,31 +4,30 @@ Este archivo sirve como punto de partida rápido para ti, para tu socio, o para 
 
 ## 🟢 Lo que ya hemos completado (Lo Avanzado)
 
-En las últimas sesiones hemos consolidado la infraestructura core y la lógica de negocio:
+En la última sesión terminamos la **fase más gruesa** del desarrollo de funcionalidades core B2B del marketplace:
 
-1. **Marketplace & Filtros Pro:** 
-   - Refactorización total de `Marketplace.tsx`.
-   - Cascadas de filtros inteligentes y `FilterChips.tsx` para una navegación fluida.
-   - Sliders de Kilometraje, Color, Precios (ARS/USD) y Año.
+1. **Marketplace estilo MercadoLibre:** 
+   - Refactorización total de `Marketplace.tsx` y creación de `FilterSidebar.tsx`. 
+   - Implementación de cascadas de filtros inteligentes (Al elegir Toyota, solo se ven modelos Toyota).
+   - Sliders de filtros múltiples: Rango de Kilometrajes, Color interactivo, Precios duales (ARS/USD), Transmisión, Año, etc.
+   - Componente `FilterChips.tsx` para mostrar etiquetas dinámicas de lo que estás buscando y botón de "Limpiar filtros".
 
-2. **Gestión de Planes y Límites (Estricto):**
-   - Implementación de `normalizePlan` para manejar nombres antiguos (Plata, Oro, Platinum) y mapearlos a los actuales (Business, Professional, Enterprise).
-   - Aplicación de límites reales: **Business (5 autos / 5 búsquedas)**, **Professional (15 autos / 15 búsquedas)**, **Enterprise (150 autos / 150 búsquedas)**.
-   - Feedback visual en el Perfil con barras de progreso de consumo de cuotas.
+2. **Copys Premium / "Tu Socio Estratégico":**
+   - Se removió la dependencia de decir "Hacemos peritajes" y se transformó al concepto ganador B2B: **"Historial de Inspecciones Verificadas"**, lo cual aporta transparencia al vendedor de la unidad. 
+   - Se modificaron testimonios y pantallas iniciales en `Home.tsx` para ajustarse a este modelo.
 
-3. **Formulario de Publicación Completo (`Publish.tsx`):**
-   - Integración total con la API de Catálogo (ArgAutos).
-   - **Optimizaciones de API:** Uso de `?year=YYYY` y `relations[]=years` para reducir la carga de red y mejorar la velocidad de respuesta en los dropdowns.
-   - Soporte para subida de hasta 15 fotos con previsualización y compresión.
-   - **Cotizaciones Infoauto (Integradas):** Se implementó la integración con Infoauto (priorizada sobre ACARA). *Nota: Actualmente deshabilitado visualmente en el formulario por solicitud del usuario.*
+3. **Bases de Datos Autóctonas (Argentina + Vehículos):**
+   - Agregamos un archivo `argentina-geo.ts` que nutre al portal de las 24 provincias y ciudades principales sin consumir APIs externas que gasten dinero.
+   - Extrajimos el Excel corporativo al archivo estático `vehicle-catalog.ts` conteniendo Marcas -> Modelos -> Versiones reales del mercado.
 
-4. **Analytics y Métricas de Éxito:**
-   - Corrección de la lógica de **Conversión de Leads**. Ahora refleja una tasa de cierre real basada en Ventas / Consultas.
-   - Visibilidad de métricas habilitada para todos los planes (incluyendo Business).
+4. **Sistema de Chat B2B Real (Firebase):**
+   - Nos deshicimos del chat estático. `chat.ts` y la página `Messages.tsx` ahora usan Firestore real (`onSnapshot`) para chatear entre compradores y vendedores sin recargar la página.
+   - Al tocar "Contactar Vendedor" se le envía a la sala correcta pasando por parámetro variables como el Auto y la Concesionaria.
 
-5. **Bases de Datos & GeoRef:**
-   - Integración optimizada con la API de Provincias y Localidades (GeoRef Argentina).
-   - Sistema de fallback a base de datos estática para marcas y modelos.
+5. **Perfiles de Alto Nivel y Analytics:**
+   - Creado todo un sistema de analíticas pasivas en `analytics.ts` que se almacena en Firestore con `increment()` sin gastar mucha base de datos.
+   - Creación visual premium de `Profile.tsx` (Dashboard de la Concesionaria). Un usuario puede ver: Clicks en Perfil, Vistas a Anuncios, Clicks a "Contactar" y su propio historial de Tiempo Estimado de Respuesta.
+   - El header ya cuenta con acceso interactivo a tu propio perfil.
 
 6. **Flujo de Olvidé mi Contraseña:**
    - Integrado directamente dentro del modal de inicio de sesión (`Header.tsx`).

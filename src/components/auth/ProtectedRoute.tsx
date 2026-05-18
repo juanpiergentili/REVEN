@@ -101,7 +101,7 @@ export function ProtectedRoute({ children, requireApproval = true }: ProtectedRo
   }
 
   if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/" state={{ from: location }} replace />;
   }
 
   const SUPER_ADMINS = ['lucas.ferreyra@gmail.com'];
